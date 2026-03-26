@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout.js";
 import { AliasesPage } from "@/features/aliases/AliasesPage.js";
-import { BrokerRemovalPage } from "@/features/broker/BrokerRemovalPage.js";
+import { BrokersPage } from "@/features/broker/BrokersPage.js";
 import { DashboardPage } from "@/features/dashboard/DashboardPage.js";
 import { PlaceholderPage } from "@/features/placeholder/PlaceholderPage.js";
 import { SettingsPage } from "@/features/settings/SettingsPage.js";
@@ -20,8 +20,12 @@ function SessionBootstrap() {
 
   useEffect(() => {
     let cancelled = false;
+    const email =
+      import.meta.env.VITE_DEV_EMAIL ?? "dev@phantom.local";
+    const password =
+      import.meta.env.VITE_DEV_PASSWORD ?? "devpassword123";
     void (async () => {
-      const res = await phantomApi.auth.login();
+      const res = await phantomApi.auth.login(email, password);
       if (cancelled) return;
       if (res.ok) {
         setAccessToken(res.data.accessToken);
@@ -62,7 +66,11 @@ export function App() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/aliases" element={<AliasesPage />} />
           <Route path="/vault" element={<VaultPage />} />
-          <Route path="/broker-removal" element={<BrokerRemovalPage />} />
+          <Route path="/brokers" element={<BrokersPage />} />
+          <Route
+            path="/broker-removal"
+            element={<Navigate to="/brokers" replace />}
+          />
           <Route
             path="/call-guard"
             element={

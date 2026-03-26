@@ -1,5 +1,15 @@
 # Phase 2 — Intelligence (Months 6–12)
 
+> **Progress:** Each deliverable shows **% complete** (0% = not started).
+
+| Track | Avg |
+|-------|-----|
+| Brain + risk | **0%** |
+| Telephony + Call Guard + SEE | **0%** |
+| Threat intel + brokers + complaints | **0%** |
+| Cards + VPN + extensions + dark web | **0%** |
+| **Phase 2 (overall)** | **0%** |
+
 ## Objective
 
 Deploy the AI Brain layer. Launch Call Guard, Scammer Engagement Engine v1, cross-user threat intelligence, and expand to Firefox/Safari. Upgrade to carrier-grade phone numbers. Launch virtual payment cards and VPN.
@@ -18,20 +28,20 @@ Deploy the AI Brain layer. Launch Call Guard, Scammer Engagement Engine v1, cros
 
 ### Month 6–7: The Brain v1
 
-- [ ] **Behavioral baseline engine**
+- [ ] **Behavioral baseline engine** — **0%**
   - Time-series data collection (anonymized timestamps, no content)
   - 30-day rolling window for baseline calculation
   - Anomaly detection (Z-score + ML classifier)
   - Per-alias communication pattern tracking
   - Weekly baseline recalculation
 
-- [ ] **Risk scoring engine**
+- [ ] **Risk scoring engine** — **0%**
   - 6-factor model (exposure, alias health, breaches, call threats, password hygiene, dark web)
   - Real-time score calculation on data change events
   - Dashboard widget: risk score with trend chart
   - Score-based action triggers (notifications at thresholds)
 
-- [ ] **Alias health monitoring**
+- [ ] **Alias health monitoring** — **0%**
   - 4-state model: Healthy → Warning → Compromised → Quarantined
   - Spam volume tracking per alias
   - Breach cross-reference (auto-check aliases against new breach databases)
@@ -40,13 +50,13 @@ Deploy the AI Brain layer. Launch Call Guard, Scammer Engagement Engine v1, cros
 
 ### Month 7–9: Telephony Upgrade + Call Guard
 
-- [ ] **Carrier-grade phone numbers**
+- [ ] **Carrier-grade phone numbers** — **0%**
   - Tier-1 carrier partnership signed and integrated
   - Migration path from VoIP to carrier numbers
   - Number porting for existing users
   - Data poisoning engine (multi-user number assignment)
 
-- [ ] **Call Guard AI v1**
+- [ ] **Call Guard AI v1** — **0%**
   - SIP/RTP gateway for call interception
   - Speech-to-text (Whisper) for caller transcription
   - Intent classification model (legitimate / suspicious / scam)
@@ -55,7 +65,7 @@ Deploy the AI Brain layer. Launch Call Guard, Scammer Engagement Engine v1, cros
   - "Take over" button in dashboard (switch from AI to user mid-call)
   - Call log with transcripts in dashboard
 
-- [ ] **Scammer Engagement Engine v1**
+- [ ] **Scammer Engagement Engine v1** — **0%**
   - 3 initial personas: Confused Retiree, Nervous Newbie, Interested Buyer
   - TTS voice synthesis per persona (age-appropriate, distinct voices)
   - Background noise injection (TV, keyboard, ambient)
@@ -65,35 +75,35 @@ Deploy the AI Brain layer. Launch Call Guard, Scammer Engagement Engine v1, cros
 
 ### Month 9–10: Threat Intelligence + Broker Expansion
 
-- [ ] **Cross-user threat intelligence network**
+- [ ] **Cross-user threat intelligence network** — **0%**
   - Anonymization pipeline (strip PII at point of collection)
   - Pattern recognition: scam campaign clustering
   - Pre-protection: when pattern detected across 50+ users, alert all users
   - Threat feed API (internal, for dashboard consumption)
   - VulnIQ bridge (initial API endpoint for threat data exchange)
 
-- [ ] **Data broker expansion**
+- [ ] **Data broker expansion** — **0%**
   - Broker registry expanded to 250+
   - Re-listing monitor (14-day re-scan cycle)
   - Auto-re-removal on re-listing detection
   - Dashboard: re-listing tracking per broker
   - Basic legal escalation (CCPA notice template for repeat offenders)
 
-- [ ] **Automated complaint filing**
+- [ ] **Automated complaint filing** — **0%**
   - FTC complaint auto-generation from scam engagement transcripts
   - FCC complaint submission
   - Dashboard: complaint tracking (filed, acknowledged, case number)
 
 ### Month 10–11: Virtual Cards + VPN
 
-- [ ] **Virtual payment cards**
+- [ ] **Virtual payment cards** — **0%**
   - Card issuer partnership (Marqeta / Stripe Issuing)
   - Card generation API (per-merchant, single-use, recurring)
   - Spending limits and merchant locking
   - Transaction notifications in dashboard
   - Extension: autofill virtual card at checkout
 
-- [ ] **VPN**
+- [ ] **VPN** — **0%**
   - WireGuard-based VPN infrastructure
   - Identity-aware routing (different exit node per active alias context)
   - Extension toggle (one-click enable/disable)
@@ -101,23 +111,23 @@ Deploy the AI Brain layer. Launch Call Guard, Scammer Engagement Engine v1, cros
 
 ### Month 11–12: Firefox/Safari + Dark Web Monitoring
 
-- [ ] **Firefox extension**
+- [ ] **Firefox extension** — **0%**
   - Port Chrome extension via Plasmo
   - Firefox Add-ons store submission
   - Cross-browser testing
 
-- [ ] **Safari extension**
+- [ ] **Safari extension** — **0%**
   - Plasmo → Safari Web Extension conversion
   - App Store submission (requires Xcode wrapper)
   - macOS/iOS Safari testing
 
-- [ ] **Dark web monitoring**
+- [ ] **Dark web monitoring** — **0%**
   - Integration with dark web data providers
   - Monitoring: SSN, emails, phones, credit cards, addresses
   - Alert pipeline: detection → classification → notification → recommended action
   - Dashboard: dark web findings list with severity
 
-- [ ] **Identity theft insurance**
+- [ ] **Identity theft insurance** — **0%**
   - Insurance provider partnership (AIG or similar)
   - Integration into account provisioning
   - Claims process documentation

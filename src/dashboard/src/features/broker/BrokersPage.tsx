@@ -1,0 +1,286 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { BrokerResultsPanel } from "./BrokerResultsPanel.js";
+import { BrokerScanningState } from "./BrokerScanningState.js";
+import { BrokerUpgradeModal } from "./BrokerUpgradeModal.js";
+import { phantomApi } from "@/lib/api/phantomApi.js";
+import { queryKeys } from "@/lib/queryKeys.js";
+import { useSessionStore } from "@/stores/useSessionStore.js";
+
+type TabId = "all" | "found" | "pending" | "removed" | "relisted";
+
+function tabToStatus(tab: TabId): string | undefined {
+  if (tab === "all") return undefined;
+  if (tab === "found") return "found";
+  if (tab === "pending") return "pending";
+  if (tab === "removed") return "removed";
+  if (tab === "relisted") return "relisted";
+  return undefined;
+}
+
+export function BrokersPage() {
+  const accessToken = useSessionStore((s) => s.accessToken);
+  const tier = useSessionStore((s) => s.tier);
+  const queryClient = useQueryClient();
+
+  const [tab, setTab] = useState<TabId>("all");
+  const [searchQ, setSearchQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
+  const [scanning, setScanning] = useState(false);
+  const [scanMeta, setScanMeta] = useState<{
+    totalBrokers: number;
+    estimatedTime: number;
+  } | null>(null);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [removalBusyId, setRemovalBusyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedQ(searchQ), 320);
+    return () => window.clearTimeout(t);
+  }, [searchQ]);
+
+  const statusParam = tabToStatus(tab);
+
+  const summaryQuery = useQuery({
+    queryKey: queryKeys.brokerScanSummary(accessToken),
+    queryFn: async () => {
+      const res = await phantomApi.brokerScan.summary(accessToken);
+      if (!res.ok) throw new Error(res.error.message);
+      return res.data;
+    },
+    enabled: accessToken !== null,
+  });
+
+  const catalogQuery = useQuery({
+    queryKey: queryKeys.brokerScanCatalog(accessToken),
+    queryFn: async () => {
+      const res = await phantomApi.brokerScan.catalog(accessToken);
+      if (!res.ok) throw new Error(res.error.message);
+      return res.data.items;
+    },
+    enabled: accessToken !== null,
+  });
+
+  const resultsQuery = useQuery({
+    queryKey: queryKeys.brokerScanResults(
+      accessToken,
+      statusParam ?? "all",
+      debouncedQ
+    ),
+    queryFn: async () => {
+      const res = await phantomApi.brokerScan.results(accessToken, {
+        status: statusParam,
+        q: debouncedQ.length > 0 ? debouncedQ : undefined,
+      });
+      if (!res.ok) throw new Error(res.error.message);
+      return res.data.items;
+    },
+    enabled: accessToken !== null && (summaryQuery.data?.totalScanned ?? 0) > 0,
+  });
+
+  const hasScan = (summaryQuery.data?.totalScanned ?? 0) > 0;
+
+  const startMutation = useMutation({
+    mutationFn: async () => {
+      const res = await phantomApi.brokerScan.start(accessToken);
+      if (!res.ok) throw new Error(res.error.message);
+      return res.data;
+    },
+    onSuccess: (data) => {
+      setScanMeta({
+        totalBrokers: data.totalBrokers,
+        estimatedTime: data.estimatedTime,
+      });
+      setScanning(true);
+      const duration = Math.min(14_000, 5800 + Math.floor(Math.random() * 4200));
+      window.setTimeout(() => {
+        void (async () => {
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.brokerScanSummary(accessToken),
+          });
+          await queryClient.invalidateQueries({ queryKey: ["broker-scan-results"] });
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.dashboardOverview(accessToken),
+          });
+          setScanning(false);
+        })();
+      }, duration);
+    },
+  });
+
+  const removeAllMutation = useMutation({
+    mutationFn: async () => {
+      const res = await phantomApi.brokerScan.removeAll(accessToken);
+      if (!res.ok) {
+        if (res.error.code === "upgrade_required") {
+          setUpgradeOpen(true);
+        }
+        throw new Error(res.error.message);
+      }
+      return res.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["broker-scan"] });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.brokerScanSummary(accessToken),
+      });
+      await queryClient.invalidateQueries({ queryKey: ["broker-scan-results"] });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboardOverview(accessToken),
+      });
+    },
+  });
+
+  const requestRemovalMutation = useMutation({
+    mutationFn: async (resultId: string) => {
+      setRemovalBusyId(resultId);
+      try {
+        const res = await phantomApi.brokerScan.requestRemoval(
+          accessToken,
+          resultId
+        );
+        if (!res.ok) {
+          if (res.error.code === "upgrade_required") {
+            setUpgradeOpen(true);
+          }
+          throw new Error(res.error.message);
+        }
+        return res.data;
+      } finally {
+        setRemovalBusyId(null);
+      }
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["broker-scan-results"] });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.brokerScanSummary(accessToken),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboardOverview(accessToken),
+      });
+    },
+  });
+
+  const summary = summaryQuery.data;
+  const catalogNames = useMemo(
+    () => (catalogQuery.data ?? []).map((b) => b.name),
+    [catalogQuery.data]
+  );
+
+  const exposureForModal = summary?.exposureCount ?? 0;
+
+  if (!accessToken) {
+    return (
+      <div className="px-8 py-6 font-sans text-sm text-ph-text-tertiary">
+        Connecting session…
+      </div>
+    );
+  }
+
+  if (summaryQuery.isPending && !summaryQuery.data) {
+    return (
+      <div className="px-8 py-6 font-sans text-sm text-ph-text-tertiary">
+        Loading broker intelligence…
+      </div>
+    );
+  }
+
+  const showPreScan = !hasScan && !scanning;
+  const showScanning = scanning;
+  const showResults = hasScan && !scanning && summary;
+
+  return (
+    <div className="px-8 py-6">
+      <BrokerUpgradeModal
+        open={upgradeOpen}
+        exposureCount={exposureForModal}
+        onClose={() => setUpgradeOpen(false)}
+      />
+
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-sans text-lg font-semibold text-ph-text-primary">
+            Data brokers
+          </h1>
+          <p className="mt-1 font-sans text-sm text-ph-text-tertiary">
+            Exposure scan and removal queue — Shield layer
+          </p>
+        </div>
+        {hasScan && !scanning ? (
+          <button
+            type="button"
+            disabled={startMutation.isPending}
+            onClick={() => startMutation.mutate()}
+            className="rounded-[7px] border border-ph-border bg-ph-raised px-4 py-2 font-sans text-xs font-medium text-ph-text-secondary transition-colors duration-150 hover:border-ph-text-muted hover:text-ph-text-primary disabled:opacity-50"
+          >
+            Scan again
+          </button>
+        ) : null}
+      </div>
+
+      {showPreScan ? (
+        <div className="rounded-xl border border-ph-border bg-ph-surface p-8">
+          <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-ph-text-tertiary">
+            Layer 1 · Shield
+          </div>
+          <h2 className="mt-3 max-w-xl font-sans text-xl font-semibold text-ph-text-primary">
+            See who&apos;s selling your data
+          </h2>
+          <p className="mt-3 max-w-2xl font-sans text-sm leading-relaxed text-ph-text-tertiary">
+            Data brokers aggregate public records, marketing lists, and people
+            search indexes. We scan the broker registry for your profile signals
+            — name, phone, email, and address — so you can see exposure before
+            requesting removal.
+          </p>
+          <p className="mt-4 max-w-2xl font-sans text-sm leading-relaxed text-ph-text-tertiary">
+            Phase 1 runs a deterministic simulation (no live broker queries).
+            Production workers will parallelize real scans with rate limits per
+            site.
+          </p>
+          <button
+            type="button"
+            disabled={startMutation.isPending}
+            onClick={() => startMutation.mutate()}
+            className="mt-8 rounded-[8px] border border-ph-accent-border bg-[#6C3AED15] px-6 py-3 font-sans text-sm font-semibold text-ph-accent-light shadow-[0_0_20px_rgba(108,58,237,0.12)] transition-[transform,background-color] duration-200 hover:bg-[#6C3AED22] disabled:opacity-50"
+          >
+            {startMutation.isPending ? "Starting…" : "Start free scan"}
+          </button>
+          <p className="mt-4 font-mono text-[11px] text-ph-text-ghost">
+            ~2 minutes · {catalogNames.length || 50}+ broker sites in registry
+          </p>
+        </div>
+      ) : null}
+
+      {showScanning && scanMeta ? (
+        <BrokerScanningState
+          brokerNames={catalogNames.length > 0 ? catalogNames : ["Loading…"]}
+          totalBrokers={scanMeta.totalBrokers}
+          estimatedTime={scanMeta.estimatedTime}
+        />
+      ) : null}
+
+      {showResults && summary ? (
+        resultsQuery.isPending ? (
+          <div className="font-sans text-sm text-ph-text-tertiary">
+            Loading results…
+          </div>
+        ) : (
+          <BrokerResultsPanel
+            summary={summary}
+            items={resultsQuery.data ?? []}
+            tab={tab}
+            onTab={setTab}
+            searchQ={searchQ}
+            onSearchQ={setSearchQ}
+            tier={tier}
+            onRemoveAll={() => removeAllMutation.mutate()}
+            onRequestRemoval={(id) => requestRemovalMutation.mutate(id)}
+            onUpgrade={() => setUpgradeOpen(true)}
+            removeAllBusy={removeAllMutation.isPending}
+            removalBusyId={removalBusyId}
+          />
+        )
+      ) : null}
+    </div>
+  );
+}

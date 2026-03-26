@@ -1,66 +1,324 @@
+import type {
+  AliasCategory,
+  AliasType,
+  ApiResponse,
+  GenerateAliasRequest,
+  HealthStatus,
+  PatchAliasRequest,
+} from "@phantom/shared";
 import { Router } from "express";
-import type { Alias, ApiResponse } from "@phantom/shared";
-import { HEALTH_STATES } from "@phantom/shared";
+import type { AliasCategory as PrismaAliasCategory } from "@prisma/client";
+import { prisma } from "../lib/prisma.js";
+import { generateValueForType } from "../lib/aliasGenerators.js";
+import { mapAliasToDto } from "../lib/mapAlias.js";
 
 export const aliasesRouter = Router();
 
-const mockAliases: Alias[] = [
-  {
-    id: "als_001",
-    label: "Shopping — checkout",
-    address: "shade+shop.demo@phantom.id",
-    categoryId: "shopping",
-    healthScore: 92,
-    healthState: HEALTH_STATES[0],
-    createdAt: new Date().toISOString(),
-    parentIdentityId: "idn_primary",
-  },
-  {
-    id: "als_002",
-    label: "Newsletter",
-    address: "shade+news.demo@phantom.id",
-    categoryId: "other",
-    healthScore: 78,
-    healthState: HEALTH_STATES[1],
-    createdAt: new Date().toISOString(),
-    parentIdentityId: "idn_primary",
-  },
-];
+const CATEGORY_SET = new Set<string>([
+  "shopping",
+  "social",
+  "finance",
+  "work",
+  "dating",
+  "newsletter",
+  "temp",
+]);
 
-aliasesRouter.get("/", (req, res) => {
-  const userId = req.user?.id ?? "unknown";
-  const response: ApiResponse<{ userId: string; items: Alias[] }> = {
+const TYPE_SET = new Set<string>(["email", "phone", "username", "password"]);
+
+const HEALTH_SET = new Set<string>([
+  "healthy",
+  "warning",
+  "compromised",
+  "quarantined",
+]);
+
+function parseCategory(v: string | undefined): PrismaAliasCategory | undefined {
+  if (!v || !CATEGORY_SET.has(v)) return undefined;
+  return v as PrismaAliasCategory;
+}
+
+function parseHealth(v: string | undefined): HealthStatus | undefined {
+  if (!v || !HEALTH_SET.has(v)) return undefined;
+  return v as HealthStatus;
+}
+
+aliasesRouter.get("/", async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({
+      ok: false,
+      error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
+
+  const category = parseCategory(
+    typeof req.query.category === "string" ? req.query.category : undefined
+  );
+  const health = parseHealth(
+    typeof req.query.health === "string" ? req.query.health : undefined
+  );
+  const includeInactive = req.query.includeInactive === "true";
+
+  const rows = await prisma.alias.findMany({
+    where: {
+      userId,
+      ...(includeInactive ? {} : { isActive: true }),
+      ...(category ? { category } : {}),
+      ...(health ? { healthStatus: health } : {}),
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const response: ApiResponse<{ userId: string; items: ReturnType<typeof mapAliasToDto>[] }> =
+    {
+      ok: true,
+      data: { userId, items: rows.map(mapAliasToDto) },
+    };
+  res.json(response);
+});
+
+aliasesRouter.post("/generate", async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({
+      ok: false,
+      error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
+
+  const body = req.body as GenerateAliasRequest;
+  const type = typeof body.type === "string" ? body.type : "";
+  const category = typeof body.category === "string" ? body.category : "";
+  if (!TYPE_SET.has(type) || !CATEGORY_SET.has(category)) {
+    res.status(400).json({
+      ok: false,
+      error: {
+        code: "validation_error",
+        message: "Valid type and category required",
+      },
+    });
+    return;
+  }
+
+  const serviceName =
+    typeof body.serviceName === "string" && body.serviceName.length > 0
+      ? body.serviceName
+      : null;
+  const serviceUrl =
+    typeof body.serviceUrl === "string" && body.serviceUrl.length > 0
+      ? body.serviceUrl
+      : null;
+
+  const existsEmail = async (value: string): Promise<boolean> => {
+    const found = await prisma.alias.findFirst({
+      where: { type: "email", value, isActive: true },
+    });
+    return found !== null;
+  };
+
+  const value = await generateValueForType(
+    type as AliasType,
+    category as AliasCategory,
+    existsEmail
+  );
+
+  const row = await prisma.alias.create({
+    data: {
+      userId,
+      type: type as AliasType,
+      value,
+      category: category as AliasCategory,
+      serviceName,
+      serviceUrl,
+      healthStatus: "healthy",
+      lastActivityAt: new Date(),
+    },
+  });
+
+  const response: ApiResponse<{ alias: ReturnType<typeof mapAliasToDto> }> = {
     ok: true,
-    data: { userId, items: mockAliases },
+    data: { alias: mapAliasToDto(row) },
+  };
+  res.status(201).json(response);
+});
+
+aliasesRouter.get("/:id", async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({
+      ok: false,
+      error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
+
+  const row = await prisma.alias.findFirst({
+    where: { id: req.params.id, userId },
+  });
+  if (!row) {
+    res.status(404).json({
+      ok: false,
+      error: { code: "not_found", message: "Alias not found" },
+    });
+    return;
+  }
+
+  const response: ApiResponse<{ alias: ReturnType<typeof mapAliasToDto> }> = {
+    ok: true,
+    data: { alias: mapAliasToDto(row) },
   };
   res.json(response);
 });
 
-aliasesRouter.post("/generate", (req, res) => {
-  const body = req.body as { categoryId?: string; label?: string };
-  const categoryId =
-    typeof body.categoryId === "string" && body.categoryId.length > 0
-      ? body.categoryId
-      : "other";
-  const label =
-    typeof body.label === "string" && body.label.length > 0
-      ? body.label
-      : "Generated alias";
+aliasesRouter.patch("/:id", async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({
+      ok: false,
+      error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
 
-  const created: Alias = {
-    id: `als_${Date.now().toString(36)}`,
-    label,
-    address: `shade+gen.${Date.now().toString(36)}@phantom.id`,
-    categoryId,
-    healthScore: 100,
-    healthState: HEALTH_STATES[0],
-    createdAt: new Date().toISOString(),
-    parentIdentityId: "idn_primary",
+  const body = req.body as PatchAliasRequest;
+  const data: {
+    category?: PrismaAliasCategory;
+    serviceName?: string | null;
+    isActive?: boolean;
+  } = {};
+
+  if (body.category !== undefined) {
+    if (!CATEGORY_SET.has(body.category)) {
+      res.status(400).json({
+        ok: false,
+        error: { code: "validation_error", message: "Invalid category" },
+      });
+      return;
+    }
+    data.category = body.category as PrismaAliasCategory;
+  }
+  if (body.serviceName !== undefined) {
+    data.serviceName = body.serviceName;
+  }
+  if (body.isActive !== undefined) {
+    data.isActive = body.isActive;
+  }
+
+  const existingPatch = await prisma.alias.findFirst({
+    where: { id: req.params.id, userId },
+  });
+  if (!existingPatch) {
+    res.status(404).json({
+      ok: false,
+      error: { code: "not_found", message: "Alias not found" },
+    });
+    return;
+  }
+
+  const row = await prisma.alias.update({
+    where: { id: existingPatch.id },
+    data,
+  });
+  const response: ApiResponse<{ alias: ReturnType<typeof mapAliasToDto> }> = {
+    ok: true,
+    data: { alias: mapAliasToDto(row) },
+  };
+  res.json(response);
+});
+
+aliasesRouter.delete("/:id", async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({
+      ok: false,
+      error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
+
+  const existingDel = await prisma.alias.findFirst({
+    where: { id: req.params.id, userId },
+  });
+  if (!existingDel) {
+    res.status(404).json({
+      ok: false,
+      error: { code: "not_found", message: "Alias not found" },
+    });
+    return;
+  }
+
+  const row = await prisma.alias.update({
+    where: { id: existingDel.id },
+    data: { isActive: false },
+  });
+  const response: ApiResponse<{ alias: ReturnType<typeof mapAliasToDto> }> = {
+    ok: true,
+    data: { alias: mapAliasToDto(row) },
+  };
+  res.json(response);
+});
+
+aliasesRouter.post("/:id/rotate", async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({
+      ok: false,
+      error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
+
+  const existing = await prisma.alias.findFirst({
+    where: { id: req.params.id, userId, isActive: true },
+  });
+  if (!existing) {
+    res.status(404).json({
+      ok: false,
+      error: { code: "not_found", message: "Alias not found" },
+    });
+    return;
+  }
+
+  await prisma.alias.update({
+    where: { id: existing.id },
+    data: { healthStatus: "quarantined", isActive: false },
+  });
+
+  const existsEmail = async (value: string): Promise<boolean> => {
+    const found = await prisma.alias.findFirst({
+      where: { type: "email", value, isActive: true },
+    });
+    return found !== null;
   };
 
-  const response: ApiResponse<{ alias: Alias }> = {
+  const value = await generateValueForType(
+    existing.type,
+    existing.category,
+    existsEmail
+  );
+
+  const row = await prisma.alias.create({
+    data: {
+      userId,
+      type: existing.type,
+      value,
+      category: existing.category,
+      serviceName: existing.serviceName,
+      serviceUrl: existing.serviceUrl,
+      healthStatus: "healthy",
+      lastActivityAt: new Date(),
+    },
+  });
+
+  const response: ApiResponse<{
+    previousId: string;
+    alias: ReturnType<typeof mapAliasToDto>;
+  }> = {
     ok: true,
-    data: { alias: created },
+    data: { previousId: existing.id, alias: mapAliasToDto(row) },
   };
   res.status(201).json(response);
 });

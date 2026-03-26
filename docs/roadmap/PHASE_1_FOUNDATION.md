@@ -1,5 +1,16 @@
 # Phase 1 — Foundation (Months 1–6)
 
+> **Progress:** Each deliverable line shows **% complete** for that workstream (rough engineering estimate; update as you ship).
+
+| Section | Avg (of deliverables in section) |
+|---------|-------------------------------------|
+| Month 1–2 infrastructure | **34%** |
+| Month 2–3 extension + dashboard | **48%** |
+| Month 3–4 phone + brokers | **28%** |
+| Month 4–5 removal + notifications | **18%** |
+| Month 5–6 launch + QA | **3%** |
+| **Phase 1 (all deliverables)** | **~24%** |
+
 ## Objective
 
 Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establish core alias generation, data broker scanning, and password management. Launch free tier to build user base and collect data.
@@ -17,7 +28,7 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 ### Month 1–2: Core Infrastructure
 
-- [ ] **Project scaffolding**
+- [ ] **Project scaffolding** — **55%**
   - React + TypeScript + Vite dashboard app
   - Plasmo Chrome extension (Manifest V3)
   - Node.js + Express API server
@@ -27,19 +38,19 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - CI/CD pipeline (GitHub Actions)
   - Terraform for AWS infrastructure
 
-- [ ] **Authentication system**
+- [ ] **Authentication system** — **40%**
   - SRP (Secure Remote Password) protocol implementation
   - Master passphrase → Argon2id key derivation
   - JWT with RS256 (15-min access, 7-day refresh)
   - Session management in Redis
 
-- [ ] **Encrypted vault (client-side)**
+- [ ] **Encrypted vault (client-side)** — **5%**
   - Web Crypto API integration (AES-256-GCM)
   - Encrypted IndexedDB in extension
   - Per-user isolated database schemas
   - Vault sync between extension and dashboard
 
-- [ ] **Email alias engine**
+- [ ] **Email alias engine** — **35%**
   - Custom domain setup (phantom.id, shade.email)
   - Email alias generation API
   - Email forwarding infrastructure (inbound → user's real email)
@@ -48,7 +59,7 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 ### Month 2–3: Extension + Dashboard MVP
 
-- [ ] **Browser extension v1**
+- [ ] **Browser extension v1** — **45%**
   - Form detection (heuristic: input types, labels, structure)
   - Alias generation popup (email + password)
   - Autofill for generated aliases
@@ -56,7 +67,7 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - Service worker for API communication
   - Encrypted credential cache in IndexedDB
 
-- [ ] **Web dashboard v1**
+- [ ] **Web dashboard v1** — **50%**
   - Login / account management
   - Alias list view (all generated aliases with metadata)
   - Alias detail view (service, creation date, health status, forwarding rules)
@@ -66,14 +77,14 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 ### Month 3–4: Phone Aliases + Data Broker Scanning
 
-- [ ] **Phone alias engine**
+- [ ] **Phone alias engine** — **15%**
   - VoIP number provisioning (temporary bridge until carrier partnership Phase 2)
   - Phone alias generation API
   - Call forwarding to user's real number
   - SMS forwarding to dashboard inbox
   - Basic call log in dashboard
 
-- [ ] **Data broker scanner**
+- [ ] **Data broker scanner** — **55%**
   - Broker registry database (initial 150+ brokers)
   - Scanner workers (parallel, rate-limited)
   - Search: name, phone, email, address variations
@@ -82,7 +93,7 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - Free tier: scan only (show what's exposed)
   - Paid tier: removal submission
 
-- [ ] **Password manager v1**
+- [ ] **Password manager v1** — **15%**
   - Password generation (configurable length, complexity)
   - Password storage in encrypted vault
   - Import from 1Password, LastPass, Bitwarden (CSV import)
@@ -91,14 +102,14 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 ### Month 4–5: Data Broker Removal + Notifications
 
-- [ ] **Data broker removal engine**
+- [ ] **Data broker removal engine** — **35%**
   - Automated opt-out submission (API brokers)
   - Browser automation for manual-submission brokers (Playwright workers)
   - Submission tracking: { submitted, pending, confirmed, failed }
   - Verification re-scan 7–30 days after submission
   - Dashboard: removal status per broker
 
-- [ ] **Notification system**
+- [ ] **Notification system** — **0%**
   - Desktop notifications (browser notification API)
   - Email notifications (breach alerts, removal confirmations)
   - Dashboard notification center (bell icon, unread count)
@@ -106,7 +117,7 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 ### Month 5–6: Polish + Free Tier Launch
 
-- [ ] **Free tier**
+- [ ] **Free tier** — **0%**
   - Exposure scan (unlimited)
   - 3 email aliases
   - 1 phone alias
@@ -114,20 +125,20 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - Community threat feed (read-only)
   - No data broker removal (upsell to paid)
 
-- [ ] **Paid tier ($9.99/mo)**
+- [ ] **Paid tier ($9.99/mo)** — **0%**
   - Unlimited aliases (email + phone)
   - Data broker removal (150+ brokers)
   - Unlimited password storage
   - Dark web monitoring (basic)
   - Priority support
 
-- [ ] **Onboarding flow**
+- [ ] **Onboarding flow** — **0%**
   - Extension install → account creation → first alias generation
   - Guided exposure scan ("see who's selling your data")
   - Import existing passwords
   - Generate aliases for top services (Gmail, Amazon, Facebook, etc.)
 
-- [ ] **Testing and QA**
+- [ ] **Testing and QA** — **10%**
   - Unit tests for: vault encryption, alias generation, API auth
   - Integration tests for: extension ↔ API, broker scanning
   - E2E tests with Playwright (extension + dashboard flows)

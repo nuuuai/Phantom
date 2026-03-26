@@ -1,10 +1,12 @@
+import "dotenv/config";
 import cors from "cors";
 import express from "express";
 import rateLimit from "express-rate-limit";
-import { authStub } from "./middleware/authStub.js";
+import { authenticateJwt } from "./middleware/authJwt.js";
 import { jsonBody } from "./middleware/jsonBody.js";
 import { authRouter } from "./routes/auth.js";
 import { aliasesRouter } from "./routes/aliases.js";
+import { brokerScanRouter } from "./routes/brokerScan.js";
 import { dashboardRouter } from "./routes/dashboard.js";
 
 const app = express();
@@ -27,10 +29,10 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/api/auth", authRouter);
-app.use("/api/aliases", authStub, aliasesRouter);
-app.use("/api/dashboard", authStub, dashboardRouter);
+app.use("/api/aliases", authenticateJwt, aliasesRouter);
+app.use("/api/broker-scan", authenticateJwt, brokerScanRouter);
+app.use("/api/dashboard", authenticateJwt, dashboardRouter);
 
 app.listen(port, () => {
-  // Avoid logging secrets; port is non-sensitive.
   process.stdout.write(`phantom-api listening on ${port}\n`);
 });

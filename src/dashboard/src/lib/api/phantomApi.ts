@@ -1,9 +1,35 @@
 import type {
   Alias,
   ApiResponse,
+  BrokerScanResult,
+  BrokerScanStartResponse,
+  BrokerScanSummary,
   DashboardOverview,
+  DataBroker,
+  GenerateAliasRequest,
+  PatchAliasRequest,
   User,
 } from "@phantom/shared";
+
+type Token = string | null | undefined;
+
+function bearerHeaders(token: Token): HeadersInit {
+  const headers: HeadersInit = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+function jsonAuthHeaders(token: Token): HeadersInit {
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
+}
 
 function buildUrl(path: string): string {
   const base = import.meta.env.VITE_API_URL;
@@ -39,22 +65,24 @@ export const phantomApi = {
 
   auth: {
     register: async (
-      displayName: string
+      email: string,
+      password: string
     ): Promise<ApiResponse<{ user: User; accessToken: string }>> => {
       const res = await fetch(buildUrl("/api/auth/register"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ displayName }),
+        body: JSON.stringify({ email, password }),
       });
       return parseJson(res);
     },
-    login: async (): Promise<
-      ApiResponse<{ user: User; accessToken: string }>
-    > => {
+    login: async (
+      email: string,
+      password: string
+    ): Promise<ApiResponse<{ user: User; accessToken: string }>> => {
       const res = await fetch(buildUrl("/api/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ email, password }),
       });
       return parseJson(res);
     },
@@ -62,26 +90,156 @@ export const phantomApi = {
 
   dashboard: {
     overview: async (
-      accessToken?: string
+      accessToken?: Token
     ): Promise<ApiResponse<DashboardOverview>> => {
-      const headers: HeadersInit = {};
-      if (accessToken) {
-        headers.Authorization = `Bearer ${accessToken}`;
-      }
-      const res = await fetch(buildUrl("/api/dashboard/metrics"), { headers });
+      const res = await fetch(buildUrl("/api/dashboard/metrics"), {
+        headers: bearerHeaders(accessToken),
+      });
+      return parseJson(res);
+    },
+  },
+
+  brokerScan: {
+    catalog: async (
+      accessToken: Token
+    ): Promise<ApiResponse<{ items: DataBroker[] }>> => {
+      const res = await fetch(buildUrl("/api/broker-scan/catalog"), {
+        headers: bearerHeaders(accessToken),
+      });
+      return parseJson(res);
+    },
+
+    start: async (
+      accessToken: Token
+    ): Promise<ApiResponse<BrokerScanStartResponse>> => {
+      const res = await fetch(buildUrl("/api/broker-scan/start"), {
+        method: "POST",
+        headers: jsonAuthHeaders(accessToken),
+      });
+      return parseJson(res);
+    },
+
+    summary: async (
+      accessToken: Token
+    ): Promise<ApiResponse<BrokerScanSummary>> => {
+      const res = await fetch(buildUrl("/api/broker-scan/summary"), {
+        headers: bearerHeaders(accessToken),
+      });
+      return parseJson(res);
+    },
+
+    results: async (
+      accessToken: Token,
+      params: { status?: string; q?: string }
+    ): Promise<ApiResponse<{ userId: string; items: BrokerScanResult[] }>> => {
+      const q = new URLSearchParams();
+      if (params.status) q.set("status", params.status);
+      if (params.q) q.set("q", params.q);
+      const qs = q.toString();
+      const path = qs
+        ? `/api/broker-scan/results?${qs}`
+        : "/api/broker-scan/results";
+      const res = await fetch(buildUrl(path), {
+        headers: bearerHeaders(accessToken),
+      });
+      return parseJson(res);
+    },
+
+    removeAll: async (
+      accessToken: Token
+    ): Promise<ApiResponse<{ updated: number }>> => {
+      const res = await fetch(buildUrl("/api/broker-scan/remove-all"), {
+        method: "POST",
+        headers: jsonAuthHeaders(accessToken),
+      });
+      return parseJson(res);
+    },
+
+    requestRemoval: async (
+      accessToken: Token,
+      resultId: string
+    ): Promise<ApiResponse<{ result: BrokerScanResult }>> => {
+      const res = await fetch(
+        buildUrl(`/api/broker-scan/${resultId}/request-removal`),
+        {
+          method: "POST",
+          headers: jsonAuthHeaders(accessToken),
+        }
+      );
       return parseJson(res);
     },
   },
 
   aliases: {
     list: async (
-      accessToken?: string
+      accessToken: Token,
+      params: { category?: string; health?: string }
     ): Promise<ApiResponse<{ userId: string; items: Alias[] }>> => {
-      const headers: HeadersInit = {};
-      if (accessToken) {
-        headers.Authorization = `Bearer ${accessToken}`;
-      }
-      const res = await fetch(buildUrl("/api/aliases"), { headers });
+      const q = new URLSearchParams();
+      if (params.category) q.set("category", params.category);
+      if (params.health) q.set("health", params.health);
+      const qs = q.toString();
+      const path = qs ? `/api/aliases?${qs}` : "/api/aliases";
+      const res = await fetch(buildUrl(path), {
+        headers: bearerHeaders(accessToken),
+      });
+      return parseJson(res);
+    },
+
+    generate: async (
+      accessToken: Token,
+      body: GenerateAliasRequest
+    ): Promise<ApiResponse<{ alias: Alias }>> => {
+      const res = await fetch(buildUrl("/api/aliases/generate"), {
+        method: "POST",
+        headers: jsonAuthHeaders(accessToken),
+        body: JSON.stringify(body),
+      });
+      return parseJson(res);
+    },
+
+    get: async (
+      accessToken: Token,
+      id: string
+    ): Promise<ApiResponse<{ alias: Alias }>> => {
+      const res = await fetch(buildUrl(`/api/aliases/${id}`), {
+        headers: bearerHeaders(accessToken),
+      });
+      return parseJson(res);
+    },
+
+    patch: async (
+      accessToken: Token,
+      id: string,
+      body: PatchAliasRequest
+    ): Promise<ApiResponse<{ alias: Alias }>> => {
+      const res = await fetch(buildUrl(`/api/aliases/${id}`), {
+        method: "PATCH",
+        headers: jsonAuthHeaders(accessToken),
+        body: JSON.stringify(body),
+      });
+      return parseJson(res);
+    },
+
+    remove: async (
+      accessToken: Token,
+      id: string
+    ): Promise<ApiResponse<{ alias: Alias }>> => {
+      const res = await fetch(buildUrl(`/api/aliases/${id}`), {
+        method: "DELETE",
+        headers: bearerHeaders(accessToken),
+      });
+      return parseJson(res);
+    },
+
+    rotate: async (
+      accessToken: Token,
+      id: string
+    ): Promise<ApiResponse<{ previousId: string; alias: Alias }>> => {
+      const res = await fetch(buildUrl(`/api/aliases/${id}/rotate`), {
+        method: "POST",
+        headers: bearerHeaders(accessToken),
+      });
       return parseJson(res);
     },
   },

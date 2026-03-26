@@ -1,7 +1,24 @@
-export type { Alias } from "./types/alias.js";
+export type {
+  Alias,
+  AliasType,
+  AliasCategory,
+  HealthStatus,
+  GenerateAliasRequest,
+  PatchAliasRequest,
+} from "./types/alias.js";
 export type { User } from "./types/user.js";
 export type { ThreatPattern } from "./types/threatPattern.js";
-export type { BrokerScanResult } from "./types/brokerScanResult.js";
+export type {
+  BrokerCategory,
+  BrokerRemovalMethod,
+  BrokerScanResult,
+  BrokerScanStartResponse,
+  BrokerScanSummary,
+  DataBroker,
+  ScanStatus,
+} from "./types/brokerScan.js";
+export type { BrokerDataType } from "./constants/brokerDataTypes.js";
+export { BROKER_DATA_TYPES } from "./constants/brokerDataTypes.js";
 export type { RiskScore } from "./types/riskScore.js";
 export type { ActivityLayerType } from "./types/activityLayer.js";
 export type {
@@ -14,5 +31,5 @@ export {
   ALIAS_CATEGORIES,
   type AliasCategoryId,
 } from "./constants/aliasCategories.js";
-export { HEALTH_STATES, type HealthState } from "./constants/healthStates.js";
+export { HEALTH_STATUS_VALUES } from "./constants/healthStatus.js";
 export { RISK_THRESHOLDS } from "./constants/riskThresholds.js";

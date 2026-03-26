@@ -1,5 +1,14 @@
 # Phase 3 — Autonomy (Months 12–18)
 
+> **Progress:** Each deliverable shows **% complete** (0% = not started).
+
+| Track | Avg |
+|-------|-----|
+| Autopilot + rotation + breach | **0%** |
+| SEE v2 + gamification + deepfake | **0%** |
+| Family + NLI + desktop + eSIM | **0%** |
+| **Phase 3 (overall)** | **0%** |
+
 ## Objective
 
 Deploy the Autopilot layer. Full autonomous identity management, advanced Scammer Engagement Engine with gamification, deepfake voice detection, Family Command Center, and natural language interface.
@@ -16,27 +25,27 @@ Deploy the Autopilot layer. Full autonomous identity management, advanced Scamme
 
 ### Month 12–14: Autopilot Mode
 
-- [ ] **Tiered autonomy system**
+- [ ] **Tiered autonomy system** — **0%**
   - Notify Only → Suggest + Auto-Queue → Auto with Undo → Full Autopilot
   - Per-feature autonomy settings (alias rotation, password changes, broker removal)
   - Dashboard: autonomy level selector with clear explanations
   - Undo system: 7-day rollback for any autonomous action
 
-- [ ] **Autonomous alias rotation**
+- [ ] **Autonomous alias rotation** — **0%**
   - Rotation triggers: health drop, age limit, spam threshold, breach detection
   - AutoCloak: programmatic credential update at source services
   - Migration: forwarding rules transfer from old to new alias
   - Quarantine: old alias monitored 30 days before retirement
   - Dashboard: rotation history and upcoming scheduled rotations
 
-- [ ] **Breach auto-response**
+- [ ] **Breach auto-response** — **0%**
   - Credential Rotation Engine: change passwords at source services
   - Email alias quarantine + replacement pipeline
   - Phone number lock + replacement pipeline
   - Response timeline in dashboard (what happened, what was done, when)
   - User notification with action summary
 
-- [ ] **Monthly exposure report**
+- [ ] **Monthly exposure report** — **0%**
   - AI-generated document (PDF + in-dashboard view)
   - Risk score trend, broker removal progress, alias health summary
   - Scam calls blocked/engaged, dark web findings
@@ -46,25 +55,25 @@ Deploy the Autopilot layer. Full autonomous identity management, advanced Scamme
 
 ### Month 14–16: Scammer Engagement Engine v2
 
-- [ ] **Full persona library**
+- [ ] **Full persona library** — **0%**
   - 8+ personas (add: Lonely Optimist, Angry but Curious, Corporate Gatekeeper, Distracted Parent, Eager Investor)
   - Advanced conversation models (longer engagement, better adaptation)
   - Per-persona voice profiles (TTS with age/accent/speech patterns)
   - Adaptive behavior (adjust approach based on scammer responses)
 
-- [ ] **Gamification system**
+- [ ] **Gamification system** — **0%**
   - Scam Leaderboard: longest engagements, most time wasted
   - Scam of the Week: curated best transcript
   - Impact Dashboard: personal stats (minutes wasted, complaints filed, scams prevented estimate)
   - Achievement badges: "100 Minutes Wasted," "First Complaint Filed," "Scam Network Exposed"
   - Social sharing: one-click share anonymized transcripts
 
-- [ ] **Live listening**
+- [ ] **Live listening** — **0%**
   - Opt-in real-time audio stream of active scam engagements
   - Dashboard player with transcript alongside audio
   - Community feed of active engagements (anonymized)
 
-- [ ] **Deepfake voice detection v1**
+- [ ] **Deepfake voice detection v1** — **0%**
   - Spectral analysis for TTS/voice-cloning artifacts
   - Audio fingerprinting against known deepfake generation patterns
   - Confidence score in call transcript: "Voice: 94% likely AI-generated"
@@ -73,7 +82,7 @@ Deploy the Autopilot layer. Full autonomous identity management, advanced Scamme
 
 ### Month 16–18: Family + NLI + Desktop Notifications
 
-- [ ] **Family Command Center**
+- [ ] **Family Command Center** — **0%**
   - Family plan account structure (up to 6 members)
   - Per-member alias management and risk scoring
   - Shared threat dashboard (family-wide view)
@@ -81,20 +90,20 @@ Deploy the Autopilot layer. Full autonomous identity management, advanced Scamme
   - Parental Controls: age-appropriate alias categories, activity visibility
   - Weekly family digest email
 
-- [ ] **Natural language interface**
+- [ ] **Natural language interface** — **0%**
   - LLM-powered conversational interface in dashboard
   - Tool use: AI can execute Phantom actions (create alias, rotate password, check risk score)
   - Context-aware: understands current aliases, recent threats, user preferences
   - Examples: "Create a shopping identity," "Why am I getting calls from 800 numbers?"
   - Extension: quick NLI in popup (shorter interactions)
 
-- [ ] **Desktop notification system**
+- [ ] **Desktop notification system** — **0%**
   - System-level notifications (browser notification API)
   - Priority levels: critical (breach), high (scam detected), medium (alias warning), low (report ready)
   - Notification preferences per category
   - Click-through to relevant dashboard section
 
-- [ ] **eSIM multi-profile support**
+- [ ] **eSIM multi-profile support** — **0%**
   - Multiple eSIM numbers per device
   - Context-based: work, personal, dating, shopping, travel
   - Dashboard management of eSIM profiles

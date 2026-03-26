@@ -37,7 +37,7 @@ const sections: readonly NavSection[] = [
   {
     group: "DEFENSE",
     items: [
-      { id: "brokers", label: "Broker removal", path: "/broker-removal" },
+      { id: "brokers", label: "Broker removal", path: "/brokers" },
       { id: "callguard", label: "Call Guard", path: "/call-guard" },
       { id: "darkweb", label: "Dark web", path: "/dark-web" },
     ],

@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  hashedPassword   String
+  tier             UserTier @default(free)
+  createdAt        DateTime @default(now())
+  aliases          Alias[]
+  brokerScanRuns   BrokerScanRun[]
+  brokerScanResults BrokerScanResult[]
+}
+
+enum UserTier {
+  free
+  paid
+  enterprise
+}
+
+model Alias {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            AliasType
+  value           String
+  category        AliasCategory
+  serviceName     String?
+  serviceUrl      String?
+  healthStatus    HealthStatus  @default(healthy)
+  createdAt       DateTime      @default(now())
+  lastActivityAt  DateTime?
+  spamCount       Int           @default(0)
+  isActive        Boolean       @default(true)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, category])
+  @@index([userId, healthStatus])
+}
+
+model DataBroker {
+  id              String          @id @default(cuid())
+  name            String
+  domain          String          @unique
+  category        BrokerCategory
+  removalMethod   RemovalMethod
+  avgRemovalDays  Int
+  isActive        Boolean         @default(true)
+  scanResults     BrokerScanResult[]
+}
+
+model BrokerScanRun {
+  id             String               @id @default(cuid())
+  userId         String
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startedAt      DateTime             @default(now())
+  completedAt    DateTime?
+  totalBrokers   Int
+  foundCount     Int                  @default(0)
+  results        BrokerScanResult[]
+
+  @@index([userId, startedAt(sort: Desc)])
+}
+
+model BrokerScanResult {
+  id                   String             @id @default(cuid())
+  userId               String
+  user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brokerScanRunId      String
+  brokerScanRun        BrokerScanRun      @relation(fields: [brokerScanRunId], references: [id], onDelete: Cascade)
+  brokerId             String
+  broker               DataBroker         @relation(fields: [brokerId], references: [id], onDelete: Cascade)
+  dataTypesFound       String[]           @default([])
+  scanDate             DateTime           @default(now())
+  status               BrokerScanStatus
+  removalSubmittedAt   DateTime?
+  removalConfirmedAt   DateTime?
+  relistDetectedAt     DateTime?
+
+  @@index([userId, brokerScanRunId])
+  @@index([userId, status])
+  @@index([brokerScanRunId, status])
+}
+
+enum AliasType {
+  email
+  phone
+  username
+  password
+}
+
+enum AliasCategory {
+  shopping
+  social
+  finance
+  work
+  dating
+  newsletter
+  temp
+}
+
+enum HealthStatus {
+  healthy
+  warning
+  compromised
+  quarantined
+}
+
+enum BrokerCategory {
+  people_search
+  marketing
+  data_aggregator
+  background_check
+  public_records
+}
+
+enum RemovalMethod {
+  api
+  form
+  email
+  manual
+}
+
+enum BrokerScanStatus {
+  not_found
+  found
+  removal_submitted
+  removal_confirmed
+  re_listed
+}

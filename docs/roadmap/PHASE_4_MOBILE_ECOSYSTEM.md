@@ -1,5 +1,14 @@
 # Phase 4 — Mobile + Ecosystem (Months 18–24)
 
+> **Progress:** Each deliverable shows **% complete** (0% = not started).
+
+| Track | Avg |
+|-------|-----|
+| iOS + Android + mobile features | **0%** |
+| Kova + VulnIQ + SSO | **0%** |
+| Enterprise + international + advanced | **0%** |
+| **Phase 4 (overall)** | **0%** |
+
 ## Objective
 
 Ship mobile apps (iOS + Android) as polished companions to the proven desktop platform. Full Kova and VulnIQ ecosystem integration. Enterprise product launch. International expansion.
@@ -26,7 +35,7 @@ Mobile ships last because:
 
 ### Month 18–20: Mobile Apps
 
-- [ ] **iOS app**
+- [ ] **iOS app** — **0%**
   - React Native (shared logic with dashboard where possible)
   - Native call integration (CallKit for call screening)
   - On-device Call Guard (local AI inference for latency)
@@ -37,14 +46,14 @@ Mobile ships last because:
   - Exposure report viewer
   - Family member management
 
-- [ ] **Android app**
+- [ ] **Android app** — **0%**
   - React Native (shared codebase with iOS)
   - Native call integration (ConnectionService API)
   - On-device Call Guard
   - Same feature set as iOS
   - Additional: default dialer integration option
 
-- [ ] **Mobile-specific features**
+- [ ] **Mobile-specific features** — **0%**
   - Widget: risk score + quick alias generation on home screen
   - Quick actions: long-press app icon for "Generate Alias," "Check Risk"
   - Offline mode: cached aliases and credentials accessible without network
@@ -52,21 +61,21 @@ Mobile ships last because:
 
 ### Month 20–22: Ecosystem Integration
 
-- [ ] **Full Kova integration**
+- [ ] **Full Kova integration** — **0%**
   - Phantom's AI agents built and deployed through Kova's agent factory
   - Agent versioning: rollback to previous agent versions if issues detected
   - Agent performance dashboard (accuracy, latency, user satisfaction per agent)
   - Custom agent creation: power users can tweak agent behavior via Kova
   - Agent marketplace: community-contributed engagement personas
 
-- [ ] **Full VulnIQ integration**
+- [ ] **Full VulnIQ integration** — **0%**
   - Bidirectional threat intelligence API (production)
   - Phantom → VulnIQ: scam transcripts, phishing URLs, deepfake samples, broker behaviors
   - VulnIQ → Phantom: vulnerability feeds, breach predictions, threat actor profiles
   - Shared threat dashboard (cross-product view)
   - VulnIQ-powered service risk scores (inform alias health for specific services)
 
-- [ ] **Ecosystem single sign-on**
+- [ ] **Ecosystem single sign-on** — **0%**
   - One account across Kova, VulnIQ, Phantom
   - Unified billing
   - Cross-product navigation
@@ -74,7 +83,7 @@ Mobile ships last because:
 
 ### Month 22–24: Enterprise + International + Advanced
 
-- [ ] **Enterprise product**
+- [ ] **Enterprise product** — **0%**
   - Admin console: manage employee identities, aliases, security policies
   - SSO integration (SAML, OIDC)
   - Compliance reporting (SOC 2, GDPR, CCPA)
@@ -83,7 +92,7 @@ Mobile ships last because:
   - Per-department policies (sales team gets phone aliases, engineering gets email aliases)
   - API for integration with existing security tools (SIEM, MDM)
 
-- [ ] **International expansion**
+- [ ] **International expansion** — **0%**
   - EU: GDPR compliance (already built-in), EU phone numbers, EU data residency option
   - UK: same as EU + UK-specific data brokers
   - Canada: PIPEDA compliance, Canadian phone numbers
@@ -91,7 +100,7 @@ Mobile ships last because:
   - Localized dashboard (language support)
   - Region-specific broker registries
 
-- [ ] **Advanced features**
+- [ ] **Advanced features** — **0%**
   - Honeypot alias network (bait identities seeded into broker ecosystem)
   - Legal escalation pipeline (coordinated group action against repeat-offender brokers)
   - Scam network mapping (operation profiles shared with law enforcement)
