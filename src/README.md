@@ -81,21 +81,29 @@ src/
 ## Development Setup
 
 ```bash
-# Prerequisites: Node.js 20+, Python 3.11+, Docker, Cursor AI
+# Prerequisites: Node.js 20+, Docker optional (for compose services)
 
-# Clone and install
+# Clone and install (npm workspaces — install once at repo root)
 git clone https://github.com/nuuuai/Phantom.git
 cd Phantom
+npm install
 
-# Install dependencies (when src is populated)
-cd src/dashboard && npm install
-cd ../extension && npm install
-cd ../api && npm install
+# Configure env (see repo .env.example): DATABASE_URL, JWT_SECRET (16+ chars), optional REDIS_URL
+# Ports: API 8787 (API_PORT), dashboard 5173 with /api proxied to the API, extension PLASMO_PUBLIC_API_URL
 
-# Start local development
-docker-compose up -d  # PostgreSQL, Redis, Elasticsearch
-npm run dev           # Starts all services concurrently
+# Start local development (shared + api + dashboard + extension)
+docker-compose up -d   # optional: PostgreSQL, Redis, Elasticsearch
+npm run dev
 ```
+
+CI runs Postgres as a service container, applies `prisma migrate deploy`, then lint / test / build. Refresh-token flows that need Redis are not exercised in CI unless `REDIS_URL` is added to the workflow.
+
+The browser extension build generates `src/extension/.plasmo/` (gitignored). Plasmo’s static entry shims use `@ts-ignore` for dynamic imports of your pages; do not hand-edit those files — they are regenerated on build.
+
+### Local API / dashboard troubleshooting
+
+- **Login fails or the dashboard stays on “Connecting…”**: confirm the API is listening on **8787** (same as the Vite proxy in `src/dashboard/vite.config.ts`), `.env` has a valid **`JWT_SECRET` (≥16 characters)** and **`DATABASE_URL`**, Postgres is running, migrations are applied (`npm run db:migrate:deploy -w @phantom/api` or `db:migrate` in dev), and the seed user exists (`npm run db:seed -w @phantom/api`) with credentials matching **`VITE_DEV_EMAIL`** / **`VITE_DEV_PASSWORD`** (see `src/api/prisma/seed.ts` and `.env.example`).
+- If **`REDIS_URL`** is set, Redis must be reachable; otherwise refresh-token storage during login can throw.
 
 ## Key Principles
 

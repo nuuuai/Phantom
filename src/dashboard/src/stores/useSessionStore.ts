@@ -17,12 +17,18 @@ interface SessionState {
   darkWebAlerts: number;
   vaultKeyHex: string | null;
   loginPassword: string | null;
+  /** Dev auto-login failure message; cleared on success or retry. */
+  devBootstrapError: string | null;
+  /** Bumps to re-run dev SessionBootstrap login (e.g. Retry in top bar). */
+  devBootstrapRetryNonce: number;
   setAccessToken: (token: string | null) => void;
   setRefreshToken: (token: string | null) => void;
   setUser: (user: Pick<User, "displayName" | "tier" | "email">) => void;
   setDarkWebAlerts: (count: number) => void;
   setVaultKeyHex: (hex: string | null) => void;
   setLoginPassword: (pw: string | null) => void;
+  setDevBootstrapError: (msg: string | null) => void;
+  incrementDevBootstrapRetry: () => void;
   /** Clears tokens, vault key, and cached user fields (e.g. after sign out). */
   clearSession: () => void;
 }
@@ -37,6 +43,8 @@ export const useSessionStore = create<SessionState>((set) => ({
   darkWebAlerts: 0,
   vaultKeyHex: null,
   loginPassword: null,
+  devBootstrapError: null,
+  devBootstrapRetryNonce: 0,
   setAccessToken: (token) => set({ accessToken: token }),
   setRefreshToken: (token) => set({ refreshToken: token }),
   setUser: (user) =>
@@ -49,6 +57,12 @@ export const useSessionStore = create<SessionState>((set) => ({
   setDarkWebAlerts: (count) => set({ darkWebAlerts: count }),
   setVaultKeyHex: (hex) => set({ vaultKeyHex: hex }),
   setLoginPassword: (pw) => set({ loginPassword: pw }),
+  setDevBootstrapError: (msg) => set({ devBootstrapError: msg }),
+  incrementDevBootstrapRetry: () =>
+    set((s) => ({
+      devBootstrapRetryNonce: s.devBootstrapRetryNonce + 1,
+      devBootstrapError: null,
+    })),
   clearSession: () =>
     set({
       accessToken: null,
@@ -60,5 +74,7 @@ export const useSessionStore = create<SessionState>((set) => ({
       darkWebAlerts: 0,
       vaultKeyHex: null,
       loginPassword: null,
+      devBootstrapError: null,
+      devBootstrapRetryNonce: 0,
     }),
 }));

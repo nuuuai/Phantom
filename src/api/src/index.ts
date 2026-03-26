@@ -1,56 +1,30 @@
 import "dotenv/config";
-import cors from "cors";
-import express from "express";
-import rateLimit from "express-rate-limit";
-import { authenticateJwt } from "./middleware/authJwt.js";
-import { jsonBody } from "./middleware/jsonBody.js";
-import { authRouter } from "./routes/auth.js";
-import { aliasesRouter } from "./routes/aliases.js";
-import { brokerScanRouter } from "./routes/brokerScan.js";
-import { dashboardRouter } from "./routes/dashboard.js";
-import { notificationsRouter } from "./routes/notifications.js";
-import { userRouter } from "./routes/user.js";
-import { vaultRouter } from "./routes/vault.js";
-import { pingRedis } from "./lib/redis.js";
+import { createApp } from "./app.js";
 
-const app = express();
 const port = Number(process.env.API_PORT ?? "8787");
 
-const rateLimitStub = rateLimit({
-  windowMs: 60_000,
-  max: 10_000,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-app.disable("x-powered-by");
-app.use(cors({ origin: process.env.CORS_ORIGIN?.split(",") ?? true }));
-app.use(jsonBody);
-app.use(rateLimitStub);
-
-app.get("/health", async (_req, res) => {
-  const redisConfigured = Boolean(
-    process.env.REDIS_URL && process.env.REDIS_URL.length > 0
-  );
-  let redis: "ok" | "down" | "disabled" = "disabled";
-  if (redisConfigured) {
-    redis = (await pingRedis()) ? "ok" : "down";
+async function assertDatabaseReachable(): Promise<void> {
+  if (!process.env.DATABASE_URL?.trim()) {
+    process.stderr.write(
+      "phantom-api: DATABASE_URL is not set. Copy .env.example to .env and configure PostgreSQL, or start docker-compose for Postgres.\n"
+    );
+    process.exit(1);
   }
-  res.json({
-    status: "ok",
-    service: "phantom-api",
-    redis,
+  try {
+    const { prisma } = await import("./lib/prisma.js");
+    await prisma.$connect();
+  } catch (err) {
+    process.stderr.write(
+      `phantom-api: could not connect to the database (${err instanceof Error ? err.message : String(err)}). Check DATABASE_URL and that PostgreSQL is running.\n`
+    );
+    process.exit(1);
+  }
+}
+
+const app = createApp();
+
+void assertDatabaseReachable().then(() => {
+  app.listen(port, () => {
+    process.stdout.write(`phantom-api listening on ${port}\n`);
   });
-});
-
-app.use("/api/auth", authRouter);
-app.use("/api/user", authenticateJwt, userRouter);
-app.use("/api/aliases", authenticateJwt, aliasesRouter);
-app.use("/api/broker-scan", authenticateJwt, brokerScanRouter);
-app.use("/api/notifications", authenticateJwt, notificationsRouter);
-app.use("/api/dashboard", authenticateJwt, dashboardRouter);
-app.use("/api/vault", authenticateJwt, vaultRouter);
-
-app.listen(port, () => {
-  process.stdout.write(`phantom-api listening on ${port}\n`);
 });

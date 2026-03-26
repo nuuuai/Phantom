@@ -19,41 +19,72 @@ import { useSessionStore } from "@/stores/useSessionStore.js";
 function SessionBootstrap() {
   const accessToken = useSessionStore((s) => s.accessToken);
   const refreshToken = useSessionStore((s) => s.refreshToken);
+  const devBootstrapRetryNonce = useSessionStore(
+    (s) => s.devBootstrapRetryNonce
+  );
   const setAccessToken = useSessionStore((s) => s.setAccessToken);
   const setRefreshToken = useSessionStore((s) => s.setRefreshToken);
   const setUser = useSessionStore((s) => s.setUser);
   const setDarkWebAlerts = useSessionStore((s) => s.setDarkWebAlerts);
   const setLoginPassword = useSessionStore((s) => s.setLoginPassword);
   const setVaultKeyHex = useSessionStore((s) => s.setVaultKeyHex);
+  const setDevBootstrapError = useSessionStore(
+    (s) => s.setDevBootstrapError
+  );
 
   useEffect(() => {
-    if (shouldSkipDevBootstrap()) return;
+    if (shouldSkipDevBootstrap()) {
+      setDevBootstrapError(null);
+      return;
+    }
     let cancelled = false;
     const email =
       import.meta.env.VITE_DEV_EMAIL ?? "dev@phantom.local";
     const password =
       import.meta.env.VITE_DEV_PASSWORD ?? "devpassword123";
+    setDevBootstrapError(null);
     void (async () => {
-      const res = await phantomApi.auth.login(email, password);
-      if (cancelled) return;
-      if (res.ok) {
-        setAccessToken(res.data.accessToken);
-        setRefreshToken(res.data.refreshToken ?? null);
-        setUser(res.data.user);
-        setLoginPassword(password);
-
-        const saltRes = await phantomApi.vault.getSalt(res.data.accessToken);
+      try {
+        const res = await phantomApi.auth.login(email, password);
         if (cancelled) return;
-        if (saltRes.ok && saltRes.data.vaultSalt) {
-          const key = await deriveVaultKey(password, saltRes.data.vaultSalt);
-          if (!cancelled) setVaultKeyHex(await exportKeyHex(key));
+        if (res.ok) {
+          setAccessToken(res.data.accessToken);
+          setRefreshToken(res.data.refreshToken ?? null);
+          setUser(res.data.user);
+          setLoginPassword(password);
+          setDevBootstrapError(null);
+
+          const saltRes = await phantomApi.vault.getSalt(res.data.accessToken);
+          if (cancelled) return;
+          if (saltRes.ok && saltRes.data.vaultSalt) {
+            const key = await deriveVaultKey(password, saltRes.data.vaultSalt);
+            if (!cancelled) setVaultKeyHex(await exportKeyHex(key));
+          }
+        } else {
+          setDevBootstrapError(
+            res.error?.message ?? "Login failed. Check API logs and credentials."
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setDevBootstrapError(
+            "Could not reach the API. Is it running (port 8787) and healthy?"
+          );
         }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [setAccessToken, setRefreshToken, setUser, setLoginPassword, setVaultKeyHex]);
+  }, [
+    devBootstrapRetryNonce,
+    setAccessToken,
+    setRefreshToken,
+    setUser,
+    setLoginPassword,
+    setVaultKeyHex,
+    setDevBootstrapError,
+  ]);
 
   useEffect(() => {
     if (!refreshToken) return;

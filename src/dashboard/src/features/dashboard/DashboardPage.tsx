@@ -11,6 +11,7 @@ import { useSessionStore } from "@/stores/useSessionStore.js";
 
 export function DashboardPage() {
   const accessToken = useSessionStore((s) => s.accessToken);
+  const devBootstrapError = useSessionStore((s) => s.devBootstrapError);
 
   const overviewQuery = useQuery({
     queryKey: queryKeys.dashboardOverview(accessToken),
@@ -46,9 +47,15 @@ export function DashboardPage() {
         <h1 className="font-sans text-xl font-semibold text-ph-text-primary">
           Overview
         </h1>
-        <p className="mt-3 font-sans text-sm text-ph-text-tertiary">
-          Connecting session…
-        </p>
+        {devBootstrapError ? (
+          <p className="mt-3 max-w-lg font-sans text-sm text-ph-danger">
+            {devBootstrapError}
+          </p>
+        ) : (
+          <p className="mt-3 font-sans text-sm text-ph-text-tertiary">
+            Connecting session…
+          </p>
+        )}
       </div>
     );
   }

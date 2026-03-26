@@ -8,6 +8,22 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: phantom
+          POSTGRES_PASSWORD: phantom_ci
+          POSTGRES_DB: phantom
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U phantom -d phantom"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://phantom:phantom_ci@localhost:5432/phantom
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -16,6 +32,8 @@ jobs:
           cache: npm
       - name: Install
         run: npm ci
+      - name: Prisma migrate deploy
+        run: npm run db:migrate:deploy -w @phantom/api
       - name: Lint
         run: npm run lint
       - name: Test

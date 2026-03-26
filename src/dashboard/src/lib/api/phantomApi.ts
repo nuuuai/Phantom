@@ -15,6 +15,7 @@ import {
   RATE_LIMIT_RETRY_MS,
 } from "@phantom/shared";
 import { useSessionStore } from "@/stores/useSessionStore.js";
+import { parseApiResponseJson } from "./parseApiResponse.js";
 
 type Token = string | null | undefined;
 
@@ -25,20 +26,6 @@ function buildUrl(path: string): string {
     return normalized;
   }
   return `${base.replace(/\/$/, "")}${normalized}`;
-}
-
-async function parseJson<T>(response: Response): Promise<ApiResponse<T>> {
-  const data = (await response.json()) as ApiResponse<T>;
-  if (!response.ok) {
-    if (data.ok === false) {
-      return data;
-    }
-    return {
-      ok: false,
-      error: { code: "http_error", message: `HTTP ${String(response.status)}` },
-    };
-  }
-  return data;
 }
 
 async function postRefresh(refreshToken: string): Promise<Response> {
@@ -127,7 +114,7 @@ export const phantomApi = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
     login: async (
       email: string,
@@ -140,7 +127,7 @@ export const phantomApi = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
     refresh: async (
       refreshToken: string
@@ -148,7 +135,7 @@ export const phantomApi = {
       ApiResponse<{ user: User; accessToken: string; refreshToken: string }>
     > => {
       const res = await postRefresh(refreshToken);
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
     logout: async (
       refreshToken?: string | null
@@ -160,7 +147,7 @@ export const phantomApi = {
           refreshToken ? { refreshToken } : {}
         ),
       });
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
   },
 
@@ -169,7 +156,7 @@ export const phantomApi = {
       accessToken: Token
     ): Promise<ApiResponse<UserAccountSnapshot>> => {
       const res = await fetchWithRefresh("/api/user/me", accessToken, {});
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
   },
 
@@ -182,7 +169,7 @@ export const phantomApi = {
         accessToken ?? null,
         {}
       );
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
   },
 
@@ -191,7 +178,7 @@ export const phantomApi = {
       accessToken: Token
     ): Promise<ApiResponse<{ items: DataBroker[] }>> => {
       const res = await fetchWithRefresh("/api/broker-scan/catalog", accessToken, {});
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
 
     start: async (
@@ -201,14 +188,14 @@ export const phantomApi = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
 
     summary: async (
       accessToken: Token
     ): Promise<ApiResponse<BrokerScanSummary>> => {
       const res = await fetchWithRefresh("/api/broker-scan/summary", accessToken, {});
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
 
     results: async (
@@ -223,7 +210,7 @@ export const phantomApi = {
         ? `/api/broker-scan/results?${qs}`
         : "/api/broker-scan/results";
       const res = await fetchWithRefresh(path, accessToken, {});
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
 
     removeAll: async (
@@ -233,7 +220,7 @@ export const phantomApi = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
 
     requestRemoval: async (
@@ -248,7 +235,7 @@ export const phantomApi = {
           headers: { "Content-Type": "application/json" },
         }
       );
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
   },
 
@@ -267,14 +254,14 @@ export const phantomApi = {
         ? `/api/notifications?${qs}`
         : "/api/notifications";
       const res = await fetchWithRefresh(path, accessToken, {});
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
 
     count: async (
       accessToken: Token
     ): Promise<ApiResponse<{ unreadCount: number }>> => {
       const res = await fetchWithRefresh("/api/notifications/count", accessToken, {});
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
 
     markRead: async (
@@ -285,7 +272,7 @@ export const phantomApi = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
 
     markAllRead: async (
@@ -295,7 +282,7 @@ export const phantomApi = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
 
     seedDemo: async (
@@ -305,14 +292,14 @@ export const phantomApi = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
 
     getPreferences: async (
       accessToken: Token
     ): Promise<ApiResponse<{ items: NotificationPrefItem[] }>> => {
       const res = await fetchWithRefresh("/api/notifications/preferences", accessToken, {});
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
 
     updatePreferences: async (
@@ -324,7 +311,7 @@ export const phantomApi = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items }),
       });
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
   },
 
@@ -333,7 +320,7 @@ export const phantomApi = {
       accessToken: Token
     ): Promise<ApiResponse<{ vaultSalt: string | null }>> => {
       const res = await fetchWithRefresh("/api/vault/salt", accessToken, {});
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
 
     init: async (
@@ -343,7 +330,7 @@ export const phantomApi = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
   },
 
@@ -358,7 +345,7 @@ export const phantomApi = {
       const qs = q.toString();
       const path = qs ? `/api/aliases?${qs}` : "/api/aliases";
       const res = await fetchWithRefresh(path, accessToken, {});
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
 
     generate: async (
@@ -370,7 +357,7 @@ export const phantomApi = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
 
     get: async (
@@ -378,7 +365,7 @@ export const phantomApi = {
       id: string
     ): Promise<ApiResponse<{ alias: Alias }>> => {
       const res = await fetchWithRefresh(`/api/aliases/${id}`, accessToken, {});
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
 
     patch: async (
@@ -391,7 +378,7 @@ export const phantomApi = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
 
     remove: async (
@@ -401,7 +388,7 @@ export const phantomApi = {
       const res = await fetchWithRefresh(`/api/aliases/${id}`, accessToken, {
         method: "DELETE",
       });
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
 
     rotate: async (
@@ -414,7 +401,7 @@ export const phantomApi = {
         headers: { "Content-Type": "application/json" },
         body: body ? JSON.stringify(body) : undefined,
       });
-      return parseJson(res);
+      return parseApiResponseJson(res);
     },
   },
 };

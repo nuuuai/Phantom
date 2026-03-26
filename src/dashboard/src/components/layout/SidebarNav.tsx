@@ -62,6 +62,7 @@ const sections: readonly NavSection[] = [
 
 export function SidebarNav() {
   const accessToken = useSessionStore((s) => s.accessToken);
+  const devBootstrapError = useSessionStore((s) => s.devBootstrapError);
   const darkWebAlerts = useSessionStore((s) => s.darkWebAlerts);
   const displayName = useSessionStore((s) => s.displayName);
   const planLabel = useSessionStore((s) => s.planLabel);
@@ -125,14 +126,18 @@ export function SidebarNav() {
         </div>
         <div className="truncate font-sans text-[13px] font-medium text-ph-text-primary">
           {!accessToken && !shouldSkipDevBootstrap()
-            ? "Connecting…"
+            ? devBootstrapError
+              ? "Login failed"
+              : "Connecting…"
             : !accessToken
               ? "Signed out"
               : displayName}
         </div>
         <div className="ml-auto font-sans text-[10px] font-semibold text-ph-accent">
           {!accessToken && !shouldSkipDevBootstrap()
-            ? "…"
+            ? devBootstrapError
+              ? "!"
+              : "…"
             : !accessToken
               ? "—"
               : planLabel}

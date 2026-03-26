@@ -15,6 +15,10 @@ export function TopBar() {
   const location = useLocation();
   const navigate = useNavigate();
   const accessToken = useSessionStore((s) => s.accessToken);
+  const devBootstrapError = useSessionStore((s) => s.devBootstrapError);
+  const incrementDevBootstrapRetry = useSessionStore(
+    (s) => s.incrementDevBootstrapRetry
+  );
   const clearSession = useSessionStore((s) => s.clearSession);
   const [signingOut, setSigningOut] = useState(false);
 
@@ -83,6 +87,22 @@ export function TopBar() {
           >
             Resume dev session
           </button>
+        ) : devBootstrapError ? (
+          <div className="flex max-w-[min(420px,50vw)] items-center gap-2">
+            <span
+              className="truncate font-sans text-xs text-ph-danger"
+              title={devBootstrapError}
+            >
+              {devBootstrapError}
+            </span>
+            <button
+              type="button"
+              onClick={() => incrementDevBootstrapRetry()}
+              className="shrink-0 cursor-pointer rounded-md border border-ph-border bg-ph-bg px-2.5 py-1 font-sans text-xs text-ph-text-secondary hover:text-ph-text-primary"
+            >
+              Retry
+            </button>
+          </div>
         ) : (
           <span className="font-mono text-[10px] text-ph-text-muted">
             Connecting…
