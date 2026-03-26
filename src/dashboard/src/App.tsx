@@ -1,24 +1,33 @@
+import { deriveVaultKey, exportKeyHex } from "@phantom/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout.js";
+import { AliasDetailPage } from "@/features/aliases/AliasDetailPage.js";
 import { AliasesPage } from "@/features/aliases/AliasesPage.js";
 import { BrokersPage } from "@/features/broker/BrokersPage.js";
 import { DashboardPage } from "@/features/dashboard/DashboardPage.js";
+import { OnboardingModal } from "@/features/onboarding/OnboardingModal.js";
 import { PlaceholderPage } from "@/features/placeholder/PlaceholderPage.js";
 import { SettingsPage } from "@/features/settings/SettingsPage.js";
 import { VaultPage } from "@/features/vault/VaultPage.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
+import { shouldSkipDevBootstrap } from "@/lib/devBootstrap.js";
 import { queryKeys } from "@/lib/queryKeys.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 
 function SessionBootstrap() {
   const accessToken = useSessionStore((s) => s.accessToken);
+  const refreshToken = useSessionStore((s) => s.refreshToken);
   const setAccessToken = useSessionStore((s) => s.setAccessToken);
+  const setRefreshToken = useSessionStore((s) => s.setRefreshToken);
   const setUser = useSessionStore((s) => s.setUser);
   const setDarkWebAlerts = useSessionStore((s) => s.setDarkWebAlerts);
+  const setLoginPassword = useSessionStore((s) => s.setLoginPassword);
+  const setVaultKeyHex = useSessionStore((s) => s.setVaultKeyHex);
 
   useEffect(() => {
+    if (shouldSkipDevBootstrap()) return;
     let cancelled = false;
     const email =
       import.meta.env.VITE_DEV_EMAIL ?? "dev@phantom.local";
@@ -29,13 +38,38 @@ function SessionBootstrap() {
       if (cancelled) return;
       if (res.ok) {
         setAccessToken(res.data.accessToken);
+        setRefreshToken(res.data.refreshToken ?? null);
         setUser(res.data.user);
+        setLoginPassword(password);
+
+        const saltRes = await phantomApi.vault.getSalt(res.data.accessToken);
+        if (cancelled) return;
+        if (saltRes.ok && saltRes.data.vaultSalt) {
+          const key = await deriveVaultKey(password, saltRes.data.vaultSalt);
+          if (!cancelled) setVaultKeyHex(await exportKeyHex(key));
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [setAccessToken, setUser]);
+  }, [setAccessToken, setRefreshToken, setUser, setLoginPassword, setVaultKeyHex]);
+
+  useEffect(() => {
+    if (!refreshToken) return;
+    const intervalMs = 14 * 60 * 1000;
+    const id = window.setInterval(() => {
+      void (async () => {
+        const rt = useSessionStore.getState().refreshToken;
+        if (!rt) return;
+        const res = await phantomApi.auth.refresh(rt);
+        if (!res.ok) return;
+        useSessionStore.getState().setAccessToken(res.data.accessToken);
+        useSessionStore.getState().setRefreshToken(res.data.refreshToken);
+      })();
+    }, intervalMs);
+    return () => window.clearInterval(id);
+  }, [refreshToken]);
 
   const overviewQuery = useQuery({
     queryKey: queryKeys.dashboardOverview(accessToken),
@@ -46,6 +80,7 @@ function SessionBootstrap() {
       }
       return res.data;
     },
+    enabled: accessToken !== null,
   });
 
   useEffect(() => {
@@ -61,10 +96,12 @@ export function App() {
   return (
     <>
       <SessionBootstrap />
+      <OnboardingModal />
       <Routes>
         <Route element={<MainLayout />}>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/aliases" element={<AliasesPage />} />
+          <Route path="/aliases/:id" element={<AliasDetailPage />} />
           <Route path="/vault" element={<VaultPage />} />
           <Route path="/brokers" element={<BrokersPage />} />
           <Route

@@ -12,11 +12,23 @@ model User {
   email            String   @unique
   hashedPassword   String
   tier             UserTier @default(free)
+  vaultSalt        String?
   createdAt        DateTime @default(now())
   aliases          Alias[]
   brokerScanRuns   BrokerScanRun[]
   brokerScanResults BrokerScanResult[]
   notifications    Notification[]
+  notificationPrefs NotificationPref[]
+}
+
+model NotificationPref {
+  id        String               @id @default(cuid())
+  userId    String
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  NotificationCategory
+  enabled   Boolean              @default(true)
+
+  @@unique([userId, category])
 }
 
 enum UserTier {
@@ -31,6 +43,7 @@ model Alias {
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   type            AliasType
   value           String
+  encryptedValue  String?
   category        AliasCategory
   serviceName     String?
   serviceUrl      String?

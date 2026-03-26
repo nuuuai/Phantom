@@ -16,6 +16,7 @@ export interface Alias {
   userId: string;
   type: AliasType;
   value: string;
+  encryptedValue: string | null;
   category: AliasCategory;
   serviceName: string | null;
   serviceUrl: string | null;
@@ -31,6 +32,7 @@ export interface GenerateAliasRequest {
   category: AliasCategory;
   serviceName?: string;
   serviceUrl?: string;
+  encryptedValue?: string;
 }
 
 export interface PatchAliasRequest {

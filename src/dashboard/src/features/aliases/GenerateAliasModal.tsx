@@ -1,10 +1,17 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useCallback, useState } from "react";
-import type { AliasCategory, AliasType } from "@phantom/shared";
-import { ALIAS_CATEGORIES } from "@phantom/shared";
+import type { Alias, AliasCategory, AliasType } from "@phantom/shared";
+import { ALIAS_CATEGORIES, encryptVaultValue, generatePassword, importKeyHex } from "@phantom/shared";
 import { phantomApi } from "@/lib/api/phantomApi.js";
-import { queryKeys } from "@/lib/queryKeys.js";
+import {
+  aliasDetailAll,
+  aliasesAll,
+  dashboardOverviewAll,
+  queryKeys,
+  vaultAll,
+} from "@/lib/queryKeys.js";
+import { useEscapeKey } from "@/hooks/useEscapeKey.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 
 const TYPES: { id: AliasType; label: string; hint: string }[] = [
@@ -21,6 +28,7 @@ interface GenerateAliasModalProps {
 
 export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
   const accessToken = useSessionStore((s) => s.accessToken);
+  const vaultKeyHex = useSessionStore((s) => s.vaultKeyHex);
   const queryClient = useQueryClient();
   const [step, setStep] = useState<1 | 2>(1);
   const [type, setType] = useState<AliasType | null>(null);
@@ -32,17 +40,31 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
       if (!type || !category) {
         throw new Error("Select type and category");
       }
+      let encryptedValue: string | undefined;
+      if (type === "password" && vaultKeyHex) {
+        const key = await importKeyHex(vaultKeyHex);
+        const plain = generatePassword(20);
+        encryptedValue = await encryptVaultValue(key, plain);
+      }
       const res = await phantomApi.aliases.generate(accessToken, {
         type,
         category,
+        encryptedValue,
       });
       if (!res.ok) {
         throw new Error(res.error.message);
       }
       return res.data.alias;
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["aliases"] });
+    onSuccess: async (alias: Alias) => {
+      await queryClient.invalidateQueries({ queryKey: aliasesAll });
+      await queryClient.invalidateQueries({ queryKey: aliasDetailAll });
+      if (alias.type === "password") {
+        await queryClient.invalidateQueries({ queryKey: vaultAll });
+      }
+      await queryClient.invalidateQueries({
+        queryKey: dashboardOverviewAll,
+      });
       await queryClient.invalidateQueries({
         queryKey: queryKeys.userMe(accessToken),
       });
@@ -67,6 +89,8 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
     }
   }, [generateMutation.isPending, onClose]);
 
+  useEscapeKey(open, handleClose);
+
   if (!open) return null;
 
   return (
@@ -75,6 +99,9 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="generate-alias-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
     >
       <motion.div
         initial={{ opacity: 0, y: 8 }}
@@ -96,6 +123,7 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
           <button
             type="button"
             onClick={handleClose}
+            aria-label="Close dialog"
             className="font-mono text-xs text-ph-text-ghost hover:text-ph-text-secondary"
           >
             Esc

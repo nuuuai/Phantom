@@ -2,11 +2,22 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import type { Alias } from "@phantom/shared";
+import { encryptVaultValue, generatePassword, importKeyHex } from "@phantom/shared";
+import { useCopiedFeedback } from "@/hooks/useCopiedFeedback.js";
+import { useDecryptedPasswords } from "@/hooks/useDecryptedPasswords.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { formatRelativeTime } from "@/lib/formatRelative.js";
-import { queryKeys } from "@/lib/queryKeys.js";
+import {
+  aliasDetailAll,
+  aliasesAll,
+  dashboardOverviewAll,
+  queryKeys,
+  vaultAll,
+} from "@/lib/queryKeys.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
+import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { VaultGenerateModal } from "./VaultGenerateModal.js";
+import { VaultUnlockGate } from "./VaultUnlockGate.js";
 
 const CATEGORY_TABS = [
   { id: "all", label: "All" },
@@ -39,14 +50,28 @@ function strengthLabel(value: string): { text: string; cls: string } {
 
 export function VaultPage() {
   const accessToken = useSessionStore((s) => s.accessToken);
+  if (!accessToken) {
+    return <SessionGateMessage />;
+  }
+  return (
+    <VaultUnlockGate>
+      <VaultPageInner />
+    </VaultUnlockGate>
+  );
+}
+
+function VaultPageInner() {
+  const accessToken = useSessionStore((s) => s.accessToken);
+  const vaultKeyHex = useSessionStore((s) => s.vaultKeyHex);
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [modalOpen, setModalOpen] = useState(false);
+  const { copiedId, setCopiedId } = useCopiedFeedback();
 
   const listQuery = useQuery({
-    queryKey: ["vault", accessToken, category],
+    queryKey: queryKeys.vaultList(accessToken, category),
     queryFn: async () => {
       const params: { category?: string; health?: string } = {};
       if (category !== "all") params.category = category;
@@ -56,6 +81,8 @@ export function VaultPage() {
     },
     enabled: accessToken !== null,
   });
+
+  const resolveValue = useDecryptedPasswords(listQuery.data, vaultKeyHex);
 
   const userMeQuery = useQuery({
     queryKey: queryKeys.userMe(accessToken),
@@ -69,13 +96,24 @@ export function VaultPage() {
 
   const rotateMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await phantomApi.aliases.rotate(accessToken, id);
+      let body: { encryptedValue?: string } | undefined;
+      if (vaultKeyHex) {
+        const key = await importKeyHex(vaultKeyHex);
+        const newPw = generatePassword(20);
+        const enc = await encryptVaultValue(key, newPw);
+        body = { encryptedValue: enc };
+      }
+      const res = await phantomApi.aliases.rotate(accessToken, id, body);
       if (!res.ok) throw new Error(res.error.message);
       return res.data;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["vault"] });
-      void qc.invalidateQueries({ queryKey: ["aliases"] });
+      void qc.invalidateQueries({ queryKey: vaultAll });
+      void qc.invalidateQueries({ queryKey: aliasesAll });
+      void qc.invalidateQueries({ queryKey: aliasDetailAll });
+      void qc.invalidateQueries({
+        queryKey: dashboardOverviewAll,
+      });
       void qc.invalidateQueries({
         queryKey: queryKeys.userMe(accessToken),
       });
@@ -89,8 +127,12 @@ export function VaultPage() {
       return res.data;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["vault"] });
-      void qc.invalidateQueries({ queryKey: ["aliases"] });
+      void qc.invalidateQueries({ queryKey: vaultAll });
+      void qc.invalidateQueries({ queryKey: aliasesAll });
+      void qc.invalidateQueries({ queryKey: aliasDetailAll });
+      void qc.invalidateQueries({
+        queryKey: dashboardOverviewAll,
+      });
       void qc.invalidateQueries({
         queryKey: queryKeys.userMe(accessToken),
       });
@@ -105,25 +147,18 @@ export function VaultPage() {
       (a) =>
         (a.serviceName?.toLowerCase().includes(lc) ?? false) ||
         (a.serviceUrl?.toLowerCase().includes(lc) ?? false) ||
-        a.value.toLowerCase().includes(lc)
+        resolveValue(a).toLowerCase().includes(lc)
     );
-  }, [listQuery.data, search]);
+  }, [listQuery.data, search, resolveValue]);
 
   const passwordUsage = userMeQuery.data?.aliasUsage.find(
     (u) => u.type === "password"
   );
 
-  const copyValue = (value: string) => {
-    void navigator.clipboard.writeText(value);
+  const copyValue = (pw: Alias) => {
+    void navigator.clipboard.writeText(resolveValue(pw));
+    setCopiedId(pw.id);
   };
-
-  if (!accessToken) {
-    return (
-      <div className="px-8 py-6 font-sans text-sm text-ph-text-tertiary">
-        Connecting session…
-      </div>
-    );
-  }
 
   return (
     <div className="px-8 py-6">
@@ -217,12 +252,14 @@ export function VaultPage() {
               <VaultCard
                 key={pw.id}
                 pw={pw}
+                displayValue={resolveValue(pw)}
                 index={i}
                 revealed={revealed[pw.id] ?? false}
                 onToggleReveal={() =>
                   setRevealed((r) => ({ ...r, [pw.id]: !r[pw.id] }))
                 }
-                onCopy={() => copyValue(pw.value)}
+                copyLabel={copiedId === pw.id ? "Copied" : "Copy"}
+                onCopy={() => copyValue(pw)}
                 onRotate={() => {
                   if (
                     window.confirm(
@@ -253,22 +290,26 @@ export function VaultPage() {
 
 function VaultCard({
   pw,
+  displayValue,
   index,
   revealed,
+  copyLabel,
   onToggleReveal,
   onCopy,
   onRotate,
   onDeactivate,
 }: {
   pw: Alias;
+  displayValue: string;
   index: number;
   revealed: boolean;
+  copyLabel: string;
   onToggleReveal: () => void;
   onCopy: () => void;
   onRotate: () => void;
   onDeactivate: () => void;
 }) {
-  const strength = strengthLabel(pw.value);
+  const strength = strengthLabel(displayValue);
 
   return (
     <motion.div
@@ -289,9 +330,16 @@ function VaultCard({
             </div>
           )}
         </div>
-        <span className="shrink-0 rounded-full border border-ph-border bg-ph-bg px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-ph-text-muted">
-          {pw.category}
-        </span>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {pw.encryptedValue && (
+            <span className="rounded-full border border-ph-accent-border bg-[#6C3AED15] px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-ph-accent-light">
+              e2e
+            </span>
+          )}
+          <span className="rounded-full border border-ph-border bg-ph-bg px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-ph-text-muted">
+            {pw.category}
+          </span>
+        </div>
       </div>
 
       <div className="mt-3 flex items-center gap-2 rounded-md border border-ph-borderSubtle bg-ph-bg px-3 py-2">
@@ -300,7 +348,7 @@ function VaultCard({
           onClick={onToggleReveal}
           className="min-w-0 flex-1 cursor-pointer truncate text-left font-mono text-xs text-ph-text-primary"
         >
-          {revealed ? pw.value : "•".repeat(Math.min(pw.value.length, 20))}
+          {revealed ? displayValue : "•".repeat(Math.min(displayValue.length, 20))}
         </button>
         <button
           type="button"
@@ -308,7 +356,7 @@ function VaultCard({
           className="shrink-0 cursor-pointer font-sans text-[10px] text-ph-accent-light hover:underline"
           title="Copy to clipboard"
         >
-          Copy
+          {copyLabel}
         </button>
       </div>
 
@@ -323,7 +371,7 @@ function VaultCard({
             {strength.text}
           </span>
           <span className="font-mono text-[10px] text-ph-text-muted">
-            · {pw.value.length} chars
+            · {displayValue.length} chars
           </span>
         </span>
         <span className="font-mono text-[10px] text-ph-text-ghost">

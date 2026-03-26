@@ -1,9 +1,16 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Alias, AliasCategory } from "@phantom/shared";
 import { ALIAS_CATEGORIES } from "@phantom/shared";
 import { phantomApi } from "@/lib/api/phantomApi.js";
+import {
+  aliasDetailAll,
+  aliasesAll,
+  dashboardOverviewAll,
+  vaultAll,
+} from "@/lib/queryKeys.js";
+import { useEscapeKey } from "@/hooks/useEscapeKey.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 
 interface EditAliasModalProps {
@@ -36,21 +43,43 @@ export function EditAliasModal({ alias, open, onClose }: EditAliasModalProps) {
       return res.data;
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["aliases"] });
+      await queryClient.invalidateQueries({ queryKey: aliasesAll });
+      await queryClient.invalidateQueries({ queryKey: vaultAll });
+      await queryClient.invalidateQueries({ queryKey: aliasDetailAll });
+      await queryClient.invalidateQueries({
+        queryKey: dashboardOverviewAll,
+      });
       onClose();
     },
   });
 
+  const handleClose = useCallback(() => {
+    if (!patchMutation.isPending) onClose();
+  }, [patchMutation.isPending, onClose]);
+
+  useEscapeKey(open && alias != null, handleClose);
+
   if (!open || !alias) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="edit-alias-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
+    >
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md rounded-xl border border-ph-border bg-ph-surface p-6"
       >
-        <h2 className="font-sans text-lg font-semibold text-ph-text-primary">
+        <h2
+          id="edit-alias-title"
+          className="font-sans text-lg font-semibold text-ph-text-primary"
+        >
           Edit alias
         </h2>
         <div className="mt-4 space-y-3">
@@ -88,7 +117,7 @@ export function EditAliasModal({ alias, open, onClose }: EditAliasModalProps) {
         <div className="mt-6 flex justify-end gap-2">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="rounded-md border border-ph-border px-4 py-2 font-sans text-xs text-ph-text-secondary"
           >
             Cancel

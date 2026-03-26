@@ -4,6 +4,7 @@ import { QuickActionsGrid } from "./QuickActionsGrid.js";
 import { StatGrid } from "./StatGrid.js";
 import { SystemLayersPanel } from "./SystemLayersPanel.js";
 import { WeeklyScamsChart } from "./WeeklyScamsChart.js";
+import { shouldSkipDevBootstrap } from "@/lib/devBootstrap.js";
 import { queryKeys } from "@/lib/queryKeys.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
@@ -20,7 +21,37 @@ export function DashboardPage() {
       }
       return res.data;
     },
+    enabled: accessToken !== null,
   });
+
+  if (!accessToken) {
+    if (shouldSkipDevBootstrap()) {
+      return (
+        <div className="px-8 py-6">
+          <h1 className="font-sans text-xl font-semibold text-ph-text-primary">
+            Overview
+          </h1>
+          <p className="mt-3 max-w-md font-sans text-sm leading-relaxed text-ph-text-tertiary">
+            You are signed out. Use{" "}
+            <span className="font-medium text-ph-text-secondary">
+              Resume dev session
+            </span>{" "}
+            in the top bar to sign in again with the seeded dev account.
+          </p>
+        </div>
+      );
+    }
+    return (
+      <div className="px-8 py-6">
+        <h1 className="font-sans text-xl font-semibold text-ph-text-primary">
+          Overview
+        </h1>
+        <p className="mt-3 font-sans text-sm text-ph-text-tertiary">
+          Connecting session…
+        </p>
+      </div>
+    );
+  }
 
   if (overviewQuery.isPending) {
     return (

@@ -1,3 +1,5 @@
+import { useEscapeKey } from "@/hooks/useEscapeKey.js";
+
 interface BrokerUpgradeModalProps {
   open: boolean;
   exposureCount: number;
@@ -9,6 +11,8 @@ export function BrokerUpgradeModal({
   exposureCount,
   onClose,
 }: BrokerUpgradeModalProps) {
+  useEscapeKey(open, onClose);
+
   if (!open) return null;
 
   return (
@@ -17,6 +21,9 @@ export function BrokerUpgradeModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="upgrade-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="w-full max-w-md rounded-xl border border-ph-border bg-ph-surface p-6 shadow-none">
         <h2

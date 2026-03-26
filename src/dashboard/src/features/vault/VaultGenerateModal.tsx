@@ -1,9 +1,21 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useState } from "react";
+import { useEscapeKey } from "@/hooks/useEscapeKey.js";
 import type { AliasCategory } from "@phantom/shared";
+import {
+  encryptVaultValue,
+  generatePassword,
+  importKeyHex,
+} from "@phantom/shared";
 import { phantomApi } from "@/lib/api/phantomApi.js";
-import { queryKeys } from "@/lib/queryKeys.js";
+import {
+  aliasDetailAll,
+  aliasesAll,
+  dashboardOverviewAll,
+  queryKeys,
+  vaultAll,
+} from "@/lib/queryKeys.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 
 const CATEGORIES: { id: AliasCategory; label: string }[] = [
@@ -23,6 +35,7 @@ interface Props {
 
 export function VaultGenerateModal({ open, onClose }: Props) {
   const accessToken = useSessionStore((s) => s.accessToken);
+  const vaultKeyHex = useSessionStore((s) => s.vaultKeyHex);
   const qc = useQueryClient();
   const [category, setCategory] = useState<AliasCategory>("work");
   const [serviceName, setServiceName] = useState("");
@@ -31,18 +44,29 @@ export function VaultGenerateModal({ open, onClose }: Props) {
 
   const generateMutation = useMutation({
     mutationFn: async () => {
+      let encryptedValue: string | undefined;
+      if (vaultKeyHex) {
+        const plaintext = generatePassword(20);
+        const key = await importKeyHex(vaultKeyHex);
+        encryptedValue = await encryptVaultValue(key, plaintext);
+      }
       const res = await phantomApi.aliases.generate(accessToken, {
         type: "password",
         category,
         serviceName: serviceName.trim() || undefined,
         serviceUrl: serviceUrl.trim() || undefined,
+        encryptedValue,
       });
       if (!res.ok) throw new Error(res.error.message);
       return res.data;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["vault"] });
-      void qc.invalidateQueries({ queryKey: ["aliases"] });
+      void qc.invalidateQueries({ queryKey: vaultAll });
+      void qc.invalidateQueries({ queryKey: aliasesAll });
+      void qc.invalidateQueries({ queryKey: aliasDetailAll });
+      void qc.invalidateQueries({
+        queryKey: dashboardOverviewAll,
+      });
       void qc.invalidateQueries({
         queryKey: queryKeys.userMe(accessToken),
       });
@@ -61,12 +85,21 @@ export function VaultGenerateModal({ open, onClose }: Props) {
     onClose();
   }, [onClose]);
 
+  const escapeClose = useCallback(() => {
+    if (!generateMutation.isPending) resetAndClose();
+  }, [generateMutation.isPending, resetAndClose]);
+
+  useEscapeKey(open, escapeClose);
+
   if (!open) return null;
 
   return (
     <AnimatePresence>
       <motion.div
         key="vault-modal-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="vault-generate-title"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -82,12 +115,16 @@ export function VaultGenerateModal({ open, onClose }: Props) {
           transition={{ type: "spring", damping: 24, stiffness: 300 }}
           className="w-full max-w-md rounded-xl border border-ph-border bg-ph-surface p-6 shadow-2xl"
         >
-          <h2 className="font-sans text-base font-semibold text-ph-text-primary">
+          <h2
+            id="vault-generate-title"
+            className="font-sans text-base font-semibold text-ph-text-primary"
+          >
             New password
           </h2>
           <p className="mt-1 font-sans text-[12px] text-ph-text-tertiary">
             A cryptographically random 20-character password will be generated
-            and stored in your vault.
+            on your device, encrypted, and stored in your vault. The server
+            never sees the plaintext.
           </p>
 
           <div className="mt-5 space-y-4">

@@ -1,13 +1,28 @@
+import {
+  encryptVaultValue,
+  generatePassword,
+  importKeyHex,
+} from "@phantom/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import type { Alias, AliasCategory, HealthStatus } from "@phantom/shared";
+import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { EditAliasModal } from "./EditAliasModal.js";
 import { GenerateAliasModal } from "./GenerateAliasModal.js";
+import { useCopiedFeedback } from "@/hooks/useCopiedFeedback.js";
+import { useDecryptedPasswords } from "@/hooks/useDecryptedPasswords.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { categoryBadgeClass, categoryLabel } from "@/lib/categoryBadgeStyle.js";
 import { formatRelativeTime } from "@/lib/formatRelative.js";
 import { maskAliasValue } from "@/lib/maskAliasValue.js";
-import { queryKeys } from "@/lib/queryKeys.js";
+import {
+  aliasDetailAll,
+  aliasesAll,
+  dashboardOverviewAll,
+  queryKeys,
+  vaultAll,
+} from "@/lib/queryKeys.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 
 const CATEGORY_TABS: { id: "all" | AliasCategory; label: string }[] = [
@@ -45,12 +60,14 @@ function healthDotClass(h: HealthStatus): string {
 
 export function AliasesPage() {
   const accessToken = useSessionStore((s) => s.accessToken);
+  const vaultKeyHex = useSessionStore((s) => s.vaultKeyHex);
   const queryClient = useQueryClient();
   const [categoryTab, setCategoryTab] = useState<"all" | AliasCategory>("all");
   const [healthFilter, setHealthFilter] = useState<"all" | HealthStatus>("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [editAlias, setEditAlias] = useState<Alias | null>(null);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
+  const { copiedId, setCopiedId } = useCopiedFeedback();
 
   const queryParams = useMemo(
     () => ({
@@ -87,12 +104,26 @@ export function AliasesPage() {
 
   const rotateMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await phantomApi.aliases.rotate(accessToken, id);
+      let body: { encryptedValue?: string } | undefined;
+      if (vaultKeyHex) {
+        const row = listQuery.data?.find((a) => a.id === id);
+        if (row?.type === "password") {
+          const key = await importKeyHex(vaultKeyHex);
+          const newPw = generatePassword(20);
+          body = { encryptedValue: await encryptVaultValue(key, newPw) };
+        }
+      }
+      const res = await phantomApi.aliases.rotate(accessToken, id, body);
       if (!res.ok) throw new Error(res.error.message);
       return res.data;
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["aliases"] });
+      await queryClient.invalidateQueries({ queryKey: aliasesAll });
+      await queryClient.invalidateQueries({ queryKey: vaultAll });
+      await queryClient.invalidateQueries({ queryKey: aliasDetailAll });
+      await queryClient.invalidateQueries({
+        queryKey: dashboardOverviewAll,
+      });
       await queryClient.invalidateQueries({
         queryKey: queryKeys.userMe(accessToken),
       });
@@ -106,28 +137,31 @@ export function AliasesPage() {
       return res.data;
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["aliases"] });
+      await queryClient.invalidateQueries({ queryKey: aliasesAll });
+      await queryClient.invalidateQueries({ queryKey: vaultAll });
+      await queryClient.invalidateQueries({ queryKey: aliasDetailAll });
+      await queryClient.invalidateQueries({
+        queryKey: dashboardOverviewAll,
+      });
       await queryClient.invalidateQueries({
         queryKey: queryKeys.userMe(accessToken),
       });
     },
   });
 
-  const copyValue = (value: string) => {
+  const copyValue = (value: string, rowId: string) => {
     void navigator.clipboard.writeText(value);
+    setCopiedId(rowId);
   };
 
   const toggleReveal = (id: string) => {
     setRevealed((r) => ({ ...r, [id]: !r[id] }));
   };
 
+  const resolveValue = useDecryptedPasswords(listQuery.data, vaultKeyHex);
+
   if (!accessToken) {
-    return (
-      <div className="px-8 py-6 font-sans text-sm text-ph-text-tertiary">
-        Connecting session… ensure API is running and dev credentials match the
-        seeded user (see .env.example).
-      </div>
-    );
+    return <SessionGateMessage />;
   }
 
   const items = listQuery.data ?? [];
@@ -251,7 +285,14 @@ export function AliasesPage() {
                   className="border-b border-ph-borderSubtle last:border-0"
                 >
                   <td className="px-4 py-3 font-mono text-sm text-ph-text-secondary">
-                    <span title={row.type}>{typeGlyph(row.type)}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span title={row.type}>{typeGlyph(row.type)}</span>
+                      {row.encryptedValue && (
+                        <span className="rounded bg-[#6C3AED15] px-1 py-px font-mono text-[8px] uppercase text-ph-accent-light">
+                          e2e
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="max-w-xs px-4 py-3">
                     <button
@@ -261,7 +302,7 @@ export function AliasesPage() {
                     >
                       {maskAliasValue(
                         row.type,
-                        row.value,
+                        resolveValue(row),
                         revealed[row.id] ?? false
                       )}
                     </button>
@@ -298,12 +339,18 @@ export function AliasesPage() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex flex-wrap justify-end gap-1">
+                      <Link
+                        to={`/aliases/${row.id}`}
+                        className="rounded px-2 py-1 font-sans text-[10px] text-ph-accent-light hover:bg-ph-raised"
+                      >
+                        View
+                      </Link>
                       <button
                         type="button"
                         className="rounded px-2 py-1 font-sans text-[10px] text-ph-accent-light hover:bg-ph-raised"
-                        onClick={() => copyValue(row.value)}
+                        onClick={() => copyValue(resolveValue(row), row.id)}
                       >
-                        Copy
+                        {copiedId === row.id ? "Copied" : "Copy"}
                       </button>
                       <button
                         type="button"

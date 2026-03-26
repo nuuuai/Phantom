@@ -7,6 +7,7 @@ export function mapAliasToDto(row: PrismaAliasRow): Alias {
     userId: row.userId,
     type: row.type,
     value: row.value,
+    encryptedValue: row.encryptedValue,
     category: row.category,
     serviceName: row.serviceName,
     serviceUrl: row.serviceUrl,

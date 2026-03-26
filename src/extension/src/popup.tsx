@@ -1,12 +1,23 @@
 import { useCallback, useState } from "react";
-import { MESSAGE_GENERATE_ALIAS, MESSAGE_LOGIN } from "./lib/messages";
+import {
+  MESSAGE_GENERATE_ALIAS,
+  MESSAGE_LOGIN,
+  MESSAGE_LOGOUT,
+} from "./lib/messages";
 import "./popup.css";
 
 type GenerateResponse =
-  | { ok: true; alias: { type: string; value: string } }
+  | {
+      ok: true;
+      alias: { type: string; value: string };
+      /** Present when vault decrypted server-stored ciphertext (password aliases). */
+      plainValue?: string;
+    }
   | { ok: false; error: string };
 
 type LoginResponse = { ok: true } | { ok: false; error: string };
+
+type LogoutResponse = { ok: true } | { ok: false; error: string };
 
 function maskValue(type: string, value: string): string {
   if (type === "password") return "•".repeat(12);
@@ -24,6 +35,22 @@ export function Popup() {
   const [authStatus, setAuthStatus] = useState<string>("");
   const [status, setStatus] = useState<string>("");
   const [preview, setPreview] = useState<string | null>(null);
+
+  const onLogout = useCallback(() => {
+    setAuthStatus("Signing out…");
+    void chrome.runtime
+      .sendMessage({ type: MESSAGE_LOGOUT })
+      .then((res: LogoutResponse | undefined) => {
+        if (res?.ok) {
+          setAuthStatus("Signed out");
+        } else {
+          setAuthStatus("Sign-out failed");
+        }
+      })
+      .catch(() => {
+        setAuthStatus("Sign-out failed");
+      });
+  }, []);
 
   const onLogin = useCallback(() => {
     setAuthStatus("Signing in…");
@@ -61,8 +88,11 @@ export function Popup() {
         }
         if (res.ok) {
           setStatus("Alias ready");
+          const previewValue =
+            res.plainValue ??
+            res.alias.value;
           setPreview(
-            `${res.alias.type} · ${maskValue(res.alias.type, res.alias.value)}`
+            `${res.alias.type} · ${maskValue(res.alias.type, previewValue)}`
           );
         } else {
           setStatus(res.error);
@@ -96,9 +126,14 @@ export function Popup() {
           autoComplete="current-password"
         />
       </label>
-      <button type="button" className="popup__secondary" onClick={onLogin}>
-        Sign in
-      </button>
+      <div className="popup__row">
+        <button type="button" className="popup__secondary" onClick={onLogin}>
+          Sign in
+        </button>
+        <button type="button" className="popup__secondary" onClick={onLogout}>
+          Sign out
+        </button>
+      </div>
       <div className="popup__mini" aria-live="polite">
         {authStatus}
       </div>

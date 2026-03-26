@@ -10,6 +10,8 @@ import { brokerScanRouter } from "./routes/brokerScan.js";
 import { dashboardRouter } from "./routes/dashboard.js";
 import { notificationsRouter } from "./routes/notifications.js";
 import { userRouter } from "./routes/user.js";
+import { vaultRouter } from "./routes/vault.js";
+import { pingRedis } from "./lib/redis.js";
 
 const app = express();
 const port = Number(process.env.API_PORT ?? "8787");
@@ -26,8 +28,19 @@ app.use(cors({ origin: process.env.CORS_ORIGIN?.split(",") ?? true }));
 app.use(jsonBody);
 app.use(rateLimitStub);
 
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok", service: "phantom-api" });
+app.get("/health", async (_req, res) => {
+  const redisConfigured = Boolean(
+    process.env.REDIS_URL && process.env.REDIS_URL.length > 0
+  );
+  let redis: "ok" | "down" | "disabled" = "disabled";
+  if (redisConfigured) {
+    redis = (await pingRedis()) ? "ok" : "down";
+  }
+  res.json({
+    status: "ok",
+    service: "phantom-api",
+    redis,
+  });
 });
 
 app.use("/api/auth", authRouter);
@@ -36,6 +49,7 @@ app.use("/api/aliases", authenticateJwt, aliasesRouter);
 app.use("/api/broker-scan", authenticateJwt, brokerScanRouter);
 app.use("/api/notifications", authenticateJwt, notificationsRouter);
 app.use("/api/dashboard", authenticateJwt, dashboardRouter);
+app.use("/api/vault", authenticateJwt, vaultRouter);
 
 app.listen(port, () => {
   process.stdout.write(`phantom-api listening on ${port}\n`);

@@ -1,4 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import type { NotificationPrefItem } from "@phantom/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { queryKeys } from "@/lib/queryKeys.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
@@ -19,11 +21,7 @@ export function SettingsPage() {
   });
 
   if (!accessToken) {
-    return (
-      <div className="px-8 py-6 font-sans text-sm text-ph-text-tertiary">
-        Connecting session…
-      </div>
-    );
+    return <SessionGateMessage />;
   }
 
   if (meQuery.isPending) {
@@ -113,17 +111,110 @@ export function SettingsPage() {
           </ul>
         </section>
 
-        <section className="rounded-xl border border-ph-border bg-ph-surface p-5">
-          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-ph-text-muted">
-            Notifications
-          </div>
-          <p className="mt-2 font-sans text-sm text-ph-text-tertiary">
-            Notification center and per-category preferences ship in a
-            future iteration. Critical alerts will use the same Midnight
-            Editorial styling.
-          </p>
-        </section>
+        <NotificationPrefsSection accessToken={accessToken} />
       </div>
     </div>
+  );
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  alias_health: "Alias health alerts",
+  broker_removal: "Broker removal updates",
+  security_alert: "Security alerts",
+  system: "System messages",
+};
+
+function NotificationPrefsSection({
+  accessToken,
+}: {
+  accessToken: string;
+}) {
+  const qc = useQueryClient();
+
+  const prefsQuery = useQuery({
+    queryKey: queryKeys.notificationPrefs(accessToken),
+    queryFn: async () => {
+      const res = await phantomApi.notifications.getPreferences(accessToken);
+      if (!res.ok) throw new Error(res.error.message);
+      return res.data.items;
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (items: NotificationPrefItem[]) => {
+      const res = await phantomApi.notifications.updatePreferences(
+        accessToken,
+        items
+      );
+      if (!res.ok) throw new Error(res.error.message);
+      return res.data.items;
+    },
+    onSuccess: (data) => {
+      qc.setQueryData(queryKeys.notificationPrefs(accessToken), data);
+      void qc.invalidateQueries({
+        queryKey: queryKeys.notifications(accessToken),
+      });
+      void qc.invalidateQueries({
+        queryKey: queryKeys.notificationCount(accessToken),
+      });
+    },
+  });
+
+  const toggle = (category: string, current: boolean) => {
+    const items = (prefsQuery.data ?? []).map((p) =>
+      p.category === category ? { ...p, enabled: !current } : p
+    );
+    updateMutation.mutate(items);
+  };
+
+  return (
+    <section className="rounded-xl border border-ph-border bg-ph-surface p-5">
+      <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-ph-text-muted">
+        Notification preferences
+      </div>
+      <p className="mt-2 font-sans text-xs text-ph-text-tertiary">
+        Control which notification categories appear in your feed and count
+        toward the unread badge.
+      </p>
+
+      {prefsQuery.isPending && (
+        <p className="mt-4 font-sans text-xs text-ph-text-tertiary">
+          Loading…
+        </p>
+      )}
+
+      {prefsQuery.data && (
+        <ul className="mt-4 space-y-3">
+          {prefsQuery.data.map((pref) => (
+            <li
+              key={pref.category}
+              className="flex items-center justify-between gap-4"
+            >
+              <span className="font-sans text-sm text-ph-text-secondary">
+                {CATEGORY_LABELS[pref.category] ?? pref.category}
+              </span>
+              <button
+                type="button"
+                onClick={() => toggle(pref.category, pref.enabled)}
+                disabled={updateMutation.isPending}
+                className={[
+                  "relative h-5 w-9 cursor-pointer rounded-full transition-colors",
+                  pref.enabled
+                    ? "bg-ph-accent"
+                    : "bg-ph-border",
+                ].join(" ")}
+              >
+                <span
+                  className={[
+                    "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform",
+                    pref.enabled ? "left-[18px]" : "left-0.5",
+                  ].join(" ")}
+                />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

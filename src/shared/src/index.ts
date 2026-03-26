@@ -12,6 +12,7 @@ export type {
   UserAccountSnapshot,
 } from "./types/userAccount.js";
 export { FREE_TIER_ALIAS_MAX } from "./constants/tierLimits.js";
+export { RATE_LIMIT_RETRY_MS } from "./constants/http.js";
 export type { ThreatPattern } from "./types/threatPattern.js";
 export type {
   BrokerCategory,
@@ -34,6 +35,7 @@ export type {
 export type { ApiResponse, ApiFailure, ApiSuccess } from "./types/apiResponse.js";
 export type {
   NotificationCategory,
+  NotificationPrefItem,
   NotificationPriority,
   PhantomNotification,
 } from "./types/notification.js";
@@ -43,3 +45,13 @@ export {
 } from "./constants/aliasCategories.js";
 export { HEALTH_STATUS_VALUES } from "./constants/healthStatus.js";
 export { RISK_THRESHOLDS } from "./constants/riskThresholds.js";
+export {
+  generateVaultSalt,
+  deriveVaultKey,
+  encryptVaultValue,
+  decryptVaultValue,
+  generatePassword,
+  exportKeyHex,
+  importKeyHex,
+} from "./lib/vaultCrypto.js";
+export type { VaultPayload } from "./lib/vaultCrypto.js";

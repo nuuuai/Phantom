@@ -21,3 +21,8 @@ export interface PhantomNotification {
   /** Optional link target within the dashboard */
   linkTo: string | null;
 }
+
+export interface NotificationPrefItem {
+  category: NotificationCategory;
+  enabled: boolean;
+}

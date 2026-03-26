@@ -1,10 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { BrokerResultsPanel } from "./BrokerResultsPanel.js";
 import { BrokerScanningState } from "./BrokerScanningState.js";
 import { BrokerUpgradeModal } from "./BrokerUpgradeModal.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
-import { queryKeys } from "@/lib/queryKeys.js";
+import {
+  brokerScanCatalogAll,
+  brokerScanResultsAll,
+  brokerScanSummaryAll,
+  dashboardOverviewAll,
+  queryKeys,
+} from "@/lib/queryKeys.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 
 type TabId = "all" | "found" | "pending" | "removed" | "relisted";
@@ -96,11 +103,13 @@ export function BrokersPage() {
       window.setTimeout(() => {
         void (async () => {
           await queryClient.invalidateQueries({
-            queryKey: queryKeys.brokerScanSummary(accessToken),
+            queryKey: brokerScanSummaryAll,
           });
-          await queryClient.invalidateQueries({ queryKey: ["broker-scan-results"] });
           await queryClient.invalidateQueries({
-            queryKey: queryKeys.dashboardOverview(accessToken),
+            queryKey: brokerScanResultsAll,
+          });
+          await queryClient.invalidateQueries({
+            queryKey: dashboardOverviewAll,
           });
           setScanning(false);
         })();
@@ -120,13 +129,17 @@ export function BrokersPage() {
       return res.data;
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["broker-scan"] });
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.brokerScanSummary(accessToken),
+        queryKey: brokerScanCatalogAll,
       });
-      await queryClient.invalidateQueries({ queryKey: ["broker-scan-results"] });
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.dashboardOverview(accessToken),
+        queryKey: brokerScanSummaryAll,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: brokerScanResultsAll,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: dashboardOverviewAll,
       });
     },
   });
@@ -151,12 +164,14 @@ export function BrokersPage() {
       }
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["broker-scan-results"] });
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.brokerScanSummary(accessToken),
+        queryKey: brokerScanResultsAll,
       });
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.dashboardOverview(accessToken),
+        queryKey: brokerScanSummaryAll,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: dashboardOverviewAll,
       });
     },
   });
@@ -170,11 +185,7 @@ export function BrokersPage() {
   const exposureForModal = summary?.exposureCount ?? 0;
 
   if (!accessToken) {
-    return (
-      <div className="px-8 py-6 font-sans text-sm text-ph-text-tertiary">
-        Connecting session…
-      </div>
-    );
+    return <SessionGateMessage />;
   }
 
   if (summaryQuery.isPending && !summaryQuery.data) {

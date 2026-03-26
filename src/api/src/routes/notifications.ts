@@ -1,7 +1,36 @@
-import type { ApiResponse, PhantomNotification } from "@phantom/shared";
+import type {
+  ApiResponse,
+  NotificationPrefItem,
+  PhantomNotification,
+} from "@phantom/shared";
+import type { NotificationCategory as PrismaNotifCategory } from "@prisma/client";
 import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 import { mapNotification } from "../lib/mapNotification.js";
+
+const NOTIF_CATEGORIES: PrismaNotifCategory[] = [
+  "alias_health",
+  "broker_removal",
+  "security_alert",
+  "system",
+];
+
+async function getDisabledNotificationCategories(
+  userId: string
+): Promise<PrismaNotifCategory[]> {
+  const rows = await prisma.notificationPref.findMany({
+    where: { userId, enabled: false },
+    select: { category: true },
+  });
+  return rows.map((r) => r.category);
+}
+
+function categoryWhere(
+  disabled: PrismaNotifCategory[]
+): { category: { notIn: PrismaNotifCategory[] } } | Record<string, never> {
+  if (disabled.length === 0) return {};
+  return { category: { notIn: disabled } };
+}
 
 export const notificationsRouter = Router();
 
@@ -21,13 +50,25 @@ notificationsRouter.get("/", async (req, res) => {
     200
   );
 
+  const disabled = await getDisabledNotificationCategories(userId);
+  const catFilter = categoryWhere(disabled);
+
   const rows = await prisma.notification.findMany({
     where: {
       userId,
+      ...catFilter,
       ...(unreadOnly ? { isRead: false } : {}),
     },
     orderBy: { createdAt: "desc" },
     take: limit,
+  });
+
+  const unreadCount = await prisma.notification.count({
+    where: {
+      userId,
+      ...catFilter,
+      isRead: false,
+    },
   });
 
   const response: ApiResponse<{
@@ -37,7 +78,7 @@ notificationsRouter.get("/", async (req, res) => {
     ok: true,
     data: {
       items: rows.map(mapNotification),
-      unreadCount: rows.filter((r) => !r.isRead).length,
+      unreadCount,
     },
   };
   res.json(response);
@@ -53,8 +94,11 @@ notificationsRouter.get("/count", async (req, res) => {
     return;
   }
 
+  const disabled = await getDisabledNotificationCategories(userId);
+  const catFilter = categoryWhere(disabled);
+
   const count = await prisma.notification.count({
-    where: { userId, isRead: false },
+    where: { userId, isRead: false, ...catFilter },
   });
   const response: ApiResponse<{ unreadCount: number }> = {
     ok: true,
@@ -106,8 +150,11 @@ notificationsRouter.post("/read-all", async (req, res) => {
     return;
   }
 
+  const disabled = await getDisabledNotificationCategories(userId);
+  const catFilter = categoryWhere(disabled);
+
   const result = await prisma.notification.updateMany({
-    where: { userId, isRead: false },
+    where: { userId, isRead: false, ...catFilter },
     data: { isRead: true },
   });
   const response: ApiResponse<{ updated: number }> = {
@@ -199,4 +246,80 @@ notificationsRouter.post("/seed-demo", async (req, res) => {
     data: { seeded: demo.length },
   };
   res.status(201).json(response);
+});
+
+notificationsRouter.get("/preferences", async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({
+      ok: false,
+      error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
+
+  const rows = await prisma.notificationPref.findMany({
+    where: { userId },
+  });
+
+  const prefMap = new Map(rows.map((r) => [r.category, r.enabled]));
+  const items: NotificationPrefItem[] = NOTIF_CATEGORIES.map((cat) => ({
+    category: cat,
+    enabled: prefMap.get(cat) ?? true,
+  }));
+
+  const response: ApiResponse<{ items: NotificationPrefItem[] }> = {
+    ok: true,
+    data: { items },
+  };
+  res.json(response);
+});
+
+notificationsRouter.put("/preferences", async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({
+      ok: false,
+      error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
+
+  const body = req.body as { items?: NotificationPrefItem[] } | undefined;
+  if (!body?.items || !Array.isArray(body.items)) {
+    res.status(400).json({
+      ok: false,
+      error: { code: "validation_error", message: "items array required" },
+    });
+    return;
+  }
+
+  const catSet = new Set<string>(NOTIF_CATEGORIES);
+  for (const item of body.items) {
+    if (!catSet.has(item.category)) continue;
+    await prisma.notificationPref.upsert({
+      where: {
+        userId_category: { userId, category: item.category as PrismaNotifCategory },
+      },
+      update: { enabled: item.enabled },
+      create: {
+        userId,
+        category: item.category as PrismaNotifCategory,
+        enabled: item.enabled,
+      },
+    });
+  }
+
+  const rows = await prisma.notificationPref.findMany({ where: { userId } });
+  const prefMap = new Map(rows.map((r) => [r.category, r.enabled]));
+  const items: NotificationPrefItem[] = NOTIF_CATEGORIES.map((cat) => ({
+    category: cat,
+    enabled: prefMap.get(cat) ?? true,
+  }));
+
+  const response: ApiResponse<{ items: NotificationPrefItem[] }> = {
+    ok: true,
+    data: { items },
+  };
+  res.json(response);
 });

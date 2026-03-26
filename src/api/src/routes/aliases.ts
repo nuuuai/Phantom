@@ -141,24 +141,34 @@ aliasesRouter.post("/generate", async (req, res) => {
     return;
   }
 
-  const existsEmail = async (value: string): Promise<boolean> => {
-    const found = await prisma.alias.findFirst({
-      where: { type: "email", value, isActive: true },
-    });
-    return found !== null;
-  };
+  const clientEncrypted =
+    typeof body.encryptedValue === "string" && body.encryptedValue.length > 0
+      ? body.encryptedValue
+      : null;
 
-  const value = await generateValueForType(
-    type as AliasType,
-    category as AliasCategory,
-    existsEmail
-  );
+  let value: string;
+  if (clientEncrypted && type === "password") {
+    value = "[encrypted]";
+  } else {
+    const existsEmail = async (v: string): Promise<boolean> => {
+      const found = await prisma.alias.findFirst({
+        where: { type: "email", value: v, isActive: true },
+      });
+      return found !== null;
+    };
+    value = await generateValueForType(
+      type as AliasType,
+      category as AliasCategory,
+      existsEmail
+    );
+  }
 
   const row = await prisma.alias.create({
     data: {
       userId,
       type: type as AliasType,
       value,
+      encryptedValue: clientEncrypted,
       category: category as AliasCategory,
       serviceName,
       serviceUrl,
@@ -316,24 +326,36 @@ aliasesRouter.post("/:id/rotate", async (req, res) => {
     data: { healthStatus: "quarantined", isActive: false },
   });
 
-  const existsEmail = async (value: string): Promise<boolean> => {
-    const found = await prisma.alias.findFirst({
-      where: { type: "email", value, isActive: true },
-    });
-    return found !== null;
-  };
+  const rotateBody = req.body as { encryptedValue?: string } | undefined;
+  const clientEncrypted =
+    typeof rotateBody?.encryptedValue === "string" &&
+    rotateBody.encryptedValue.length > 0
+      ? rotateBody.encryptedValue
+      : null;
 
-  const value = await generateValueForType(
-    existing.type,
-    existing.category,
-    existsEmail
-  );
+  let value: string;
+  if (clientEncrypted && existing.type === "password") {
+    value = "[encrypted]";
+  } else {
+    const existsEmail = async (v: string): Promise<boolean> => {
+      const found = await prisma.alias.findFirst({
+        where: { type: "email", value: v, isActive: true },
+      });
+      return found !== null;
+    };
+    value = await generateValueForType(
+      existing.type,
+      existing.category,
+      existsEmail
+    );
+  }
 
   const row = await prisma.alias.create({
     data: {
       userId,
       type: existing.type,
       value,
+      encryptedValue: clientEncrypted,
       category: existing.category,
       serviceName: existing.serviceName,
       serviceUrl: existing.serviceUrl,

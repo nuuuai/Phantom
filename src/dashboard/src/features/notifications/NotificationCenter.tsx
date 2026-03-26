@@ -6,6 +6,7 @@ import type { PhantomNotification } from "@phantom/shared";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { formatRelativeTime } from "@/lib/formatRelative.js";
 import { queryKeys } from "@/lib/queryKeys.js";
+import { useEscapeKey } from "@/hooks/useEscapeKey.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 
 const LAYER_COLORS: Record<string, string> = {
@@ -120,6 +121,7 @@ export function NotificationCenter() {
       if (!res.ok) throw new Error(res.error.message);
       return res.data;
     },
+    enabled: accessToken !== null,
     refetchInterval: 30_000,
   });
 
@@ -132,7 +134,7 @@ export function NotificationCenter() {
       if (!res.ok) throw new Error(res.error.message);
       return res.data;
     },
-    enabled: open,
+    enabled: open && accessToken !== null,
   });
 
   useEffect(() => {
@@ -140,9 +142,17 @@ export function NotificationCenter() {
     void phantomApi.notifications.seedDemo(accessToken);
   }, [open, accessToken]);
 
+  useEffect(() => {
+    if (!accessToken) setOpen(false);
+  }, [accessToken]);
+
   const markRead = useMutation({
-    mutationFn: (id: string) =>
-      phantomApi.notifications.markRead(accessToken, id),
+    mutationFn: (id: string) => {
+      if (!accessToken) {
+        return Promise.reject(new Error("signed_out"));
+      }
+      return phantomApi.notifications.markRead(accessToken, id);
+    },
     onSuccess: () => {
       void qc.invalidateQueries({
         queryKey: queryKeys.notifications(accessToken),
@@ -154,7 +164,12 @@ export function NotificationCenter() {
   });
 
   const markAllRead = useMutation({
-    mutationFn: () => phantomApi.notifications.markAllRead(accessToken),
+    mutationFn: () => {
+      if (!accessToken) {
+        return Promise.reject(new Error("signed_out"));
+      }
+      return phantomApi.notifications.markAllRead(accessToken);
+    },
     onSuccess: () => {
       void qc.invalidateQueries({
         queryKey: queryKeys.notifications(accessToken),
@@ -175,6 +190,8 @@ export function NotificationCenter() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
+  useEscapeKey(open, () => setOpen(false));
+
   const unread = countQuery.data?.unreadCount ?? 0;
   const items = listQuery.data?.items ?? [];
 
@@ -184,6 +201,9 @@ export function NotificationCenter() {
         type="button"
         onClick={() => setOpen((p) => !p)}
         className="flex cursor-pointer items-center justify-center rounded-md border border-[#2a2a34] bg-ph-raised p-2 transition-colors hover:border-ph-accent-border"
+        aria-controls="phantom-notification-panel"
+        aria-expanded={open}
+        aria-haspopup="dialog"
         aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ""}`}
       >
         <BellIcon unread={unread} />
@@ -192,10 +212,13 @@ export function NotificationCenter() {
       <AnimatePresence>
         {open && (
           <motion.div
+            id="phantom-notification-panel"
             initial={{ opacity: 0, y: 8, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.97 }}
             transition={{ duration: 0.18 }}
+            role="dialog"
+            aria-label="Notifications"
             className="absolute right-0 top-full z-50 mt-2 w-[380px] overflow-hidden rounded-lg border border-ph-border bg-ph-surface shadow-xl"
           >
             <div className="flex items-center justify-between border-b border-ph-border px-4 py-3">

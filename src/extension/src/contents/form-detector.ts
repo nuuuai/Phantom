@@ -52,7 +52,7 @@ function labelTextFor(el: HTMLInputElement): string {
 function classifyByLabel(el: HTMLInputElement): "email" | "username" | null {
   const text = labelTextFor(el);
   if (!text) return null;
-  if (/e[\-_]?mail/i.test(text)) return "email";
+  if (/e[-_]?mail/i.test(text)) return "email";
   if (/user\s?name|login/i.test(text)) return "username";
   return null;
 }
@@ -124,15 +124,18 @@ function createShieldIcon(field: DetectedField): HTMLDivElement {
   btn.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const payload: BackgroundMessage = { type: MESSAGE_GENERATE_ALIAS };
+    const payload: BackgroundMessage = {
+      type: MESSAGE_GENERATE_ALIAS,
+      fieldKind: field.kind,
+    };
     void chrome.runtime.sendMessage(payload).then((res: unknown) => {
       const result = res as
-        | { ok: true; alias: { type: string; value: string } }
+        | { ok: true; alias: { type: string; value: string }; plainValue?: string }
         | { ok: false; error: string }
         | undefined;
       if (!result?.ok) return;
-      if (!result) return;
-      field.element.value = result.alias.value;
+      const fillValue = result.plainValue ?? result.alias.value;
+      field.element.value = fillValue;
       field.element.dispatchEvent(new Event("input", { bubbles: true }));
       field.element.dispatchEvent(new Event("change", { bubbles: true }));
     });

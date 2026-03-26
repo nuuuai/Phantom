@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { shouldSkipDevBootstrap } from "@/lib/devBootstrap.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 
 type NavId =
@@ -60,6 +61,7 @@ const sections: readonly NavSection[] = [
 ];
 
 export function SidebarNav() {
+  const accessToken = useSessionStore((s) => s.accessToken);
   const darkWebAlerts = useSessionStore((s) => s.darkWebAlerts);
   const displayName = useSessionStore((s) => s.displayName);
   const planLabel = useSessionStore((s) => s.planLabel);
@@ -122,10 +124,18 @@ export function SidebarNav() {
           {initial}
         </div>
         <div className="truncate font-sans text-[13px] font-medium text-ph-text-primary">
-          {displayName}
+          {!accessToken && !shouldSkipDevBootstrap()
+            ? "Connecting…"
+            : !accessToken
+              ? "Signed out"
+              : displayName}
         </div>
         <div className="ml-auto font-sans text-[10px] font-semibold text-ph-accent">
-          {planLabel}
+          {!accessToken && !shouldSkipDevBootstrap()
+            ? "…"
+            : !accessToken
+              ? "—"
+              : planLabel}
         </div>
       </div>
     </div>
