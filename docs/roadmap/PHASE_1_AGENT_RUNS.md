@@ -133,3 +133,15 @@ For the rolling **% complete** model, see [`README.md`](./README.md) in this fol
 **Outcome:** Store/deploy docs aligned with repo; clear launch boundary for stakeholders; no new backends (Call Guard, SEE, SMTP, CSV).
 
 **External:** Unchanged (CWS, live Stripe, MX, legal, prod Twilio).
+
+---
+
+## Run 11 — Extension autofill hardening + Run 10 completion
+
+**Scope:** **`nativeInputValue`:** **`syncNativeInputAfterValueChange`** (native setter + **`InputEvent`** / **`change`** / **`blur`**) + unit tests; **`form-detector`** uses it for email/username/password shield fill; **password** fields — clear shield error when alias is encrypted but vault key missing; **popup** — **`aria-busy`** / **disabled** for Sign in / Sign out / Generate (and type toggles) while pending; **`useCallback`** deps include **`generateKind`**. **`@phantom/shared`:** dedicated **`normalizeClientError`** branch for **`broker_scan_config_invalid`** (default copy → **`DEPLOYMENT.md`**); **BrokersPage** operator suffix without duplicate DEPLOYMENT link. **Docs:** **`EMAIL_INBOUND.md`** / **`PHASE_1_FOUNDATION.md`** touched rows; **`EXTENSION_STORE_BUILD.md`** Run 11 status; **`CHROME_WEB_STORE_CHECKLIST`** Run 10–11 manifest note; **`CHANGELOG`** Unreleased.
+
+**Outcome:** Phase 1 extension form autofill matches React/Vue expectations; broker scan **503** config errors are legible without reading logs; stakeholder docs unchanged except Run 11 pointers.
+
+**Deferred / external:** Playwright E2E; live CWS; **`NOTIFICATIONS_EMAIL_ENABLED`** mailer — still not implemented in API.
+
+**External:** Unchanged (CWS, live Stripe, MX, legal, prod Twilio).

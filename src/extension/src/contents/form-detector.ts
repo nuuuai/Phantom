@@ -1,5 +1,5 @@
 import type { PlasmoCSConfig } from "plasmo";
-import { setNativeInputValue } from "../lib/nativeInputValue.js";
+import { syncNativeInputAfterValueChange } from "../lib/nativeInputValue.js";
 import {
   MESSAGE_FIELD_SCAN,
   MESSAGE_GENERATE_ALIAS,
@@ -185,7 +185,15 @@ function createShieldIcon(field: DetectedField): HTMLDivElement {
     void chrome.runtime.sendMessage(payload).then((res: unknown) => {
       btn.removeAttribute("aria-busy");
       const result = res as
-        | { ok: true; alias: { type: string; value: string }; plainValue?: string }
+        | {
+            ok: true;
+            alias: {
+              type: string;
+              value: string;
+              encryptedValue?: string | null;
+            };
+            plainValue?: string;
+          }
         | { ok: false; error: string }
         | undefined;
       if (!result) {
@@ -196,22 +204,18 @@ function createShieldIcon(field: DetectedField): HTMLDivElement {
         showError(result.error);
         return;
       }
-      const fillValue = result.plainValue ?? result.alias.value;
-      setNativeInputValue(field.element, fillValue);
-      try {
-        field.element.dispatchEvent(
-          new InputEvent("input", {
-            bubbles: true,
-            cancelable: true,
-            inputType: "insertReplacementText",
-            data: fillValue,
-          })
+      if (
+        field.kind === "password" &&
+        result.alias.encryptedValue &&
+        !result.plainValue
+      ) {
+        showError(
+          "Unlock your vault (sign in with the same password) to autofill passwords."
         );
-      } catch {
-        field.element.dispatchEvent(new Event("input", { bubbles: true }));
+        return;
       }
-      field.element.dispatchEvent(new Event("change", { bubbles: true }));
-      field.element.dispatchEvent(new Event("blur", { bubbles: true }));
+      const fillValue = result.plainValue ?? result.alias.value;
+      syncNativeInputAfterValueChange(field.element, fillValue);
     });
   });
 

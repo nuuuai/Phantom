@@ -5,11 +5,11 @@
 | Section | Avg (of deliverables in section) |
 |---------|-------------------------------------|
 | Month 1–2 infrastructure | **~72%** |
-| Month 2–3 extension + dashboard | **~91%** |
+| Month 2–3 extension + dashboard | **~92%** |
 | Month 3–4 phone + brokers | **~71%** |
 | Month 4–5 removal + notifications | **~65%** |
 | Month 5–6 launch + QA | **~75%** |
-| **Phase 1 (all deliverables)** | **~93%** |
+| **Phase 1 (all deliverables)** | **~94%** |
 
 ## Objective
 
@@ -55,14 +55,14 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - Email alias generation API — **58%** (generated `@phantom.id` aliases; **`POST /generate`** + **`assertCanCreateAlias`** + **`403`** **`tier_limit`**; no live MX in repo)
   - Email forwarding infrastructure (inbound → user's real email) — **50%** (signed **`POST /api/webhooks/email-inbound`**: **415** / **401** / **503**; **`X-Phantom-Request-Id`**; **256kb** body; **120/min** IP limit; alias length cap; **`providerMessageId`** + **phantom `v1` hash** dedupe; **unique** race → **`deduped: true`**; webhook tests + **`emailInbox.integration.test.ts`** (list **`meta`/`offset`**, clamp, idempotent read PATCH) + **`PATCH /user/me`** forward-email validation in CI; shared **`parseForwardToEmailPatchBody`**; optional **`User.forwardToEmail`**; worker/MX still external)
   - Alias inbox (view forwarded emails in dashboard) — **62%** (`AliasInboxMessage` **`isRead`** + **`GET /api/email-inbox`** **`q`** **`unread=1`**; **`PATCH /api/email-inbox/:id/read`**; dashboard **`/inbox`** retry on load error + mark read/unread + filter; **Settings** forward field client validation + API parity)
-  - SPF, DKIM, DMARC configuration for deliverability — **15%** (checklist: `docs/roadmap/EMAIL_INBOUND.md` aligned with code)
+  - SPF, DKIM, DMARC configuration for deliverability — **18%** (operator checklist + hands-on steps: `docs/roadmap/EMAIL_INBOUND.md`; no fake delivery; **`NOTIFICATIONS_EMAIL_ENABLED`** still not a mailer — see **`DEPLOYMENT.md`**)
 
 ### Month 2–3: Extension + Dashboard MVP
 
-- [ ] **Browser extension v1** — **78%**
-  - Form detection (heuristic: input types, labels, structure) — **65%** (email/password/username heuristics + label parsing)
-  - Alias generation popup (email + password) — **62%** (popup shows **API error strings** on sign-in / generate failure; **`aria` roles** on status/error; **`clientErrorFromApiFailure`** + **`normalizeClientError`** for network path)
-  - Autofill for generated aliases — **58%** (shield-click fills field value + dispatches **`InputEvent`** / **`change`**; password-type decrypt via vault key when present)
+- [ ] **Browser extension v1** — **80%**
+  - Form detection (heuristic: input types, labels, structure) — **66%** (email/password/username heuristics + label parsing + open shadow roots)
+  - Alias generation popup (email + password) — **64%** (popup shows **API error strings** on sign-in / generate failure; **`aria-busy`** / **disabled** while pending; **`clientErrorFromApiFailure`** + **`normalizeClientError`** for network path)
+  - Autofill for generated aliases — **72%** (**`syncNativeInputAfterValueChange`** — native setter + **`InputEvent`** / **`change`** / **`blur`**; encrypted password path + clear error when vault not unlocked; **`nativeInputValue`** unit tests)
   - Shadow DOM injected UI (shield icon on form fields) — **62%** (closed Shadow DOM; **fixed** viewport positioning + scroll/resize reposition)
   - Service worker for API communication — **81%** (login + alias generate + **`pushVaultSyncFromExtension`** after unlock — **dynamic import** of vault sync chunk; **`fetchAuth` / `refreshSession`**: offline → synthetic **`network_error`** (**503**); API **503** passthrough; **401** when refresh fails; **refresh** exponential backoff on **503/429** + **documented caps** in `apiClient.ts` + tests; **`onInstalled`**: clear invalid API URL override; **options** page: **`validateApiBaseUrlInput`** + loading/saved states; shared **`clientError`** mapping for responses)
   - Encrypted credential cache in IndexedDB — **58%** (DEK + session-wrapped vault key material; see extension **`vaultStorage`**)
@@ -101,7 +101,7 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - Vault dashboard page (card grid, search, filter, strength meter) — **78%** (**VaultPage** + **`useVaultSync`** + tier quota via **`userMe`**)
   - Vault generate modal (service name, category, one-click generate) — **78%** (**`VaultGenerateModal`**; free tier **25** password aliases per **`FREE_TIER_ALIAS_MAX`**; paid: **`assertCanCreateAlias`** + **`aliasUsage.max`** null — no false cap)
   - Import from 1Password, LastPass, Bitwarden (CSV import) — **0%**
-  - Autofill passwords via extension — **28%** (shield icon + decrypt path when vault unlocked)
+  - Autofill passwords via extension — **50%** (shield + **`syncNativeInputAfterValueChange`**; vault decrypt when **`encryptedValue`** present; honest message if vault locked on password field)
   - TOTP seed storage and auto-fill — **0%**
 
 ### Month 4–5: Data Broker Removal + Notifications

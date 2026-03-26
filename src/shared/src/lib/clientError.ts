@@ -81,9 +81,17 @@ export function normalizeClientError(err: ApiErrorBody): {
     };
   }
 
+  if (code === PHANTOM_API_ERROR_CODES.broker_scan_config_invalid) {
+    return {
+      code: "service_unavailable",
+      userMessage:
+        serverMsg ||
+        "Broker scan is unavailable: invalid BROKER_SCAN_* settings on the API. See docs/roadmap/DEPLOYMENT.md.",
+    };
+  }
+
   if (
     http === 503 ||
-    code === PHANTOM_API_ERROR_CODES.broker_scan_config_invalid ||
     code === PHANTOM_API_ERROR_CODES.service_unavailable ||
     code === PHANTOM_API_ERROR_CODES.overloaded ||
     code === PHANTOM_API_ERROR_CODES.phone_provider_unavailable

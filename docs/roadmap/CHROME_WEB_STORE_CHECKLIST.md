@@ -2,7 +2,7 @@
 
 External blockers: developer account, review time, policy compliance, and **legal/DNS** items outside the repo. Use this before submitting the MV3 extension.
 
-**Run 10 verification (repo):** `src/extension/package.json` → Plasmo **`manifest`** merges to **`src/extension/build/chrome-mv3-prod/manifest.json`** after **`npm run build:extension:store`**. Last pass: **`manifest_version` 3**; **`permissions`**: `storage`, `scripting` only; **`host_permissions`**: `https://*/*`, `http://localhost:8787/*`; **`content_scripts`**: `matches` **`<all_urls>`**, **`run_at`**: `document_idle`; **`background.service_worker`** present. No **`tabs`** / **`activeTab`**. Store listing must justify **`https://*/*`** (autofill on arbitrary HTTPS origins).
+**Run 10–11 verification (repo):** `src/extension/package.json` → Plasmo **`manifest`** merges to **`src/extension/build/chrome-mv3-prod/manifest.json`** after **`npm run build:extension:store`**. **Last pass:** **`manifest_version` 3**; **`permissions`**: `storage`, `scripting` only; **`host_permissions`**: `https://*/*`, `http://localhost:8787/*`; **`content_scripts`**: `matches` **`<all_urls>`**, **`run_at`**: `document_idle`; **`background.service_worker`** present. No **`tabs`** / **`activeTab`**. Store listing must justify **`https://*/*`** (autofill on arbitrary HTTPS origins). **Version** `0.1.0` in `src/extension/package.json` — bump per upload.
 
 ## External blockers (explicit)
 

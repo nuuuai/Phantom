@@ -66,6 +66,16 @@ describe("normalizeClientError", () => {
     expect(n.code).toBe("service_unavailable");
     expect(n.userMessage).toContain("BROKER_SCAN_CONCURRENCY");
   });
+
+  it("defaults broker_scan_config_invalid copy when server message is empty", () => {
+    const n = normalizeClientError({
+      code: PHANTOM_API_ERROR_CODES.broker_scan_config_invalid,
+      message: "",
+      httpStatus: 503,
+    });
+    expect(n.code).toBe("service_unavailable");
+    expect(n.userMessage).toContain("DEPLOYMENT");
+  });
 });
 
 describe("clientErrorFromApiFailure", () => {

@@ -2,6 +2,8 @@
 
 Phantom’s API **generates** `@phantom.id` aliases. **Receiving** mail requires DNS + an inbound provider; this repo includes a **signed webhook** and **dashboard inbox** so a worker can POST parsed mail into the API.
 
+**Ops alignment:** SPF / DKIM / DMARC below are **manual DNS steps** (no in-repo verifier). Outbound notification email remains **not implemented** until a real sender exists — **`NOTIFICATIONS_EMAIL_ENABLED`** is documented in **`DEPLOYMENT.md`** and is **not** read by application code today (same honesty as inbound: no fake delivery claims).
+
 ## DNS (authoritative for each domain)
 
 | Record | Purpose |

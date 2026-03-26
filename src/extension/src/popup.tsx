@@ -79,6 +79,10 @@ export function Popup() {
       });
   }, [email, password]);
 
+  const authBusy =
+    authStatus === "Signing in…" || authStatus === "Signing out…";
+  const generateBusy = status === "Generating…";
+
   const onGenerate = useCallback(() => {
     setStatus("Generating…");
     setPreview(null);
@@ -107,7 +111,7 @@ export function Popup() {
       .catch(() => {
         setStatus("Could not generate");
       });
-  }, []);
+  }, [generateKind]);
 
   return (
     <div className="popup">
@@ -138,7 +142,7 @@ export function Popup() {
           className="popup__secondary"
           onClick={onLogin}
           aria-busy={authStatus === "Signing in…"}
-          disabled={authStatus === "Signing in…" || authStatus === "Signing out…"}
+          disabled={authBusy || generateBusy}
         >
           Sign in
         </button>
@@ -147,7 +151,7 @@ export function Popup() {
           className="popup__secondary"
           onClick={onLogout}
           aria-busy={authStatus === "Signing out…"}
-          disabled={authStatus === "Signing in…" || authStatus === "Signing out…"}
+          disabled={authBusy || generateBusy}
         >
           Sign out
         </button>
@@ -184,6 +188,7 @@ export function Popup() {
             generateKind === "email" ? "popup__action" : "popup__secondary"
           }
           onClick={() => setGenerateKind("email")}
+          disabled={authBusy || generateBusy}
         >
           Email
         </button>
@@ -193,6 +198,7 @@ export function Popup() {
             generateKind === "password" ? "popup__action" : "popup__secondary"
           }
           onClick={() => setGenerateKind("password")}
+          disabled={authBusy || generateBusy}
         >
           Password
         </button>
@@ -201,8 +207,8 @@ export function Popup() {
         type="button"
         className="popup__action"
         onClick={onGenerate}
-        aria-busy={status === "Generating…"}
-        disabled={status === "Generating…"}
+        aria-busy={generateBusy}
+        disabled={authBusy || generateBusy}
       >
         Generate alias
       </button>

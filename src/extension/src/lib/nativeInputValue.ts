@@ -13,3 +13,28 @@ export function setNativeInputValue(el: HTMLInputElement, value: string): void {
     el.value = value;
   }
 }
+
+/**
+ * After setting the value, dispatches `input` (prefer `InputEvent`), `change`,
+ * and `blur` so SPAs with controlled inputs sync (React/Vue).
+ */
+export function syncNativeInputAfterValueChange(
+  el: HTMLInputElement,
+  value: string
+): void {
+  setNativeInputValue(el, value);
+  try {
+    el.dispatchEvent(
+      new InputEvent("input", {
+        bubbles: true,
+        cancelable: true,
+        inputType: "insertReplacementText",
+        data: value,
+      })
+    );
+  } catch {
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+  el.dispatchEvent(new Event("change", { bubbles: true }));
+  el.dispatchEvent(new Event("blur", { bubbles: true }));
+}

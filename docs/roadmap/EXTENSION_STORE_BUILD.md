@@ -85,12 +85,12 @@ Bump `version` in `src/extension/package.json` before each store submission (Chr
 - **Output directory:** **`src/extension/build/chrome-mv3-prod/`** (zip **contents** of this folder for Chrome Web Store upload — **`manifest.json`** at archive root).
 - **Dev builds** use **`chrome-mv3-dev/`** — never upload to the store.
 
-## Run 12 status (CWS packaging sprint)
+## Run 11 status (autofill + Run 10 closeout)
 
 | Status | Items |
 |--------|--------|
-| **Shipped (repo)** | Root **`npm run build:extension:store`** → **`src/extension/build/chrome-mv3-prod/`**; MV3 **`permissions`**: `storage`, `scripting` only; **`host_permissions`** documented in checklist; **options** page for API origin + validation; **`onInstalled`** clears bad override on update; **`0.1.0`** extension version. |
-| **Blocked (external)** | Chrome Web Store developer account, **hosted privacy policy URL**, listing screenshots, final marketing copy. |
+| **Shipped (repo)** | **`syncNativeInputAfterValueChange`** in **`nativeInputValue.ts`** + tests; form-detector uses unified autofill events; vault-locked password shield error; popup **`aria-busy`** / **disabled** + **`generateKind`** in **`useCallback`** deps; **`normalizeClientError`** default for **`broker_scan_config_invalid`**; **BrokersPage** copy aligned. |
+| **Blocked (external)** | Chrome Web Store developer account, **hosted privacy policy URL**, listing screenshots — unchanged. |
 | **Next sprint** | Optional: stricter content-script **`matches`** if product adds an allowlist; optional Playwright smoke; strip **`http://localhost:8787/*`** from a production-only manifest variant if required by policy. |
 
 ## Pre-submit checks
