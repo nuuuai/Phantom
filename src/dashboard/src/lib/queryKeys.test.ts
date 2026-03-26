@@ -5,6 +5,7 @@ import {
   brokerScanResultsAll,
   dashboardOverviewAll,
   emailInboxAll,
+  notificationPrefsAll,
   queryKeys,
   vaultAll,
 } from "./queryKeys.js";
@@ -27,6 +28,11 @@ describe("queryKeys", () => {
 
   it("vaultList and notificationPrefs are scoped", () => {
     expect(queryKeys.vaultList("tok", "all")[0]).toBe("vault");
+    expect(queryKeys.notificationPrefs("tok")[0]).toBe("notification-prefs");
+  });
+
+  it("notificationPrefsAll prefix", () => {
+    expect(notificationPrefsAll[0]).toBe("notification-prefs");
     expect(queryKeys.notificationPrefs("tok")[0]).toBe("notification-prefs");
   });
 

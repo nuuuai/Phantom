@@ -1,5 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { DASHBOARD_PATHS } from "@/lib/dashboardRoutes.js";
+import { prefetchDashboardRoute } from "@/lib/routePrefetch.js";
+import { useSessionStore } from "@/stores/useSessionStore.js";
 
 const LINKS = [
   { label: "Overview", to: DASHBOARD_PATHS.home, end: true },
@@ -15,6 +17,7 @@ const LINKS = [
  * Horizontal scroll strip for small viewports (sidebar is hidden below `md`).
  */
 export function MobileNavBar() {
+  const accessToken = useSessionStore((s) => s.accessToken);
   return (
     <nav
       className="shrink-0 border-b border-ph-border bg-ph-surface md:hidden"
@@ -26,6 +29,8 @@ export function MobileNavBar() {
             key={item.to}
             to={item.to}
             end={item.end}
+            onMouseEnter={() => prefetchDashboardRoute(item.to, accessToken)}
+            onFocus={() => prefetchDashboardRoute(item.to, accessToken)}
             className={({ isActive }) =>
               [
                 "shrink-0 rounded-md px-3 py-2 font-sans text-[12px] font-medium whitespace-nowrap transition-colors",

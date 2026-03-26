@@ -22,6 +22,7 @@ import {
   vaultAll,
   vaultSyncAll,
 } from "@/lib/queryKeys.js";
+import { STALE } from "@/lib/queryStaleTimes.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { VaultGenerateModal } from "./VaultGenerateModal.js";
@@ -90,12 +91,13 @@ function VaultPageInner() {
 
   const listQuery = useQuery({
     queryKey: queryKeys.vaultList(accessToken, "all"),
-    queryFn: async () => {
-      const res = await phantomApi.aliases.list(accessToken, {});
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.aliases.list(accessToken, {}, { signal });
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data.items.filter((a) => a.type === "password");
     },
     enabled: accessToken !== null,
+    staleTime: STALE.aliasesList,
   });
 
   const vaultSyncQuery = useVaultSync(
@@ -108,12 +110,13 @@ function VaultPageInner() {
 
   const userMeQuery = useQuery({
     queryKey: queryKeys.userMe(accessToken),
-    queryFn: async () => {
-      const res = await phantomApi.user.me(accessToken);
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.user.me(accessToken, { signal });
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: accessToken !== null,
+    staleTime: STALE.userMe,
   });
 
   const rotateMutation = useMutation({

@@ -5,11 +5,11 @@
 | Section | Avg (of deliverables in section) |
 |---------|-------------------------------------|
 | Month 1–2 infrastructure | **~68%** |
-| Month 2–3 extension + dashboard | **~85%** |
+| Month 2–3 extension + dashboard | **~88%** |
 | Month 3–4 phone + brokers | **~71%** |
-| Month 4–5 removal + notifications | **~62%** |
-| Month 5–6 launch + QA | **~69%** |
-| **Phase 1 (all deliverables)** | **~87%** |
+| Month 4–5 removal + notifications | **~65%** |
+| Month 5–6 launch + QA | **~70%** |
+| **Phase 1 (all deliverables)** | **~89%** |
 
 ## Objective
 
@@ -19,8 +19,8 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 | Platform | Status | Progress |
 |----------|--------|----------|
-| Chrome Extension | **BUILD** — primary user interface | **~84%** |
-| Web Dashboard | **BUILD** — command center | **~85%** |
+| Chrome Extension | **BUILD** — primary user interface | **~85%** |
+| Web Dashboard | **BUILD** — command center | **~88%** |
 | Firefox/Safari Extension | Not started | **0%** |
 | Mobile Apps | Not started | **0%** |
 
@@ -64,16 +64,16 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - Alias generation popup (email + password) — **58%** (popup shows **API error strings** on sign-in / generate failure; **`clientErrorFromApiFailure`** + **`normalizeClientError`** for network path)
   - Autofill for generated aliases — **52%** (shield-click fills field value + dispatches events; password-type decrypt via vault key when present)
   - Shadow DOM injected UI (shield icon on form fields) — **55%** (closed Shadow DOM, positioned icon on each detected field)
-  - Service worker for API communication — **80%** (login + alias generate + **`pushVaultSyncFromExtension`** after unlock; **`fetchAuth` / `refreshSession`**: offline → synthetic **`network_error`** (**503**); API **503** passthrough; **401** when refresh fails; **refresh** exponential backoff on **503/429** + **documented caps** in `apiClient.ts` + tests; **`onInstalled`**: clear invalid API URL override; **options** page: **`validateApiBaseUrlInput`** + loading/saved states; shared **`clientError`** mapping for responses)
+  - Service worker for API communication — **81%** (login + alias generate + **`pushVaultSyncFromExtension`** after unlock — **dynamic import** of vault sync chunk; **`fetchAuth` / `refreshSession`**: offline → synthetic **`network_error`** (**503**); API **503** passthrough; **401** when refresh fails; **refresh** exponential backoff on **503/429** + **documented caps** in `apiClient.ts` + tests; **`onInstalled`**: clear invalid API URL override; **options** page: **`validateApiBaseUrlInput`** + loading/saved states; shared **`clientError`** mapping for responses)
   - Encrypted credential cache in IndexedDB — **58%** (DEK + session-wrapped vault key material; see extension **`vaultStorage`**)
 
-- [ ] **Web dashboard v1** — **85%**
-  - Login / account management — **54%** (dev login path; **`PATCH /api/user/me`** for `forwardToEmail` with validation; bootstrap errors use **`clientErrorFromApiFailure`**)
+- [ ] **Web dashboard v1** — **88%**
+  - Login / account management — **58%** (dev login path; **`PATCH /api/user/me`** for `forwardToEmail` with validation; **`/settings`** shows **email** + **displayName** + tier from **`GET /api/user/me`**; bootstrap errors use **`clientErrorFromApiFailure`**)
   - Alias list view (all generated aliases with metadata) — **68%** (loading / empty / **Retry** on **normalized** error; category + health filters)
   - Alias detail view (service, creation date, health status, forwarding rules) — **48%** (**phone:** adapter banner + edit forward)
   - Create alias manually (not just from extension) — **62%** (**`GenerateAliasModal`**: per-type **quota** copy on type tiles from **`GET /api/user/me`**)
   - Delete / disable alias — **54%** (**DELETE** soft-deactivate; list/detail invalidate)
-  - Basic settings (forwarding preferences, notification preferences) — **68%** (account + quotas + **forward-to email**; notification prefs + **PUT** validation + **prefs load / save** errors visible; desktop notification permission UX)
+  - Basic settings (forwarding preferences, notification preferences) — **76%** (single **Settings** hub: **`GET /api/user/me`** + parallel **`GET /api/notifications/preferences`**; **forward-to** client + API **400** parity; quotas + **Aliases** / **Vault** links; **Billing** + **Upgrade** CTA; prefs toggles + **invalidate** after **PUT**; per-section **Retry**; desktop notification copy **default**/**granted**/**denied**; **Danger zone** sign-out + query clear — no delete-account API in Phase 1)
   - Notification center (bell icon, unread count, mark read) — **72%** (TopBar placement; UI + API + demo seeding; list **loading** + **mark-all** / row errors; **`linkTo`** routes are in-app paths)
 
 ### Month 3–4: Phone Aliases + Data Broker Scanning
@@ -113,11 +113,11 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - Verification re-scan 7–30 days after submission — **35%** (read-path simulation ticks)
   - Dashboard: removal status per broker — **66%** (**DIY** opt-out links + notes; free **Upgrade · Pro queue** vs paid queue labels; **`canRequestRemoval`** + **`GET /summary`**; **status legend** on pre-scan + results)
 
-- [ ] **Notification system** — **78%**
+- [ ] **Notification system** — **80%**
   - Desktop notifications (browser notification API) — **72%** (Settings → **Enable** permission; **NotificationCenter** fires **`Notification`** only when **unread count increases** vs prior poll and permission is **granted** — not on every **30s** poll)
   - Email notifications (breach alerts, removal confirmations) — **12%** (no API sender; **`NOTIFICATIONS_EMAIL_ENABLED`** stub in **`DEPLOYMENT.md`** / **`EMAIL_INBOUND.md`**; no delivery claims without SMTP)
   - Dashboard notification center (bell icon, unread count) — **82%** (API + TopBar bell + dropdown + loading/empty/error + mark read/all; **`POST /seed-demo`** **403** in **`NODE_ENV=production`**)
-  - Notification preferences (per-category) — **82%** (**GET/PUT `/api/notifications/preferences`**; **`enabled` boolean validation**; Settings toggles + errors; **`notificationCategoryFilter`**: disabled categories **hidden** from list/count/read-all — rows remain in DB; writers documented in **`notifications.ts`**)
+  - Notification preferences (per-category) — **84%** (**GET/PUT `/api/notifications/preferences`**; **`enabled` boolean validation**; Settings toggles + errors + **saved** feedback; **`notificationCategoryFilter`**: disabled categories **hidden** from list/count/read-all — rows remain in DB; writers documented in **`notifications.ts`**)
   - Notification model (Prisma schema, migration, priority/layer/category) — **85%**
   - Tests — **75%** (**`notificationCategoryFilter`** unit; **`notifications.integration.test.ts`**: prefs filter + seed **403** + validation **400** when Postgres in CI)
 
@@ -166,6 +166,12 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 | **QA** | Playwright E2E not wired; **manual** pre-launch list in `QA_MANUAL.md`; load / security audit external. |
 | **Store / legal** | CWS account + submission (`CHROME_WEB_STORE_CHECKLIST.md`); hosted privacy policy; ToS legal review. |
 
+## Phase 1 exit criteria (repository vs external)
+
+**In repo (engineering “green”):** CI order matches **`DEPLOYMENT.md` § CI** and **`.github/workflows/ci.yml`**; integration tests listed in **`QA_MANUAL.md`** run when **`DATABASE_URL`** points at a real Postgres (Actions job); store zip path **`src/extension/build/chrome-mv3-prod/`** per **`EXTENSION_STORE_BUILD.md`**; broker removal remains **simulated** per **`BROKER_REMOVAL_QUEUE.md`**; notification prefs + bell honor **`notificationCategoryFilter`**; **`NOTIFICATIONS_EMAIL_ENABLED`** is documented in **`.env.example`** / **`DEPLOYMENT.md`** but **not** read by API code (no false delivery claims).
+
+**External (not faked in %):** live **Stripe** keys + public HTTPS webhook URL; **DNS/MX** + inbound worker; **Chrome Web Store** listing + review; **hosted privacy policy** URL; **ToS** legal review — see **Dependencies** below.
+
 ## Success Metrics (End of Phase 1)
 
 | Metric | Target | Progress to target |
@@ -195,7 +201,9 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 | Dependency | Progress |
 |------------|----------|
 | Custom email domains registered and configured | **0%** (DNS/MX checklist + webhook contract in `docs/roadmap/EMAIL_INBOUND.md`) |
-| Chrome Web Store listing + review | **52%** (checklists + permissions justification + listing copy draft + **`QA_MANUAL.md`** + prod **`chrome-mv3-prod`** zip path; **external:** CWS account + hosted privacy policy URL) |
+| Chrome Web Store listing + review | **54%** (checklists + **`npm run build:extension:store`** + prod **`chrome-mv3-prod`** zip path + **`QA_MANUAL.md`**; **external:** CWS developer account + hosted privacy policy URL + submission) |
+| **Live Stripe** (secret key, webhook signing secret, Dashboard webhook URL on public HTTPS) | **0%** (ops — test keys + CI mocks only in repo) |
+| **Hosted privacy policy** URL (required for CWS + trust) | **0%** (legal/ops) |
 | VoIP provider partnership signed | **0%** |
 | AWS infrastructure provisioned | **0%** |
 | Chrome Web Store developer account | **0%** |
@@ -205,7 +213,21 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 Engineering “done” vs a **first public beta** differ: the items below include external work and nice-to-haves.
 
-- **External / ops:** Live **MX + worker** posting to the inbound webhook; **HTTPS** API + dashboard; **live Stripe** keys + webhook URL; **Chrome Web Store** listing; hosted **privacy policy**; **ToS** legal review.
-- **Product gaps:** Community **threat feed**; polished **onboarding**; **CSV** password import; **Playwright** E2E; **load** and **security** audits (typically external).
-- **Telephony:** Real **Twilio Number API** + PSTN/SMS (see `PHONE_INTEGRATION.md`).
-- **Brokers:** Real **opt-out automation** (not simulated); periodic **URL** verification.
+### Blocked (external; owner)
+
+| Item | Dependency |
+|------|------------|
+| Public payments | Live **Stripe** + HTTPS **`POST /api/webhooks/stripe`** endpoint |
+| Inbound mail | **DNS/MX** + worker → **`POST /api/webhooks/email-inbound`** |
+| Extension distribution | **CWS** account + listing + **hosted privacy policy** URL |
+| Telephony | **Twilio** (or partner) production numbers — see **`PHONE_INTEGRATION.md`** |
+
+### Deferred (Phase 1 policy)
+
+| Item | Reason |
+|------|--------|
+| Playwright E2E (extension + dashboard) | Deferred — manual **`QA_MANUAL.md`** + CI integration suites cover API paths |
+| Full **CSV** password import | Out of scope for Phase 1 deliverables |
+| **Community threat feed** | **0%** in deliverables; not started |
+
+**Nice-to-haves / later:** Polished **onboarding** beyond current 7-step modal; **load** and **security** audits (often external). **Brokers:** real **opt-out automation** (not simulated); periodic catalog **URL** verification.

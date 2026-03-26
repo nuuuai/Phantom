@@ -47,6 +47,8 @@ Full AI autonomy: autonomous alias rotation, breach auto-response, monthly expos
 | iOS App | FINAL | Phase 4 | Companion app after core is proven |
 | Android App | FINAL | Phase 4 | Companion app after core is proven |
 
+For local development and production deployment (environment variables, health checks, CI command order), see **[`docs/roadmap/DEPLOYMENT.md`](roadmap/DEPLOYMENT.md)**.
+
 ## Ecosystem
 
 Phantom is the third pillar of a unified ecosystem:

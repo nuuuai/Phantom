@@ -8,6 +8,7 @@ import { WeeklyScamsChart } from "./WeeklyScamsChart.js";
 import { DashboardGettingStarted } from "./DashboardGettingStarted.js";
 import { shouldSkipDevBootstrap } from "@/lib/devBootstrap.js";
 import { queryKeys } from "@/lib/queryKeys.js";
+import { STALE } from "@/lib/queryStaleTimes.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 
@@ -17,12 +18,15 @@ export function DashboardPage() {
 
   const overviewQuery = useQuery({
     queryKey: queryKeys.dashboardOverview(accessToken),
-    queryFn: async () => {
-      const res = await phantomApi.dashboard.overview(accessToken ?? undefined);
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.dashboard.overview(accessToken ?? undefined, {
+        signal,
+      });
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: accessToken !== null,
+    staleTime: STALE.dashboardOverview,
   });
 
   if (!accessToken) {

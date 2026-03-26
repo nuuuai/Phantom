@@ -15,7 +15,7 @@ External blockers: developer account, review time, policy compliance, and **lega
 ## Account & packaging
 
 - [ ] Chrome Web Store developer account registered (one-time fee).
-- [ ] Extension built for production per [EXTENSION_STORE_BUILD.md](./EXTENSION_STORE_BUILD.md) (`chrome-mv3-prod`) with version bumped in `src/extension/package.json`.
+- [ ] Extension built for production per [EXTENSION_STORE_BUILD.md](./EXTENSION_STORE_BUILD.md): from repo root run **`npm run build:extension:store`** (see root `package.json` — builds shared + extension only). Output: **`src/extension/build/chrome-mv3-prod/`** with version bumped in `src/extension/package.json`.
 - [ ] Confirm `src/extension/build/chrome-mv3-prod/manifest.json` exists after build; zip **contents** of that folder (not the repo root).
 - [ ] Icons and store listing assets (128×128 minimum; screenshots of core flows).
 - [ ] Privacy policy URL hosted and referenced in the listing (must match data practices).

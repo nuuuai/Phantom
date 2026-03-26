@@ -1,9 +1,12 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { QUICK_ACTIONS } from "@/lib/dashboardRoutes.js";
+import { prefetchDashboardRoute } from "@/lib/routePrefetch.js";
+import { useSessionStore } from "@/stores/useSessionStore.js";
 
 export function QuickActionsGrid() {
   const navigate = useNavigate();
+  const accessToken = useSessionStore((s) => s.accessToken);
 
   return (
     <motion.section
@@ -21,6 +24,8 @@ export function QuickActionsGrid() {
           <button
             key={a.label}
             type="button"
+            onMouseEnter={() => prefetchDashboardRoute(a.to, accessToken)}
+            onFocus={() => prefetchDashboardRoute(a.to, accessToken)}
             onClick={() => void navigate(a.to)}
             className="cursor-pointer rounded-lg border px-3 py-2.5 text-center font-sans text-xs font-medium transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ph-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-ph-surface"
             style={{

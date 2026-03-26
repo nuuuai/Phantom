@@ -1,11 +1,76 @@
 import { clientErrorFromApiFailure, getQueryErrorMessage } from "@phantom/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
+import type { AliasInboxItem } from "@phantom/shared";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { formatRelativeTime } from "@/lib/formatRelative.js";
 import { emailInboxAll, queryKeys } from "@/lib/queryKeys.js";
+import { STALE } from "@/lib/queryStaleTimes.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
+
+const InboxMessageRow = memo(function InboxMessageRow({
+  m,
+  markBusy,
+  onToggleRead,
+}: {
+  m: AliasInboxItem;
+  markBusy: boolean;
+  onToggleRead: (id: string, isRead: boolean) => void;
+}) {
+  return (
+    <li className="px-5 py-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <span className="flex flex-wrap items-center gap-2 font-sans text-sm font-medium text-ph-text-primary">
+          {!m.isRead && (
+            <span
+              className="rounded bg-ph-accent/15 px-1.5 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-ph-accent"
+              aria-label="Unread"
+            >
+              New
+            </span>
+          )}
+          {m.subject}
+        </span>
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-[10px] text-ph-text-muted">
+            {formatRelativeTime(m.receivedAt)}
+          </span>
+          {!m.isRead ? (
+            <button
+              type="button"
+              disabled={markBusy}
+              onClick={() => onToggleRead(m.id, true)}
+              className="rounded border border-ph-border bg-ph-raised px-2 py-0.5 font-sans text-[11px] text-ph-text-secondary hover:bg-ph-surface disabled:opacity-50"
+            >
+              Mark read
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={markBusy}
+              onClick={() => onToggleRead(m.id, false)}
+              className="rounded border border-transparent px-2 py-0.5 font-sans text-[11px] text-ph-text-muted hover:border-ph-border hover:text-ph-text-secondary disabled:opacity-50"
+            >
+              Mark unread
+            </button>
+          )}
+        </span>
+      </div>
+      <div className="mt-1 font-mono text-[11px] text-ph-text-secondary">
+        To {m.aliasAddress}
+      </div>
+      <div className="mt-1 font-sans text-xs text-ph-text-tertiary">
+        From {m.fromAddress}
+      </div>
+      {m.snippet.length > 0 && (
+        <p className="mt-2 line-clamp-3 font-sans text-sm text-ph-text-secondary">
+          {m.snippet}
+        </p>
+      )}
+    </li>
+  );
+});
 
 export function EmailInboxPage() {
   const accessToken = useSessionStore((s) => s.accessToken);
@@ -21,16 +86,21 @@ export function EmailInboxPage() {
 
   const inboxQuery = useQuery({
     queryKey: queryKeys.emailInbox(accessToken, debouncedQ, unreadOnly),
-    queryFn: async () => {
-      const res = await phantomApi.emailInbox.list(accessToken, {
-        limit: 60,
-        q: debouncedQ || undefined,
-        unread: unreadOnly || undefined,
-      });
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.emailInbox.list(
+        accessToken,
+        {
+          limit: 60,
+          q: debouncedQ || undefined,
+          unread: unreadOnly || undefined,
+        },
+        { signal }
+      );
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data.items;
     },
     enabled: accessToken !== null,
+    staleTime: STALE.emailInbox,
   });
 
   const markReadMutation = useMutation({
@@ -50,6 +120,13 @@ export function EmailInboxPage() {
       });
     },
   });
+
+  const onToggleRead = useCallback(
+    (id: string, isRead: boolean) => {
+      markReadMutation.mutate({ id, isRead });
+    },
+    [markReadMutation]
+  );
 
   if (!accessToken) {
     return <SessionGateMessage />;
@@ -131,60 +208,12 @@ export function EmailInboxPage() {
       {inboxQuery.data && inboxQuery.data.length > 0 && (
         <ul className="mt-6 divide-y divide-ph-border rounded-xl border border-ph-border bg-ph-surface">
           {inboxQuery.data.map((m) => (
-            <li key={m.id} className="px-5 py-4">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="flex flex-wrap items-center gap-2 font-sans text-sm font-medium text-ph-text-primary">
-                  {!m.isRead && (
-                    <span
-                      className="rounded bg-ph-accent/15 px-1.5 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-ph-accent"
-                      aria-label="Unread"
-                    >
-                      New
-                    </span>
-                  )}
-                  {m.subject}
-                </span>
-                <span className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-[10px] text-ph-text-muted">
-                    {formatRelativeTime(m.receivedAt)}
-                  </span>
-                  {!m.isRead ? (
-                    <button
-                      type="button"
-                      disabled={markReadMutation.isPending}
-                      onClick={() =>
-                        markReadMutation.mutate({ id: m.id, isRead: true })
-                      }
-                      className="rounded border border-ph-border bg-ph-raised px-2 py-0.5 font-sans text-[11px] text-ph-text-secondary hover:bg-ph-surface disabled:opacity-50"
-                    >
-                      Mark read
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={markReadMutation.isPending}
-                      onClick={() =>
-                        markReadMutation.mutate({ id: m.id, isRead: false })
-                      }
-                      className="rounded border border-transparent px-2 py-0.5 font-sans text-[11px] text-ph-text-muted hover:border-ph-border hover:text-ph-text-secondary disabled:opacity-50"
-                    >
-                      Mark unread
-                    </button>
-                  )}
-                </span>
-              </div>
-              <div className="mt-1 font-mono text-[11px] text-ph-text-secondary">
-                To {m.aliasAddress}
-              </div>
-              <div className="mt-1 font-sans text-xs text-ph-text-tertiary">
-                From {m.fromAddress}
-              </div>
-              {m.snippet.length > 0 && (
-                <p className="mt-2 line-clamp-3 font-sans text-sm text-ph-text-secondary">
-                  {m.snippet}
-                </p>
-              )}
-            </li>
+            <InboxMessageRow
+              key={m.id}
+              m={m}
+              markBusy={markReadMutation.isPending}
+              onToggleRead={onToggleRead}
+            />
           ))}
         </ul>
       )}

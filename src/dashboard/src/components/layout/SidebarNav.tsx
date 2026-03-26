@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { shouldSkipDevBootstrap } from "@/lib/devBootstrap.js";
+import { prefetchDashboardRoute } from "@/lib/routePrefetch.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 
 type NavId =
@@ -103,6 +104,10 @@ export function SidebarNav() {
                 key={item.id}
                 to={item.path}
                 end={item.path === "/"}
+                onMouseEnter={() =>
+                  prefetchDashboardRoute(item.path, accessToken)
+                }
+                onFocus={() => prefetchDashboardRoute(item.path, accessToken)}
                 className={({ isActive }) =>
                   [
                     "block cursor-pointer border-r-2 py-2 pl-6 pr-6 font-sans text-[13px] transition-colors duration-150",

@@ -31,7 +31,6 @@ import {
   persistVaultKeyHex,
 } from "./lib/vaultStorage";
 import { devLog } from "./lib/devLog.js";
-import { pushVaultSyncFromExtension } from "./lib/vaultSync.js";
 
 async function loginRequest(
   email: string,
@@ -178,15 +177,17 @@ chrome.runtime.onMessage.addListener(
             await initVaultKey(result.data.accessToken, message.password);
             const hex = await getVaultKeyHex();
             if (hex) {
-              void pushVaultSyncFromExtension(hex).then((r) => {
-                if (!r.ok) {
-                  const msg =
-                    r.error.length > 180
-                      ? `${r.error.slice(0, 180)}…`
-                      : r.error;
-                  devLog("vault sync push failed", msg);
-                }
-              });
+              void import("./lib/vaultSync.js").then(({ pushVaultSyncFromExtension }) =>
+                pushVaultSyncFromExtension(hex).then((r) => {
+                  if (!r.ok) {
+                    const msg =
+                      r.error.length > 180
+                        ? `${r.error.slice(0, 180)}…`
+                        : r.error;
+                    devLog("vault sync push failed", msg);
+                  }
+                })
+              );
             }
             sendResponse({ ok: true });
           } else {

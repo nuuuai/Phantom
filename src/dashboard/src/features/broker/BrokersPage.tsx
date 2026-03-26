@@ -11,6 +11,7 @@ import {
   dashboardOverviewAll,
   queryKeys,
 } from "@/lib/queryKeys.js";
+import { STALE } from "@/lib/queryStaleTimes.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 import {
   clientErrorFromApiFailure,
@@ -75,22 +76,24 @@ export function BrokersPage() {
 
   const summaryQuery = useQuery({
     queryKey: queryKeys.brokerScanSummary(accessToken),
-    queryFn: async () => {
-      const res = await phantomApi.brokerScan.summary(accessToken);
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.brokerScan.summary(accessToken, { signal });
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: accessToken !== null,
+    staleTime: STALE.brokerScanSummary,
   });
 
   const catalogQuery = useQuery({
     queryKey: queryKeys.brokerScanCatalog(accessToken),
-    queryFn: async () => {
-      const res = await phantomApi.brokerScan.catalog(accessToken);
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.brokerScan.catalog(accessToken, { signal });
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data.items;
     },
     enabled: accessToken !== null,
+    staleTime: STALE.brokerScanCatalog,
   });
 
   const resultsQuery = useQuery({
@@ -99,15 +102,20 @@ export function BrokersPage() {
       statusParam ?? "all",
       debouncedQ
     ),
-    queryFn: async () => {
-      const res = await phantomApi.brokerScan.results(accessToken, {
-        status: statusParam,
-        q: debouncedQ.length > 0 ? debouncedQ : undefined,
-      });
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.brokerScan.results(
+        accessToken,
+        {
+          status: statusParam,
+          q: debouncedQ.length > 0 ? debouncedQ : undefined,
+        },
+        { signal }
+      );
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data.items;
     },
     enabled: accessToken !== null && (summaryQuery.data?.totalScanned ?? 0) > 0,
+    staleTime: STALE.brokerScanResults,
   });
 
   const hasScan = (summaryQuery.data?.totalScanned ?? 0) > 0;

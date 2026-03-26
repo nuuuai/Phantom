@@ -73,7 +73,7 @@ Point load balancers / Kubernetes probes at these paths over HTTPS.
 | `TWILIO_ACCOUNT_SID` | If `PHONE_PROVIDER=twilio` | Non-empty **AC…** SID required for Twilio stub + dashboard “ready” state. If missing: **`GET /api/phone/provider`** → **503** `phone_provider_unavailable`; **`POST /api/aliases/generate`** / **`…/rotate`** (phone) → **503** same code. PSTN/SMS remain unwired in Phase 1. |
 | `TWILIO_AUTH_TOKEN` | Future | Reserved for real Twilio Number API / webhooks (not used in Phase 1 stub). |
 | `TWILIO_FROM_NUMBER` | Future | Reserved for outbound caller ID / SMS. |
-| `NOTIFICATIONS_EMAIL_ENABLED` | Optional (future) | **`0`** / unset = no outbound email (Phase 1 default). In-app **`/api/notifications`** + dashboard bell require **no** env. This flag is reserved for a future worker that emails digests; until then, **do not** assume SMTP delivery. See **`EMAIL_INBOUND.md`**. When a worker is added, set to **`1`** and supply provider keys via your secret store (SES/SMTP) — see **`QA_MANUAL.md`**. |
+| `NOTIFICATIONS_EMAIL_ENABLED` | Optional (future) | **`0`** / unset = no outbound email (Phase 1 default). **Not read by `src/api` application code today** — reserved for a future outbound worker; `.env.example` documents the placeholder so ops can plan. In-app **`/api/notifications`** + dashboard bell require **no** env. When a worker is added, set to **`1`** and supply provider keys — see **`EMAIL_INBOUND.md`** / **`QA_MANUAL.md`**. |
 
 **Vault (E2E):** `User.vaultSyncCiphertext` and `vaultSyncVersion` hold an **opaque** encrypted blob produced by the client (**PBKDF2** + **AES-GCM** per `AUTH_AND_VAULT_PHASE1.md`). The API never receives the vault passphrase or plaintext passwords; do not log ciphertext bodies. **`409`** on **`PUT /api/vault/sync`** means another client wrote first — clients must **GET**, merge, and retry.
 
@@ -96,6 +96,8 @@ The handler updates `User.tier`, `stripeCustomerId`, `stripeSubscriptionId`, and
 | Variable | Purpose |
 |----------|---------|
 | `VITE_API_URL` | Full API origin in production (e.g. `https://api.example.com`), or leave empty if the same host reverse-proxies `/api` |
+
+**Settings / account:** **`PATCH /api/user/me`** (`forwardToEmail`) requires no extra dashboard env — validation is server-side. Notification prefs use the same authenticated API as the bell (**`GET`/`PUT /api/notifications/preferences`**); no separate dashboard flag. Outbound email for alerts remains gated by **`NOTIFICATIONS_EMAIL_ENABLED`** on the API (see table above).
 
 Build: `npm run build -w @phantom/dashboard` — serve static assets over HTTPS.
 

@@ -6,7 +6,7 @@ import {
   importKeyHex,
 } from "@phantom/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Alias, AliasCategory, HealthStatus } from "@phantom/shared";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
@@ -25,7 +25,120 @@ import {
   queryKeys,
   vaultAll,
 } from "@/lib/queryKeys.js";
+import { STALE } from "@/lib/queryStaleTimes.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
+
+const AliasTableRow = memo(function AliasTableRow({
+  row,
+  valuePreview,
+  copiedId,
+  onToggleReveal,
+  onCopy,
+  onRotate,
+  onEdit,
+  onDeactivate,
+}: {
+  row: Alias;
+  valuePreview: string;
+  copiedId: string | null;
+  onToggleReveal: (id: string) => void;
+  onCopy: (id: string) => void;
+  onRotate: (id: string) => void;
+  onEdit: (alias: Alias) => void;
+  onDeactivate: (id: string) => void;
+}) {
+  return (
+    <tr className="border-b border-ph-borderSubtle last:border-0">
+      <td className="px-4 py-3 font-mono text-sm text-ph-text-secondary">
+        <div className="flex items-center gap-1.5">
+          <span title={row.type}>{typeGlyph(row.type)}</span>
+          {row.encryptedValue && (
+            <span className="rounded bg-[#6C3AED15] px-1 py-px font-mono text-[8px] uppercase text-ph-accent-light">
+              e2e
+            </span>
+          )}
+        </div>
+      </td>
+      <td className="max-w-xs px-4 py-3">
+        <button
+          type="button"
+          onClick={() => onToggleReveal(row.id)}
+          className="break-all text-left font-mono text-xs text-ph-text-primary hover:text-ph-accent-light"
+        >
+          {valuePreview}
+        </button>
+      </td>
+      <td className="max-w-[200px] px-4 py-3">
+        <div className="font-sans text-xs text-ph-text-secondary">
+          {row.serviceName ?? "—"}
+        </div>
+        {row.serviceUrl ? (
+          <div className="truncate font-mono text-[10px] text-ph-text-ghost">
+            {row.serviceUrl}
+          </div>
+        ) : null}
+      </td>
+      <td className="px-4 py-3">
+        <span
+          className={`inline-block rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide ${categoryBadgeClass(row.category)}`}
+        >
+          {categoryLabel(row.category)}
+        </span>
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span
+            className={`h-2 w-2 rounded-full ${healthDotClass(row.healthStatus)}`}
+          />
+          <span className="font-sans text-xs text-ph-text-tertiary">
+            {row.healthStatus}
+          </span>
+        </div>
+      </td>
+      <td className="whitespace-nowrap px-4 py-3 font-mono text-[11px] text-ph-text-ghost">
+        {formatRelativeTime(row.createdAt)}
+      </td>
+      <td className="px-4 py-3 text-right">
+        <div className="flex flex-wrap justify-end gap-1">
+          <Link
+            to={`/aliases/${row.id}`}
+            className="rounded px-2 py-1 font-sans text-[10px] text-ph-accent-light hover:bg-ph-raised"
+          >
+            View
+          </Link>
+          <button
+            type="button"
+            className="rounded px-2 py-1 font-sans text-[10px] text-ph-accent-light hover:bg-ph-raised"
+            onClick={() => onCopy(row.id)}
+          >
+            {copiedId === row.id ? "Copied" : "Copy"}
+          </button>
+          <button
+            type="button"
+            className="rounded px-2 py-1 font-sans text-[10px] text-ph-text-secondary hover:bg-ph-raised"
+            onClick={() => onRotate(row.id)}
+          >
+            Rotate
+          </button>
+          <button
+            type="button"
+            className="rounded px-2 py-1 font-sans text-[10px] text-ph-text-secondary hover:bg-ph-raised"
+            onClick={() => onEdit(row)}
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            className="rounded px-2 py-1 font-sans text-[10px] text-ph-danger hover:bg-ph-raised"
+            onClick={() => onDeactivate(row.id)}
+          >
+            Deactivate
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+});
 
 const CATEGORY_TABS: { id: "all" | AliasCategory; label: string }[] = [
   { id: "all", label: "All" },
@@ -86,22 +199,26 @@ export function AliasesPage() {
       categoryTab,
       healthFilter
     ),
-    queryFn: async () => {
-      const res = await phantomApi.aliases.list(accessToken, queryParams);
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.aliases.list(accessToken, queryParams, {
+        signal,
+      });
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data.items;
     },
     enabled: accessToken !== null,
+    staleTime: STALE.aliasesList,
   });
 
   const userMeQuery = useQuery({
     queryKey: queryKeys.userMe(accessToken),
-    queryFn: async () => {
-      const res = await phantomApi.user.me(accessToken);
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.user.me(accessToken, { signal });
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: accessToken !== null,
+    staleTime: STALE.userMe,
   });
 
   const rotateMutation = useMutation({
@@ -151,16 +268,50 @@ export function AliasesPage() {
     },
   });
 
-  const copyValue = (value: string, rowId: string) => {
+  const resolveValue = useDecryptedPasswords(listQuery.data, vaultKeyHex);
+
+  const copyValue = useCallback((value: string, rowId: string) => {
     void navigator.clipboard.writeText(value);
     setCopiedId(rowId);
-  };
+  }, [setCopiedId]);
 
-  const toggleReveal = (id: string) => {
+  const toggleReveal = useCallback((id: string) => {
     setRevealed((r) => ({ ...r, [id]: !r[id] }));
-  };
+  }, []);
 
-  const resolveValue = useDecryptedPasswords(listQuery.data, vaultKeyHex);
+  const onCopyRow = useCallback(
+    (id: string) => {
+      const row = listQuery.data?.find((a) => a.id === id);
+      if (row) copyValue(resolveValue(row), id);
+    },
+    [listQuery.data, resolveValue, copyValue]
+  );
+
+  const onRotateRow = useCallback(
+    (id: string) => {
+      if (
+        window.confirm(
+          "Rotate this alias? The current value will be quarantined."
+        )
+      ) {
+        rotateMutation.mutate(id);
+      }
+    },
+    [rotateMutation]
+  );
+
+  const onDeactivateRow = useCallback(
+    (id: string) => {
+      if (
+        window.confirm(
+          "Deactivate this alias? You can filter inactive later."
+        )
+      ) {
+        deactivateMutation.mutate(id);
+      }
+    },
+    [deactivateMutation]
+  );
 
   if (!accessToken) {
     return <SessionGateMessage />;
@@ -291,118 +442,21 @@ export function AliasesPage() {
             </thead>
             <tbody>
               {items.map((row) => (
-                <tr
+                <AliasTableRow
                   key={row.id}
-                  className="border-b border-ph-borderSubtle last:border-0"
-                >
-                  <td className="px-4 py-3 font-mono text-sm text-ph-text-secondary">
-                    <div className="flex items-center gap-1.5">
-                      <span title={row.type}>{typeGlyph(row.type)}</span>
-                      {row.encryptedValue && (
-                        <span className="rounded bg-[#6C3AED15] px-1 py-px font-mono text-[8px] uppercase text-ph-accent-light">
-                          e2e
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="max-w-xs px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => toggleReveal(row.id)}
-                      className="break-all text-left font-mono text-xs text-ph-text-primary hover:text-ph-accent-light"
-                    >
-                      {maskAliasValue(
-                        row.type,
-                        resolveValue(row),
-                        revealed[row.id] ?? false
-                      )}
-                    </button>
-                  </td>
-                  <td className="max-w-[200px] px-4 py-3">
-                    <div className="font-sans text-xs text-ph-text-secondary">
-                      {row.serviceName ?? "—"}
-                    </div>
-                    {row.serviceUrl ? (
-                      <div className="truncate font-mono text-[10px] text-ph-text-ghost">
-                        {row.serviceUrl}
-                      </div>
-                    ) : null}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-block rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide ${categoryBadgeClass(row.category)}`}
-                    >
-                      {categoryLabel(row.category)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`h-2 w-2 rounded-full ${healthDotClass(row.healthStatus)}`}
-                      />
-                      <span className="font-sans text-xs text-ph-text-tertiary">
-                        {row.healthStatus}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 font-mono text-[11px] text-ph-text-ghost">
-                    {formatRelativeTime(row.createdAt)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex flex-wrap justify-end gap-1">
-                      <Link
-                        to={`/aliases/${row.id}`}
-                        className="rounded px-2 py-1 font-sans text-[10px] text-ph-accent-light hover:bg-ph-raised"
-                      >
-                        View
-                      </Link>
-                      <button
-                        type="button"
-                        className="rounded px-2 py-1 font-sans text-[10px] text-ph-accent-light hover:bg-ph-raised"
-                        onClick={() => copyValue(resolveValue(row), row.id)}
-                      >
-                        {copiedId === row.id ? "Copied" : "Copy"}
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded px-2 py-1 font-sans text-[10px] text-ph-text-secondary hover:bg-ph-raised"
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              "Rotate this alias? The current value will be quarantined."
-                            )
-                          ) {
-                            rotateMutation.mutate(row.id);
-                          }
-                        }}
-                      >
-                        Rotate
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded px-2 py-1 font-sans text-[10px] text-ph-text-secondary hover:bg-ph-raised"
-                        onClick={() => setEditAlias(row)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded px-2 py-1 font-sans text-[10px] text-ph-danger hover:bg-ph-raised"
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              "Deactivate this alias? You can filter inactive later."
-                            )
-                          ) {
-                            deactivateMutation.mutate(row.id);
-                          }
-                        }}
-                      >
-                        Deactivate
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                  row={row}
+                  valuePreview={maskAliasValue(
+                    row.type,
+                    resolveValue(row),
+                    revealed[row.id] ?? false
+                  )}
+                  copiedId={copiedId}
+                  onToggleReveal={toggleReveal}
+                  onCopy={onCopyRow}
+                  onRotate={onRotateRow}
+                  onEdit={setEditAlias}
+                  onDeactivate={onDeactivateRow}
+                />
               ))}
             </tbody>
           </table>

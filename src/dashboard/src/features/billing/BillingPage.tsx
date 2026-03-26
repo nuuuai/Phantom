@@ -8,6 +8,7 @@ import { useSearchParams } from "react-router-dom";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { queryKeys } from "@/lib/queryKeys.js";
+import { STALE } from "@/lib/queryStaleTimes.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 
 export function BillingPage() {
@@ -23,22 +24,24 @@ export function BillingPage() {
 
   const billingQuery = useQuery({
     queryKey: queryKeys.billingStatus(accessToken),
-    queryFn: async () => {
-      const res = await phantomApi.billing.status(accessToken);
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.billing.status(accessToken, { signal });
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: accessToken !== null,
+    staleTime: STALE.billingStatus,
   });
 
   const meQuery = useQuery({
     queryKey: queryKeys.userMe(accessToken),
-    queryFn: async () => {
-      const res = await phantomApi.user.me(accessToken);
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.user.me(accessToken, { signal });
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: accessToken !== null,
+    staleTime: STALE.userMe,
   });
 
   const checkoutMutation = useMutation({

@@ -17,7 +17,7 @@ Same order as [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) and [
 
 | Area | What runs | Where |
 |------|-----------|--------|
-| Lint / unit tests | Full monorepo `npm run lint` + `npm run test` | `.github/workflows/ci.yml` |
+| Lint / unit tests | Full monorepo `npm run lint` + `npm run test` | `.github/workflows/ci.yml` (Postgres **16** + Redis **7** services; `DATABASE_URL` + `REDIS_URL` set in the workflow) |
 | API smoke | `GET /health/live`, `GET /health`, `POST /api/auth/login` validation, webhooks unconfigured paths | `src/api/src/app.test.ts` |
 | **Integration (requires Postgres)** | Auth register → login → `GET /api/user/me`; Stripe signed webhooks (`checkout.session.completed`, `customer.subscription.deleted`); **duplicate `event.id`** returns `{ duplicate: true }` without double-applying tier | `src/api/src/launch.integration.test.ts` |
 | **Integration (requires Postgres)** | **`POST /api/billing/sync-checkout-session`** with mocked Stripe retrieve → tier **paid** | `src/api/src/billingSyncSession.integration.test.ts` |
@@ -68,6 +68,7 @@ Run before Chrome Web Store submit and first production deploy.
 - [ ] **Broker summary parity:** **`GET /api/broker-scan/summary`** includes **`freeTierBrokerScanMaxPer24h`** (free tier) matching env **`FREE_TIER_BROKER_SCAN_MAX_PER_24H`**; pre-scan footnote on **`/brokers`** reflects the same cap (or “unlimited” when cap is off).
 - [ ] **Removal:** expand a **found** broker — **Self-service** link works; free tier shows **Upgrade · Pro queue** (no `403` until Checkout); paid tier can **Queue auto opt-out (sim)** / **Request removal** per **`removalMethod`**.
 - [ ] **Notifications:** TopBar **bell** opens dropdown — loading, empty, error, and **Mark all read**; unread badge matches **`GET /api/notifications/count`** (poll **30s**). **`GET/PUT /api/notifications/preferences`** — toggle a category off; confirm **`GET /api/notifications`** + **`/count`** omit that category (rows may still exist in DB); **read-all** only marks unread in **enabled** categories. **Settings → Desktop notifications:** request permission; when **granted**, a **desktop** notification appears only when **unread count increases** (not every poll). **`POST /api/notifications/seed-demo`** is **403** in **`NODE_ENV=production`** (demo seed is dev/staging only).
+- [ ] **Settings (`/settings`):** Account shows **email**, **display name**, **tier** / **plan** from **`GET /api/user/me`** (same quota math as elsewhere). **Forward-to email** — valid address or clear; **400** from API shows inline message (matches **`PATCH /api/user/me`** validation). **Alias & vault quotas** — per-type usage with links to **Aliases** / **Vault**; **Billing & subscription** + **Upgrade to Pro** (free tier) go to **`/billing`** or shared upgrade modal. **Notification preferences** — toggles disabled while saving; **Retry** on prefs load error; success flash after save; bell list/count refresh after **PUT**. **Desktop notifications** — copy reflects **default** / **granted** / **denied**. **Session** — **Sign out** clears cache and returns to overview (same as TopBar sign-out).
 
 ### Expected UX (HTTP status → copy)
 

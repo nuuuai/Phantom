@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { Outlet } from "react-router-dom";
+import { RouteFallback } from "./RouteFallback.js";
 import { MobileNavBar } from "./MobileNavBar.js";
 import { SidebarNav } from "./SidebarNav.js";
 import { TopBar } from "./TopBar.js";
@@ -21,7 +23,9 @@ export function MainLayout() {
           tabIndex={-1}
           className="flex-1 overflow-y-auto outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ph-accent/30"
         >
-          <Outlet />
+          <Suspense fallback={<RouteFallback />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

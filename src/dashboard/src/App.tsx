@@ -4,23 +4,41 @@ import {
   exportKeyHex,
 } from "@phantom/shared";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { lazy, useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout.js";
 import { AliasDetailPage } from "@/features/aliases/AliasDetailPage.js";
 import { AliasesPage } from "@/features/aliases/AliasesPage.js";
-import { BrokersPage } from "@/features/broker/BrokersPage.js";
 import { DashboardPage } from "@/features/dashboard/DashboardPage.js";
 import { OnboardingModal } from "@/features/onboarding/OnboardingModal.js";
 import { PlaceholderPage } from "@/features/placeholder/PlaceholderPage.js";
 import { SettingsPage } from "@/features/settings/SettingsPage.js";
-import { BillingPage } from "@/features/billing/BillingPage.js";
-import { EmailInboxPage } from "@/features/inbox/EmailInboxPage.js";
-import { VaultPage } from "@/features/vault/VaultPage.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { shouldSkipDevBootstrap } from "@/lib/devBootstrap.js";
 import { queryKeys } from "@/lib/queryKeys.js";
+import { STALE } from "@/lib/queryStaleTimes.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
+
+const BrokersPage = lazy(() =>
+  import("@/features/broker/BrokersPage.js").then((m) => ({
+    default: m.BrokersPage,
+  }))
+);
+const VaultPage = lazy(() =>
+  import("@/features/vault/VaultPage.js").then((m) => ({
+    default: m.VaultPage,
+  }))
+);
+const EmailInboxPage = lazy(() =>
+  import("@/features/inbox/EmailInboxPage.js").then((m) => ({
+    default: m.EmailInboxPage,
+  }))
+);
+const BillingPage = lazy(() =>
+  import("@/features/billing/BillingPage.js").then((m) => ({
+    default: m.BillingPage,
+  }))
+);
 
 function SessionBootstrap() {
   const accessToken = useSessionStore((s) => s.accessToken);
@@ -108,12 +126,15 @@ function SessionBootstrap() {
 
   const overviewQuery = useQuery({
     queryKey: queryKeys.dashboardOverview(accessToken),
-    queryFn: async () => {
-      const res = await phantomApi.dashboard.overview(accessToken ?? undefined);
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.dashboard.overview(accessToken ?? undefined, {
+        signal,
+      });
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: accessToken !== null,
+    staleTime: STALE.dashboardOverview,
   });
 
   useEffect(() => {

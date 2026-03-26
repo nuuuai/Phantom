@@ -27,6 +27,15 @@ Phantom operates across four capability layers:
 - **Web Dashboard** → command center for exposure reports, threat intel, alias lifecycle, family admin
 - **Mobile Apps** → companion apps added last once core platform is proven
 
+## How to run (developers)
+
+1. **Node 20+** — matches [CI](.github/workflows/ci.yml).
+2. Copy [`.env.example`](.env.example) → `.env` at the repo root; set **`DATABASE_URL`**, **`JWT_SECRET`** (or RS256 keys), and **`REDIS_URL`** when exercising refresh sessions / rate limits.
+3. Start **Postgres** and **Redis** (e.g. `docker compose up -d postgres redis` if your [`docker-compose.yml`](docker-compose.yml) defines them) or point **`DATABASE_URL`** / **`REDIS_URL`** at existing instances.
+4. From the repo root: **`npm install`** then **`npm run dev`** for API + dashboard + extension dev, or follow the exact migrate/seed/lint/test/build order in [`docs/roadmap/DEPLOYMENT.md`](docs/roadmap/DEPLOYMENT.md) **§ CI** for parity with GitHub Actions.
+
+On Windows, [`run.ps1`](run.ps1) wraps common dev commands (e.g. **`-DashboardOnly`** for UI-only).
+
 ## Tech Stack
 
 See [`docs/architecture/TECH_STACK.md`](docs/architecture/TECH_STACK.md) for full details.
@@ -89,6 +98,14 @@ High-level only — full detail lives in [`docs/roadmap/README.md`](docs/roadmap
 ## Local dashboard (dev)
 
 With the API on **`127.0.0.1:8787`** (default), the Vite dashboard serves at **`http://localhost:5173`** and proxies **`/api`** to the API. Use `npm run dev` (full stack) or `npm run dev -w @phantom/dashboard` (UI only); on Windows, **`run.ps1 -DashboardOnly`** starts the dashboard the same way.
+
+## Performance notes (dashboard)
+
+- React Query uses explicit **`staleTime`** per surface (for example inbox vs **`user/me`**); query keys include **`accessToken`**, and **`queryClient.clear()`** on sign-out avoids cross-session cache bleed.
+- **`useQuery`** passes **`AbortSignal`** into **`phantomApi`** fetches so rapid inbox/broker filter changes cancel superseded requests.
+- Heavy routes (**brokers**, **vault**, **inbox**, **billing**) are **`React.lazy`**-loaded with a **`Suspense`** skeleton; primary nav and **Quick actions** **prefetch** data on hover/focus.
+- Memoized list/table rows on aliases, inbox, and broker removal cells cut re-renders while parent state updates.
+- To compare bundle weight locally: `npm run build -w @phantom/dashboard` and inspect `src/dashboard/dist/assets`; use Chrome DevTools **Performance** for interaction timing in dev.
 
 ## CI (local parity with GitHub Actions)
 

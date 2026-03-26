@@ -22,6 +22,7 @@ import {
   queryKeys,
   vaultAll,
 } from "@/lib/queryKeys.js";
+import { STALE } from "@/lib/queryStaleTimes.js";
 import { useEscapeKey } from "@/hooks/useEscapeKey.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 import { Link } from "react-router-dom";
@@ -60,22 +61,24 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
 
   const userMeQuery = useQuery({
     queryKey: queryKeys.userMe(accessToken),
-    queryFn: async () => {
-      const res = await phantomApi.user.me(accessToken);
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.user.me(accessToken, { signal });
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: Boolean(open && accessToken),
+    staleTime: STALE.userMe,
   });
 
   const phoneProviderQuery = useQuery({
     queryKey: queryKeys.phoneProvider(accessToken),
-    queryFn: async () => {
-      const res = await phantomApi.phone.provider(accessToken);
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.phone.provider(accessToken, { signal });
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: Boolean(open && accessToken && step === 2 && type === "phone"),
+    staleTime: STALE.userMe,
   });
 
   const generateMutation = useMutation({

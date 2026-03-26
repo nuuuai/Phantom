@@ -179,9 +179,10 @@ export const phantomApi = {
 
   user: {
     me: async (
-      accessToken: Token
+      accessToken: Token,
+      init?: RequestInit
     ): Promise<ApiResponse<UserAccountSnapshot>> => {
-      const res = await fetchWithRefresh("/api/user/me", accessToken, {});
+      const res = await fetchWithRefresh("/api/user/me", accessToken, init ?? {});
       return parseApiResponseJson(res);
     },
 
@@ -201,7 +202,8 @@ export const phantomApi = {
   emailInbox: {
     list: async (
       accessToken: Token,
-      limitOrOpts?: number | { limit?: number; q?: string; unread?: boolean }
+      limitOrOpts?: number | { limit?: number; q?: string; unread?: boolean },
+      init?: RequestInit
     ): Promise<ApiResponse<{ items: AliasInboxItem[] }>> => {
       const opts =
         typeof limitOrOpts === "number"
@@ -221,7 +223,7 @@ export const phantomApi = {
       const res = await fetchWithRefresh(
         `/api/email-inbox${qs}`,
         accessToken,
-        {}
+        init ?? {}
       );
       return parseApiResponseJson(res);
     },
@@ -246,21 +248,27 @@ export const phantomApi = {
 
   phone: {
     provider: async (
-      accessToken: Token
+      accessToken: Token,
+      init?: RequestInit
     ): Promise<ApiResponse<PhoneProviderStatus>> => {
-      const res = await fetchWithRefresh("/api/phone/provider", accessToken, {});
+      const res = await fetchWithRefresh(
+        "/api/phone/provider",
+        accessToken,
+        init ?? {}
+      );
       return parseApiResponseJson(res);
     },
   },
 
   dashboard: {
     overview: async (
-      accessToken?: Token
+      accessToken?: Token,
+      init?: RequestInit
     ): Promise<ApiResponse<DashboardOverview>> => {
       const res = await fetchWithRefresh(
         "/api/dashboard/metrics",
         accessToken ?? null,
-        {}
+        init ?? {}
       );
       return parseApiResponseJson(res);
     },
@@ -268,9 +276,14 @@ export const phantomApi = {
 
   brokerScan: {
     catalog: async (
-      accessToken: Token
+      accessToken: Token,
+      init?: RequestInit
     ): Promise<ApiResponse<{ items: DataBroker[] }>> => {
-      const res = await fetchWithRefresh("/api/broker-scan/catalog", accessToken, {});
+      const res = await fetchWithRefresh(
+        "/api/broker-scan/catalog",
+        accessToken,
+        init ?? {}
+      );
       return parseApiResponseJson(res);
     },
 
@@ -285,15 +298,21 @@ export const phantomApi = {
     },
 
     summary: async (
-      accessToken: Token
+      accessToken: Token,
+      init?: RequestInit
     ): Promise<ApiResponse<BrokerScanSummary>> => {
-      const res = await fetchWithRefresh("/api/broker-scan/summary", accessToken, {});
+      const res = await fetchWithRefresh(
+        "/api/broker-scan/summary",
+        accessToken,
+        init ?? {}
+      );
       return parseApiResponseJson(res);
     },
 
     results: async (
       accessToken: Token,
-      params: { status?: string; q?: string }
+      params: { status?: string; q?: string },
+      init?: RequestInit
     ): Promise<ApiResponse<{ userId: string; items: BrokerScanResult[] }>> => {
       const q = new URLSearchParams();
       if (params.status) q.set("status", params.status);
@@ -302,7 +321,7 @@ export const phantomApi = {
       const path = qs
         ? `/api/broker-scan/results?${qs}`
         : "/api/broker-scan/results";
-      const res = await fetchWithRefresh(path, accessToken, {});
+      const res = await fetchWithRefresh(path, accessToken, init ?? {});
       return parseApiResponseJson(res);
     },
 
@@ -335,7 +354,8 @@ export const phantomApi = {
   notifications: {
     list: async (
       accessToken: Token,
-      params?: { unread?: boolean; limit?: number }
+      params?: { unread?: boolean; limit?: number },
+      init?: RequestInit
     ): Promise<
       ApiResponse<{ items: PhantomNotification[]; unreadCount: number }>
     > => {
@@ -346,14 +366,19 @@ export const phantomApi = {
       const path = qs
         ? `/api/notifications?${qs}`
         : "/api/notifications";
-      const res = await fetchWithRefresh(path, accessToken, {});
+      const res = await fetchWithRefresh(path, accessToken, init ?? {});
       return parseApiResponseJson(res);
     },
 
     count: async (
-      accessToken: Token
+      accessToken: Token,
+      init?: RequestInit
     ): Promise<ApiResponse<{ unreadCount: number }>> => {
-      const res = await fetchWithRefresh("/api/notifications/count", accessToken, {});
+      const res = await fetchWithRefresh(
+        "/api/notifications/count",
+        accessToken,
+        init ?? {}
+      );
       return parseApiResponseJson(res);
     },
 
@@ -389,20 +414,27 @@ export const phantomApi = {
     },
 
     getPreferences: async (
-      accessToken: Token
+      accessToken: Token,
+      init?: RequestInit
     ): Promise<ApiResponse<{ items: NotificationPrefItem[] }>> => {
-      const res = await fetchWithRefresh("/api/notifications/preferences", accessToken, {});
+      const res = await fetchWithRefresh(
+        "/api/notifications/preferences",
+        accessToken,
+        init ?? {}
+      );
       return parseApiResponseJson(res);
     },
 
     updatePreferences: async (
       accessToken: Token,
-      items: NotificationPrefItem[]
+      items: NotificationPrefItem[],
+      init?: RequestInit
     ): Promise<ApiResponse<{ items: NotificationPrefItem[] }>> => {
       const res = await fetchWithRefresh("/api/notifications/preferences", accessToken, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items }),
+        signal: init?.signal,
       });
       return parseApiResponseJson(res);
     },
@@ -448,9 +480,14 @@ export const phantomApi = {
 
   billing: {
     status: async (
-      accessToken: Token
+      accessToken: Token,
+      init?: RequestInit
     ): Promise<ApiResponse<BillingStatus>> => {
-      const res = await fetchWithRefresh("/api/billing/status", accessToken, {});
+      const res = await fetchWithRefresh(
+        "/api/billing/status",
+        accessToken,
+        init ?? {}
+      );
       return parseApiResponseJson(res);
     },
 
@@ -502,14 +539,15 @@ export const phantomApi = {
   aliases: {
     list: async (
       accessToken: Token,
-      params: { category?: string; health?: string }
+      params: { category?: string; health?: string },
+      init?: RequestInit
     ): Promise<ApiResponse<{ userId: string; items: Alias[] }>> => {
       const q = new URLSearchParams();
       if (params.category) q.set("category", params.category);
       if (params.health) q.set("health", params.health);
       const qs = q.toString();
       const path = qs ? `/api/aliases?${qs}` : "/api/aliases";
-      const res = await fetchWithRefresh(path, accessToken, {});
+      const res = await fetchWithRefresh(path, accessToken, init ?? {});
       return parseApiResponseJson(res);
     },
 

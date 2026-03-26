@@ -23,6 +23,7 @@ import {
   vaultAll,
   vaultSyncAll,
 } from "@/lib/queryKeys.js";
+import { STALE } from "@/lib/queryStaleTimes.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 
 const CATEGORIES: { id: AliasCategory; label: string }[] = [
@@ -47,12 +48,13 @@ export function VaultGenerateModal({ open, onClose }: Props) {
 
   const userMeQuery = useQuery({
     queryKey: queryKeys.userMe(accessToken),
-    queryFn: async () => {
-      const res = await phantomApi.user.me(accessToken);
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.user.me(accessToken, { signal });
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: Boolean(open && accessToken),
+    staleTime: STALE.userMe,
   });
 
   const passwordAtCap = useMemo(() => {

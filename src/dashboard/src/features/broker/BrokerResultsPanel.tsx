@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, memo, useMemo, useState } from "react";
 import {
   BROKER_DATA_TYPES,
   brokerRemovalLinkLabel,
@@ -386,7 +386,7 @@ export function BrokerResultsPanel({
   );
 }
 
-function RemovalAction({
+const RemovalAction = memo(function RemovalAction({
   row,
   canRequestRemoval,
   busy,
@@ -468,4 +468,4 @@ function RemovalAction({
     );
   }
   return null;
-}
+});

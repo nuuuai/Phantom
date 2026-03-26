@@ -5,6 +5,7 @@ Phase 1 does **not** ship live partner API clients or headless browser automatio
 ## Current behavior
 
 - Removal requests are **simulated** in-process: state transitions (`pending` → `confirmed`, etc.) advance via API logic tied to broker metadata (`removalMethod`, `avgRemovalDays`).
+- **Dashboard ↔ API:** Row actions and expanded copy use **`brokerRemovalMethodLabel`** / **`resolveBrokerRemovalHref`** from `@phantom/shared` and **`canRequestRemoval`** from **`GET /api/broker-scan/summary`** — aligned with the API’s simulated pipeline (no live partner HTTP or Playwright in this repo).
 - **Tier gating** (free vs Pro) is enforced in API + dashboard summary (`canRequestRemoval`). Free tier uses **DIY** catalog / search links only; Pro gets the **simulated** queue in addition.
 - **Broker scan env:** `BROKER_SCAN_CONCURRENCY` / `BROKER_SCAN_WORKER_DELAY_MS` are validated before `POST /api/broker-scan/start` (`validateBrokerScanRuntimeConfig` in `brokerScanPipeline.ts`). Misconfiguration returns **503** `broker_scan_config_invalid` so operators fix `.env` instead of silent fallbacks.
 

@@ -10,6 +10,7 @@ import {
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { formatRelativeTime } from "@/lib/formatRelative.js";
 import { queryKeys } from "@/lib/queryKeys.js";
+import { STALE } from "@/lib/queryStaleTimes.js";
 import { useEscapeKey } from "@/hooks/useEscapeKey.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 
@@ -120,13 +121,14 @@ export function NotificationCenter() {
 
   const countQuery = useQuery({
     queryKey: queryKeys.notificationCount(accessToken),
-    queryFn: async () => {
-      const res = await phantomApi.notifications.count(accessToken);
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.notifications.count(accessToken, { signal });
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: accessToken !== null,
     refetchInterval: 30_000,
+    staleTime: STALE.notifications,
   });
 
   const prevUnreadRef = useRef<number | undefined>(undefined);
@@ -157,14 +159,19 @@ export function NotificationCenter() {
 
   const listQuery = useQuery({
     queryKey: queryKeys.notifications(accessToken),
-    queryFn: async () => {
-      const res = await phantomApi.notifications.list(accessToken, {
-        limit: 50,
-      });
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.notifications.list(
+        accessToken,
+        {
+          limit: 50,
+        },
+        { signal }
+      );
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: open && accessToken !== null,
+    staleTime: STALE.notifications,
   });
 
   useEffect(() => {
