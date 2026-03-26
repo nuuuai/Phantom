@@ -1,5 +1,7 @@
 import "./loadRootEnv.js";
 import { createApp } from "./app.js";
+import { assertJwtEnvConfigured } from "./lib/jwt.js";
+import { logOperatorConfigSummary } from "./lib/operatorConfigLog.js";
 
 const port = Number(process.env.API_PORT ?? "8787");
 
@@ -23,8 +25,19 @@ async function assertDatabaseReachable(): Promise<void> {
 
 const app = createApp();
 
-void assertDatabaseReachable().then(() => {
-  app.listen(port, () => {
-    process.stdout.write(`phantom-api listening on ${port}\n`);
+void assertDatabaseReachable()
+  .then(() => {
+    assertJwtEnvConfigured();
+    logOperatorConfigSummary();
+  })
+  .then(() => {
+    app.listen(port, () => {
+      process.stdout.write(`phantom-api listening on ${port}\n`);
+    });
+  })
+  .catch((err: unknown) => {
+    process.stderr.write(
+      `phantom-api: startup failed: ${err instanceof Error ? err.message : String(err)}\n`
+    );
+    process.exit(1);
   });
-});

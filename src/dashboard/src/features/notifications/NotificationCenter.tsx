@@ -2,7 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { PhantomNotification } from "@phantom/shared";
+import {
+  clientErrorFromApiFailure,
+  getQueryErrorMessage,
+  type PhantomNotification,
+} from "@phantom/shared";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { formatRelativeTime } from "@/lib/formatRelative.js";
 import { queryKeys } from "@/lib/queryKeys.js";
@@ -118,7 +122,7 @@ export function NotificationCenter() {
     queryKey: queryKeys.notificationCount(accessToken),
     queryFn: async () => {
       const res = await phantomApi.notifications.count(accessToken);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: accessToken !== null,
@@ -157,7 +161,7 @@ export function NotificationCenter() {
       const res = await phantomApi.notifications.list(accessToken, {
         limit: 50,
       });
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: open && accessToken !== null,
@@ -190,11 +194,13 @@ export function NotificationCenter() {
   });
 
   const markAllRead = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (!accessToken) {
         return Promise.reject(new Error("signed_out"));
       }
-      return phantomApi.notifications.markAllRead(accessToken);
+      const res = await phantomApi.notifications.markAllRead(accessToken);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
+      return res.data;
     },
     onSuccess: () => {
       void qc.invalidateQueries({
@@ -263,11 +269,22 @@ export function NotificationCenter() {
             </div>
 
             <div className="max-h-[420px] overflow-y-auto">
-              {items.length === 0 ? (
+              {listQuery.isPending && open ? (
+                <div className="py-10 text-center font-sans text-[12px] text-ph-text-tertiary">
+                  Loading…
+                </div>
+              ) : null}
+              {listQuery.isError ? (
+                <div className="px-4 py-6 text-center font-sans text-[12px] text-ph-danger">
+                  {getQueryErrorMessage(listQuery.error)}
+                </div>
+              ) : null}
+              {!listQuery.isPending && !listQuery.isError && items.length === 0 ? (
                 <div className="py-10 text-center font-sans text-[12px] text-ph-text-muted">
                   No notifications yet
                 </div>
-              ) : (
+              ) : null}
+              {!listQuery.isPending && !listQuery.isError && items.length > 0 ? (
                 <AnimatePresence initial={false}>
                   {items.map((n) => (
                     <NotificationRow
@@ -281,8 +298,15 @@ export function NotificationCenter() {
                     />
                   ))}
                 </AnimatePresence>
-              )}
+              ) : null}
             </div>
+            {(markRead.isError || markAllRead.isError) && (
+              <div className="border-t border-ph-border px-4 py-2 font-sans text-[11px] text-ph-danger">
+                {markRead.isError
+                  ? getQueryErrorMessage(markRead.error)
+                  : getQueryErrorMessage(markAllRead.error)}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

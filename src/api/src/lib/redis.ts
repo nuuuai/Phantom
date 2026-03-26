@@ -4,7 +4,11 @@ let client: Redis | null | undefined;
 
 /**
  * Returns a shared Redis client when `REDIS_URL` is set; otherwise `null`.
- * Used for refresh token sessions and future cache features.
+ *
+ * **Key semantics (Phase 1):**
+ * - Refresh tokens: `phantom:refresh:<sha256(token)>` → `userId`, TTL **7 days** — see `refreshTokens.ts`.
+ * - Global HTTP rate limit (when Redis-backed): keys are owned by `rate-limit-redis` / express-rate-limit
+ *   (prefix not fixed in our code). See `DEPLOYMENT.md`.
  */
 export function getRedis(): Redis | null {
   const url = process.env.REDIS_URL;

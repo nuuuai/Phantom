@@ -85,7 +85,7 @@ model AliasInboxMessage {
   fromAddress       String
   snippet           String   @db.Text
   receivedAt        DateTime
-  /** Idempotency key from upstream (SES, Mailgun, etc.); null = no dedupe. */
+  /** Idempotency key (upstream ID or deterministic phantom hash) — unique prevents duplicate rows under parallel delivery. */
   providerMessageId String?  @unique
   isRead            Boolean  @default(false)
 
@@ -108,6 +108,7 @@ model DataBroker {
   scanResults     BrokerScanResult[]
 }
 
+/** Append-only scan history per user; new scans add rows (rolling quota uses `startedAt` + index below). */
 model BrokerScanRun {
   id             String               @id @default(cuid())
   userId         String
@@ -218,7 +219,10 @@ enum BrokerScanStatus {
   re_listed
 }
 
-/** One row per Stripe `event.id` successfully processed (webhook idempotency / retries). */
+/**
+ * One row per Stripe `event.id` committed with handler work in a single transaction
+ * (`POST /api/webhooks/stripe`). Duplicate deliveries hit unique `stripeEventId` and return early.
+ */
 model StripeWebhookEvent {
   id            String   @id @default(cuid())
   stripeEventId String   @unique

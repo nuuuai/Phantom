@@ -2,7 +2,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import type { Alias } from "@phantom/shared";
-import { encryptVaultValue, generatePassword, importKeyHex } from "@phantom/shared";
+import {
+  clientErrorFromApiFailure,
+  encryptVaultValue,
+  generatePassword,
+  getQueryErrorMessage,
+  importKeyHex,
+} from "@phantom/shared";
 import { useCopiedFeedback } from "@/hooks/useCopiedFeedback.js";
 import { useDecryptedPasswords } from "@/hooks/useDecryptedPasswords.js";
 import { useVaultSync } from "@/hooks/useVaultSync.js";
@@ -20,6 +26,16 @@ import { useSessionStore } from "@/stores/useSessionStore.js";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { VaultGenerateModal } from "./VaultGenerateModal.js";
 import { VaultUnlockGate } from "./VaultUnlockGate.js";
+
+function vaultSyncErrorLooksLikeConflict(message: string): boolean {
+  const m = message.toLowerCase();
+  return (
+    m.includes("could not complete after resolving") ||
+    m.includes("sync_conflict") ||
+    m.includes("newer") ||
+    m.includes("409")
+  );
+}
 
 const CATEGORY_TABS = [
   { id: "all", label: "All" },
@@ -76,7 +92,7 @@ function VaultPageInner() {
     queryKey: queryKeys.vaultList(accessToken, "all"),
     queryFn: async () => {
       const res = await phantomApi.aliases.list(accessToken, {});
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data.items.filter((a) => a.type === "password");
     },
     enabled: accessToken !== null,
@@ -94,7 +110,7 @@ function VaultPageInner() {
     queryKey: queryKeys.userMe(accessToken),
     queryFn: async () => {
       const res = await phantomApi.user.me(accessToken);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: accessToken !== null,
@@ -110,7 +126,7 @@ function VaultPageInner() {
         body = { encryptedValue: enc };
       }
       const res = await phantomApi.aliases.rotate(accessToken, id, body);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     onSuccess: () => {
@@ -130,7 +146,7 @@ function VaultPageInner() {
   const deactivateMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await phantomApi.aliases.remove(accessToken, id);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     onSuccess: () => {
@@ -207,16 +223,16 @@ function VaultPageInner() {
             <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-ph-danger/40 bg-ph-danger/5 px-3 py-2">
               <div className="min-w-0 flex-1">
                 <p className="font-sans text-[11px] text-ph-danger">
-                  {(vaultSyncQuery.error as Error).message}
+                  {getQueryErrorMessage(vaultSyncQuery.error)}
                 </p>
-                {String((vaultSyncQuery.error as Error).message).includes(
-                  "could not complete after resolving"
-                ) && (
+                {vaultSyncErrorLooksLikeConflict(
+                  getQueryErrorMessage(vaultSyncQuery.error)
+                ) ? (
                   <p className="mt-1 font-sans text-[10px] text-ph-text-tertiary">
                     Another device may have updated the vault. Retry merges with
-                    the server copy (last-write-wins).
+                    the server copy (last-write-wins per entry).
                   </p>
-                )}
+                ) : null}
               </div>
               <button
                 type="button"

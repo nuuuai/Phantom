@@ -27,6 +27,20 @@ function hasRs256Keys(): boolean {
   }
 }
 
+/**
+ * Fail fast at process start if neither RS256 keys nor a long HS256 secret is set.
+ * Skips in `NODE_ENV=test` (Vitest provides a test secret via `getJwtSecret`).
+ */
+export function assertJwtEnvConfigured(): void {
+  if (hasRs256Keys()) return;
+  if (process.env.NODE_ENV === "test") return;
+  const fromEnv = process.env.JWT_SECRET;
+  if (fromEnv && fromEnv.length >= 16) return;
+  throw new Error(
+    "JWT: set JWT_PRIVATE_KEY + JWT_PUBLIC_KEY (RS256), or JWT_SECRET (≥16 characters). See DEPLOYMENT.md and .env.example."
+  );
+}
+
 function getJwtSecret(): string {
   const fromEnv = process.env.JWT_SECRET;
   if (fromEnv && fromEnv.length >= 16) {

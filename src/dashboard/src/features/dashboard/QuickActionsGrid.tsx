@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 const actions = [
   { label: "New alias", to: "/aliases", color: "#6C3AED" },
+  { label: "Vault", to: "/vault", color: "#A78BFA" },
   { label: "Run broker scan", to: "/brokers", color: "#34D399" },
   { label: "Alias inbox", to: "/inbox", color: "#FBBF24" },
   { label: "Billing & Pro", to: "/billing", color: "#60A5FA" },
@@ -21,7 +22,7 @@ export function QuickActionsGrid() {
       <div className="mb-3.5 font-mono text-xs font-semibold uppercase tracking-wide text-ph-text-tertiary">
         Quick actions
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {actions.map((a) => (
           <button
             key={a.label}

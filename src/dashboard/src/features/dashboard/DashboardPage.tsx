@@ -1,3 +1,4 @@
+import { clientErrorFromApiFailure, getQueryErrorMessage } from "@phantom/shared";
 import { useQuery } from "@tanstack/react-query";
 import { ActivityTimeline } from "./ActivityTimeline.js";
 import { QuickActionsGrid } from "./QuickActionsGrid.js";
@@ -18,9 +19,7 @@ export function DashboardPage() {
     queryKey: queryKeys.dashboardOverview(accessToken),
     queryFn: async () => {
       const res = await phantomApi.dashboard.overview(accessToken ?? undefined);
-      if (!res.ok) {
-        throw new Error(res.error.message);
-      }
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: accessToken !== null,
@@ -70,17 +69,15 @@ export function DashboardPage() {
   }
 
   if (overviewQuery.isError || !overviewQuery.data) {
-    const detail =
-      overviewQuery.error instanceof Error
-        ? overviewQuery.error.message
-        : "Could not load overview.";
     return (
       <div className="px-8 py-6">
         <h1 className="font-sans text-xl font-semibold text-ph-text-primary">
           Overview
         </h1>
         <p className="mt-3 max-w-lg font-sans text-sm text-ph-danger">
-          {detail}
+          {overviewQuery.isError
+            ? getQueryErrorMessage(overviewQuery.error)
+            : "Could not load overview."}
         </p>
         <p className="mt-2 font-sans text-xs text-ph-text-muted">
           Check that the API is running and reachable (see{" "}

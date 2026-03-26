@@ -1,9 +1,11 @@
 # Data broker removal — queue & workers (Phase 1)
 
+Phase 1 does **not** ship live partner API clients or headless browser automation against broker sites. Every “queue” / “auto opt-out” action is **server-side simulation** only (`advanceRemovalSimulation`, `POST …/request-removal`) so the dashboard and notifications can be exercised end-to-end.
+
 ## Current behavior
 
 - Removal requests are **simulated** in-process: state transitions (`pending` → `confirmed`, etc.) advance via API logic tied to broker metadata (`removalMethod`, `avgRemovalDays`).
-- **Tier gating** (free vs Pro) is enforced in API + dashboard summary (`canRequestRemoval`).
+- **Tier gating** (free vs Pro) is enforced in API + dashboard summary (`canRequestRemoval`). Free tier uses **DIY** catalog / search links only; Pro gets the **simulated** queue in addition.
 
 ## Target shape (real queue)
 

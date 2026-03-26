@@ -18,6 +18,12 @@ const STEPS = [
     link: "/aliases",
   },
   {
+    title: "Check your inbox",
+    body: "Forwarded mail to your aliases appears in the Phantom inbox. Open it from the sidebar or when a notification links there.",
+    cta: "Next",
+    link: "/inbox",
+  },
+  {
     title: "Secure your passwords",
     body: "The Vault generates strong passwords and encrypts them on your device before storing. The server never sees your plaintext credentials.",
     cta: "Next",

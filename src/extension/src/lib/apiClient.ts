@@ -7,16 +7,62 @@ import {
   setRefreshToken,
 } from "./storage";
 
-export function getApiBaseUrl(): string {
-  return (
-    process.env.PLASMO_PUBLIC_API_URL ?? "http://localhost:8787"
-  ).replace(/\/$/, "");
+/** User override in `chrome.storage.local` (options page). */
+export const EXTENSION_API_BASE_KEY = "phantom_api_base_url" as const;
+
+const DEFAULT_BUILD_API_BASE = (
+  process.env.PLASMO_PUBLIC_API_URL ?? "http://localhost:8787"
+).replace(/\/$/, "");
+
+/**
+ * Validates user-entered API origin (options page). No remote code; URL API only.
+ */
+export function validateApiBaseUrlInput(
+  raw: string
+): { ok: true; url: string } | { ok: false; error: string } {
+  const t = raw.trim();
+  if (t.length === 0) {
+    return { ok: false, error: "Enter a URL or clear the field to use the build default." };
+  }
+  try {
+    const u = new URL(t);
+    if (u.protocol !== "http:" && u.protocol !== "https:") {
+      return { ok: false, error: "Use http:// or https:// (production should be https://)." };
+    }
+    const path = u.pathname.replace(/\/$/, "");
+    const base =
+      path.length > 0 && path !== "/"
+        ? `${u.origin}${path}`
+        : u.origin;
+    return { ok: true, url: base };
+  } catch {
+    return { ok: false, error: "Invalid URL. Example: https://api.example.com" };
+  }
 }
 
-function resolveUrl(path: string): string {
+/**
+ * Effective API origin: optional `chrome.storage.local` override, else build-time
+ * `PLASMO_PUBLIC_API_URL` (inlined by Plasmo).
+ */
+export async function getApiBaseUrl(): Promise<string> {
+  try {
+    const r = await chrome.storage.local.get(EXTENSION_API_BASE_KEY);
+    const v = r[EXTENSION_API_BASE_KEY];
+    if (typeof v === "string" && v.trim().length > 0) {
+      const parsed = validateApiBaseUrlInput(v);
+      if (parsed.ok) return parsed.url;
+    }
+  } catch {
+    /* ignore */
+  }
+  return DEFAULT_BUILD_API_BASE;
+}
+
+async function resolveUrl(path: string): Promise<string> {
   if (path.startsWith("http")) return path;
   const p = path.startsWith("/") ? path : `/${path}`;
-  return `${getApiBaseUrl()}${p}`;
+  const base = await getApiBaseUrl();
+  return `${base}${p}`;
 }
 
 function networkFailureResponse(): Response {
@@ -26,19 +72,22 @@ function networkFailureResponse(): Response {
       error: {
         code: "network_error",
         message:
-          "Could not reach the Phantom API. Check your network and PLASMO_PUBLIC_API_URL.",
+          "Could not reach the Phantom API. Check your network and API URL (extension options).",
       },
     }),
     { status: 503, headers: { "Content-Type": "application/json" } }
   );
 }
 
-const REFRESH_503_BACKOFF_MS = 2000;
+/** Max POST /api/auth/refresh attempts when the API returns 503 or 429 (transient). */
+const REFRESH_MAX_ATTEMPTS = 4;
+/** First wait before retry; then 500→1000→2000→… capped at 8000 ms between attempts. */
+const REFRESH_BACKOFF_START_MS = 500;
 
 export async function refreshSession(): Promise<boolean> {
   const rt = await getRefreshToken();
   if (!rt) return false;
-  const url = `${getApiBaseUrl()}/api/auth/refresh`;
+  const url = `${await getApiBaseUrl()}/api/auth/refresh`;
   const body = JSON.stringify({ refreshToken: rt });
   const postRefresh = () =>
     fetch(url, {
@@ -47,19 +96,15 @@ export async function refreshSession(): Promise<boolean> {
       body,
     });
 
-  let res: Response;
+  let res!: Response;
   try {
-    res = await postRefresh();
-    /** Transient overload / deploy: retry once after backoff (Stripe-style idempotency elsewhere). */
-    if (res.status === 503) {
-      await new Promise((resolve) =>
-        setTimeout(resolve, REFRESH_503_BACKOFF_MS)
-      );
+    let backoffMs = REFRESH_BACKOFF_START_MS;
+    for (let attempt = 0; attempt < REFRESH_MAX_ATTEMPTS; attempt++) {
       res = await postRefresh();
-    }
-    if (res.status === 429) {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      res = await postRefresh();
+      if (res.status !== 503 && res.status !== 429) break;
+      if (attempt === REFRESH_MAX_ATTEMPTS - 1) break;
+      await new Promise((resolve) => setTimeout(resolve, backoffMs));
+      backoffMs = Math.min(backoffMs * 2, 8000);
     }
   } catch {
     return false;
@@ -81,7 +126,7 @@ export async function fetchAuth(
   path: string,
   init: RequestInit = {}
 ): Promise<Response> {
-  const url = resolveUrl(path);
+  const url = await resolveUrl(path);
   const token = await getAccessToken();
   if (!token) {
     return new Response(

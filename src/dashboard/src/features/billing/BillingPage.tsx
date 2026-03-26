@@ -1,5 +1,9 @@
+import {
+  clientErrorFromApiFailure,
+  getQueryErrorMessage,
+} from "@phantom/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
@@ -12,12 +16,15 @@ export function BillingPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const checkoutSessionId = searchParams.get("session_id");
   const canceledCheckout = searchParams.get("canceled");
+  const [syncCheckoutError, setSyncCheckoutError] = useState<string | null>(
+    null
+  );
 
   const billingQuery = useQuery({
     queryKey: queryKeys.billingStatus(accessToken),
     queryFn: async () => {
       const res = await phantomApi.billing.status(accessToken);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: accessToken !== null,
@@ -27,7 +34,7 @@ export function BillingPage() {
     queryKey: queryKeys.userMe(accessToken),
     queryFn: async () => {
       const res = await phantomApi.user.me(accessToken);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: accessToken !== null,
@@ -36,7 +43,7 @@ export function BillingPage() {
   const checkoutMutation = useMutation({
     mutationFn: async () => {
       const res = await phantomApi.billing.checkoutSession(accessToken!);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data.url;
     },
     onSuccess: (url) => {
@@ -56,12 +63,16 @@ export function BillingPage() {
     if (!accessToken || !checkoutSessionId) return;
     let cancelled = false;
     void (async () => {
+      setSyncCheckoutError(null);
       const res = await phantomApi.billing.syncCheckoutSession(
         accessToken,
         checkoutSessionId
       );
       if (cancelled) return;
-      if (!res.ok) return;
+      if (!res.ok) {
+        setSyncCheckoutError(clientErrorFromApiFailure(res).message);
+        return;
+      }
       const next = new URLSearchParams(searchParams);
       next.delete("session_id");
       setSearchParams(next, { replace: true });
@@ -86,7 +97,7 @@ export function BillingPage() {
   const portalMutation = useMutation({
     mutationFn: async () => {
       const res = await phantomApi.billing.portalSession(accessToken!);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data.url;
     },
     onSuccess: (url) => {
@@ -112,14 +123,21 @@ export function BillingPage() {
         Checkout and Customer Portal activate when API keys are configured.
       </p>
 
+      {syncCheckoutError && checkoutSessionId ? (
+        <div
+          className="mt-6 max-w-xl rounded-lg border border-ph-danger/40 bg-ph-danger/5 px-4 py-3 font-sans text-sm text-ph-danger"
+          role="alert"
+        >
+          Could not apply checkout session: {syncCheckoutError}
+        </div>
+      ) : null}
+
       {billingQuery.isPending && (
         <p className="mt-8 font-sans text-sm text-ph-text-tertiary">Loading…</p>
       )}
       {billingQuery.isError && (
         <p className="mt-8 font-sans text-sm text-ph-danger">
-          {billingQuery.error instanceof Error
-            ? billingQuery.error.message
-            : "Could not load billing."}
+          {getQueryErrorMessage(billingQuery.error)}
         </p>
       )}
 
@@ -137,7 +155,8 @@ export function BillingPage() {
               <div className="flex justify-between gap-4">
                 <dt className="text-ph-text-tertiary">Subscription</dt>
                 <dd className="font-mono text-ph-text-secondary">
-                  {billing.subscriptionStatus}
+                  {meQuery.data?.user.subscriptionStatus ??
+                    billing.subscriptionStatus}
                 </dd>
               </div>
               <div className="flex justify-between gap-4">
@@ -182,11 +201,9 @@ export function BillingPage() {
 
           {(checkoutMutation.isError || portalMutation.isError) && (
             <p className="font-sans text-xs text-ph-danger">
-              {checkoutMutation.error instanceof Error
-                ? checkoutMutation.error.message
-                : portalMutation.error instanceof Error
-                  ? portalMutation.error.message
-                  : "Request failed"}
+              {checkoutMutation.isError
+                ? getQueryErrorMessage(checkoutMutation.error)
+                : getQueryErrorMessage(portalMutation.error)}
             </p>
           )}
 

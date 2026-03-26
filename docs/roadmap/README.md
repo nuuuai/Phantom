@@ -18,8 +18,8 @@ All roadmap docs use **percent complete** as a manual engineering estimate (not 
 
 | File | Scope | Document-level summary |
 |------|--------|-------------------------|
-| [PHASE_1_FOUNDATION.md](./PHASE_1_FOUNDATION.md) | Months 1–6, desktop MVP | Deliverables avg **~64%** (see table at top of file; updated per ship). |
-| [INFRA_AWS_PHASE1.md](./INFRA_AWS_PHASE1.md) | AWS / Terraform gap (Phase 1) | No IaC in repo; recommended layout, probes, CI parity. |
+| [PHASE_1_FOUNDATION.md](./PHASE_1_FOUNDATION.md) | Months 1–6, desktop MVP | Deliverables avg **~75%** (see table at top of file; updated per ship). |
+| [INFRA_AWS_PHASE1.md](./INFRA_AWS_PHASE1.md) | AWS / Terraform gap (Phase 1) | Minimal Terraform root in **`infra/terraform/`** (~24%; **`.gitignore`** + README); recommended AWS layout, probes, CI parity. |
 | [AUTH_AND_VAULT_PHASE1.md](./AUTH_AND_VAULT_PHASE1.md) | JWT vs vault KDF vs SRP | Phase 1 policy (PBKDF2 vault; RS256/HS256 JWT). |
 | [BROKER_REMOVAL_QUEUE.md](./BROKER_REMOVAL_QUEUE.md) | Removal jobs / workers | Simulated today; queue + Playwright direction. |
 | [PHASE_2_INTELLIGENCE.md](./PHASE_2_INTELLIGENCE.md) | Months 6–12, Brain + telephony | **0%** (not started). |
@@ -27,7 +27,7 @@ All roadmap docs use **percent complete** as a manual engineering estimate (not 
 | [PHASE_4_MOBILE_ECOSYSTEM.md](./PHASE_4_MOBILE_ECOSYSTEM.md) | Months 18–24, mobile + ecosystem | **0%** (not started). |
 | [MILESTONES.md](./MILESTONES.md) | Critical path + North Star + guardrails | Milestone **Progress** column + metric tables. |
 | [PHASE_1_AGENT_RUNS.md](./PHASE_1_AGENT_RUNS.md) | Sequential Cursor/agent prompts (Runs 1–5) | One run = one baseline commit or tag. |
-| [DEPLOYMENT.md](./DEPLOYMENT.md) | API/dashboard/extension env for prod | Health `/health/live` + `/health`; **docker-compose** port/env table; **`X-Request-Id`** + Redis policies; links **`INFRA_AWS_PHASE1.md`**; Stripe; CI integration tests. |
+| [DEPLOYMENT.md](./DEPLOYMENT.md) | API/dashboard/extension env for prod | Health `/health/live` + `/health`; **docker-compose** port/env table; **`BROKER_SCAN_*`** env; **`X-Request-Id`** + Redis policies; **§ CI** table (same order as GitHub Actions); Stripe; integration tests. |
 | [EXTENSION_STORE_BUILD.md](./EXTENSION_STORE_BUILD.md) | Plasmo prod zip / M8 | Store-ready extension build. |
 | [CHROME_WEB_STORE_CHECKLIST.md](./CHROME_WEB_STORE_CHECKLIST.md) | CWS submission | Permissions, privacy, external blockers. |
 | [QA_MANUAL.md](./QA_MANUAL.md) | Automated vs manual QA | Pre-launch checklist; billing duplicate webhook, vault sync, scan cap, **`NOTIFICATIONS_EMAIL_ENABLED`** stub. |
@@ -59,9 +59,23 @@ All roadmap docs use **percent complete** as a manual engineering estimate (not 
 - **Email path (code)**: `POST /api/webhooks/email-inbound` (HMAC `X-Phantom-Signature: sha256=…`, `INBOUND_WEBHOOK_SECRET`), `AliasInboxMessage` + `GET /api/email-inbox`, dashboard **`/inbox`**, optional **`forwardToEmail`** via `PATCH /api/user/me`.
 - **Infra**: Global API rate limit uses **Redis** when `REDIS_URL` is set (`rate-limit-redis`); in-memory fallback if not.
 - **Launch prep**: `CHROME_WEB_STORE_CHECKLIST.md` for Web Store submission.
-- **M8/M9 billing & launch**: Stripe **Checkout** + **Customer Portal**, **`POST /api/webhooks/stripe`** + **`POST /api/billing/sync-checkout-session`** (return URL `?session_id=`) → `User.tier` + `subscriptionStatus`, dashboard **`/billing`**; **`GET /health/live`** + **`GET /health`**; **`launch.integration.test.ts`** in CI with Postgres. Env: `STRIPE_*`, `DASHBOARD_PUBLIC_URL`. See `DEPLOYMENT.md`, `QA_MANUAL.md`.
+- **M8/M9 billing & launch**: Stripe **Checkout** + **Customer Portal**, **`POST /api/webhooks/stripe`** + **`POST /api/billing/sync-checkout-session`** (return URL `?session_id=`) → `User.tier` + `subscriptionStatus`, dashboard **`/billing`**; **`GET /health/live`** + **`GET /health`**; **`launch.integration.test.ts`** + **`billingSyncSession.integration.test.ts`** in CI with Postgres. Env: `STRIPE_*`, `DASHBOARD_PUBLIC_URL`. See `DEPLOYMENT.md`, `QA_MANUAL.md`.
+- **Vault & extension**: `executeVaultSyncPush` tests (wrong passphrase, **409** retry); dashboard **`useVaultSync`** `retry: 2`; extension **`fetchAuth`** / **`refreshSession`** (exponential backoff on **503/429**, **`network_error`** vs API errors vs **401**).
+- **Terraform starter**: **`infra/terraform/`** (`terraform.tf`, `variables.tf`, `outputs.tf`, README) — validate when CLI available; see **`INFRA_AWS_PHASE1.md`**.
+- **Shared vault + brokers**: **`VaultSyncGetResponse` / `VaultSyncPutRequest`** wire types; **LWW** tie-break on equal `updatedAt`; **`brokerRemovalMethodLabel`** for broker expanded row.
+- **Onboarding / brokers / overview**: **7-step** modal (includes **`/inbox`** + **`/billing`**); broker **status legend** on pre-scan card; **Get started** links include **`/inbox`**.
+- **Vault / extension**: dashboard **conflict** hint for more API messages; extension **devLog** on vault sync failure (truncated, dev-only); **`apiClient`** refresh backoff documented.
+- **Integration tests**: **`brokerScanQuota.integration.test.ts`** — free tier second **`/broker-scan/start`** → **429** + **`retryAfterSeconds`** in JSON (needs seeded catalog).
+- **Journey / funnel (Run 4):** overview **Get started** link order + **Quick actions** include **Vault**; broker pre-scan **first exposure scan**; **`EXTENSION_STORE_BUILD.md`** funnel blurb.
+- **Run 5 (M1/M8 doc parity):** **`DEPLOYMENT.md` § CI** step table + **`BROKER_SCAN_WORKER_DELAY_MS`**; **`infra/terraform/.gitignore`**; **`EXTENSION_STORE_BUILD.md`** MV3 background (fetchAuth, vault push); **`CHROME_WEB_STORE_CHECKLIST`** / **`QA_MANUAL`** link to CI order; **`INFRA_AWS_PHASE1`** CI bullet aligned.
+- **Run 6 (removal + notifications triad):** **`BrokerScanSummary.freeTierBrokerScanMaxPer24h`** on **`GET /api/broker-scan/summary`** (quota parity); **`notificationCategoryFilter`** + tests; **`BROKER_REMOVAL_QUEUE.md`** / **`EMAIL_INBOUND.md`** honesty on simulation + email stub; dashboard **Upgrade · Pro queue** + pre-scan footnote; **`QA_MANUAL`** broker + notification prefs steps.
+- **Run 7 (config / operator):** **`assertJwtEnvConfigured`** + **`logOperatorConfigSummary`** at API startup; **`.env.example`** + **`DEPLOYMENT.md`** extended (**`NODE_ENV`**, **`API_PORT`**, Twilio **SID** note); **`INFRA_AWS_PHASE1`** Terraform **~24%**; tests for JWT assert + operator log smoke.
+- **Run 8 (tier matrix):** **`403`** **`tier_limit`** + **`error.tierLimit`** on alias generate; **`isFreeTierAliasTypeAtCap`** + **`User.subscriptionStatus`** on **`GET /api/user/me`**; dashboard **Generate alias** / **Vault** modals + **Billing** subscription display; extension **`tier_limit`** messaging.
+- **Run 9 (idempotency / safe retry):** Stripe webhook **claim `event.id` before handler** + delete claim on **`500`**; **`PUT /api/vault/sync`** atomic **`vaultSyncVersion`** CAS; email inbound **unique** race → **`deduped`**; **`sync-checkout-session`** idempotent test ×2; **`DEPLOYMENT.md`** Stripe at-least-once note.
+- **Run 10 (client contract + UX):** Shared **`clientErrorFromApiFailure`** / **`normalizeClientError`** / **`BillingStatus`**; **`httpStatus`** on parsed API errors; dashboard **`parseApiResponseJson`** dev **`X-Request-Id`** hint; loading / error / empty patterns on major surfaces; **Brokers** scan **disabled** while run animation active; **`/billing`** sync failure visible; **`QA_MANUAL.md`** status-code UX table.
 - **Phone (M5)**: `provisionPhoneAlias`, `phoneProvider` / `phoneForwardTo` on aliases, alias detail **Phone routing**; `PHONE_PROVIDER` + Twilio env (stub branch); **503** if Twilio misconfigured.
 - **Email inbound**: **`POST /api/webhooks/email-inbound`** hardened (**415** media type, **`X-Phantom-Request-Id`**, tests in `webhookEmailInbound.test.ts`).
 - **Broker scan**: optional **`BROKER_SCAN_CONCURRENCY`** (1–32); env in `.env.example` + `DEPLOYMENT.md`.
 - **Extension store**: root script **`npm run build:extension:store`** (shared + extension prod build).
-- **Tests**: `vaultSyncMerge`, `brokerRemovalHelp`, `mapBrokerScan`, `userTierPaid`, `phoneConfig`, `validateForward`, `provisionPhone`, `webhookEmailInbound`; webhook smoke in `app.test.ts`.
+- **Run 12 / CWS + MV3:** Removed unused **`tabs`** permission; **`getApiBaseUrl`** async + **`phantom_api_base_url`** override; **options** page (URL validation, loading/saved); **`onInstalled`** clears invalid API override on update; **`CHROME_WEB_STORE_CHECKLIST`** permissions table + listing copy draft; **`DEPLOYMENT.md`** extension API/CORS note; extension **`0.1.0`**.
+- **Tests**: `vaultSyncMerge`, `brokerRemovalHelp`, `mapBrokerScan`, `userTierPaid`, `phoneConfig`, `validateForward`, `provisionPhone`, `webhookEmailInbound`, **`brokerScanSummaryAugment`**, **`notificationCategoryFilter`**, **`aliasTierLimits`**, **`tierQuota`**; webhook smoke in `app.test.ts`.

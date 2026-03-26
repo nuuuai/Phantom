@@ -54,6 +54,12 @@ export interface BrokerScanSummary {
   dataTypesBreakdown: Record<BrokerDataType, number>;
   /** Server truth: paid/enterprise can enqueue removal; free tier is scan + DIY links only. */
   canRequestRemoval: boolean;
+  /**
+   * Effective free-tier cap for full scans per rolling 24h (matches API env
+   * `FREE_TIER_BROKER_SCAN_MAX_PER_24H`). `null` when user is paid/enterprise,
+   * or when the free-tier cap is disabled (unlimited in dev).
+   */
+  freeTierBrokerScanMaxPer24h: number | null;
 }
 
 export interface BrokerScanStartResponse {

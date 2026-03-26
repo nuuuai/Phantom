@@ -1,5 +1,5 @@
+import { clientErrorFromApiFailure, executeVaultSyncPush } from "@phantom/shared";
 import { useQuery } from "@tanstack/react-query";
-import { executeVaultSyncPush } from "@phantom/shared";
 import type { Alias } from "@phantom/shared";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { queryKeys } from "@/lib/queryKeys.js";
@@ -28,7 +28,7 @@ export function useVaultSync(
         passwordAliases,
         async () => {
           const r = await phantomApi.vault.getSync(accessToken);
-          if (!r.ok) throw new Error(r.error.message);
+          if (!r.ok) throw clientErrorFromApiFailure(r);
           return r.data;
         },
         async (ciphertext, clientVersion) => {
@@ -38,7 +38,11 @@ export function useVaultSync(
           });
           if (r.ok) return { ok: true, version: r.data.version };
           if (r.error.code === "sync_conflict") return { ok: false, conflict: true };
-          return { ok: false, conflict: false, message: r.error.message };
+          return {
+            ok: false,
+            conflict: false,
+            message: clientErrorFromApiFailure(r).message,
+          };
         }
       );
       if (!result.ok) throw new Error(result.error);
@@ -48,6 +52,6 @@ export function useVaultSync(
       accessToken && vaultKeyHex && listReady && passwordAliases !== undefined
     ),
     staleTime: 20_000,
-    retry: 1,
+    retry: 2,
   });
 }

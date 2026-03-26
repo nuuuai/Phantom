@@ -1,12 +1,17 @@
+import type { Prisma } from "@prisma/client";
 import type Stripe from "stripe";
 import { prisma } from "./prisma.js";
+
+type Db = Prisma.TransactionClient | typeof prisma;
 
 /**
  * Applies Pro subscription fields from a completed Checkout Session (subscription mode).
  * Idempotent for the same session. Used by Stripe webhooks and POST /billing/sync-checkout-session.
+ * Pass a transaction client when called inside `prisma.$transaction`.
  */
 export async function applyProSubscriptionFromCheckoutSession(
-  session: Stripe.Checkout.Session
+  session: Stripe.Checkout.Session,
+  db: Db = prisma
 ): Promise<boolean> {
   if (session.mode !== "subscription") return false;
   const userId =
@@ -29,7 +34,7 @@ export async function applyProSubscriptionFromCheckoutSession(
       : custRaw && typeof custRaw === "object" && "id" in custRaw
         ? String(custRaw.id)
         : null;
-  await prisma.user.update({
+  await db.user.update({
     where: { id: userId },
     data: {
       tier: "paid",

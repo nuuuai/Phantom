@@ -1,13 +1,20 @@
 import type { Alias, ApiResponse } from "@phantom/shared";
 import {
+  clientErrorFromApiFailure,
   decryptVaultValue,
   deriveVaultKey,
   encryptVaultValue,
   exportKeyHex,
   generatePassword,
   importKeyHex,
+  normalizeClientError,
 } from "@phantom/shared";
-import { fetchAuth, getApiBaseUrl } from "./lib/apiClient";
+import {
+  EXTENSION_API_BASE_KEY,
+  fetchAuth,
+  getApiBaseUrl,
+  validateApiBaseUrlInput,
+} from "./lib/apiClient";
 import {
   MESSAGE_FIELD_SCAN,
   MESSAGE_GENERATE_ALIAS,
@@ -36,7 +43,7 @@ async function loginRequest(
     refreshToken?: string;
   }>
 > {
-  const base = getApiBaseUrl();
+  const base = await getApiBaseUrl();
   const response = await fetch(`${base}/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -131,6 +138,24 @@ async function revokeRefreshOnServer(): Promise<void> {
   }).catch(() => {});
 }
 
+chrome.runtime.onInstalled.addListener((details) => {
+  void (async () => {
+    if (details.reason !== "update") return;
+    try {
+      const r = await chrome.storage.local.get(EXTENSION_API_BASE_KEY);
+      const v = r[EXTENSION_API_BASE_KEY];
+      if (typeof v !== "string" || !v.trim()) return;
+      const parsed = validateApiBaseUrlInput(v);
+      if (!parsed.ok) {
+        await chrome.storage.local.remove(EXTENSION_API_BASE_KEY);
+        devLog("cleared invalid API base URL override after update");
+      }
+    } catch {
+      /* ignore */
+    }
+  })();
+});
+
 chrome.runtime.onMessage.addListener(
   (
     message: BackgroundMessage,
@@ -153,8 +178,14 @@ chrome.runtime.onMessage.addListener(
             await initVaultKey(result.data.accessToken, message.password);
             const hex = await getVaultKeyHex();
             if (hex) {
-              void pushVaultSyncFromExtension(hex).catch(() => {
-                /* sync is best-effort; dashboard can merge */
+              void pushVaultSyncFromExtension(hex).then((r) => {
+                if (!r.ok) {
+                  const msg =
+                    r.error.length > 180
+                      ? `${r.error.slice(0, 180)}…`
+                      : r.error;
+                  devLog("vault sync push failed", msg);
+                }
               });
             }
             sendResponse({ ok: true });
@@ -164,7 +195,13 @@ chrome.runtime.onMessage.addListener(
         })
         .catch((err: unknown) => {
           devLog("login failed", err);
-          sendResponse({ ok: false, error: "network_error" });
+          sendResponse({
+            ok: false,
+            error: normalizeClientError({
+              code: "network_error",
+              message: "",
+            }).userMessage,
+          });
         });
       return true;
     }
@@ -205,11 +242,22 @@ chrome.runtime.onMessage.addListener(
 
             sendResponse({ ok: true, alias, plainValue });
           } else {
-            sendResponse({ ok: false, error: result.error.message });
+            const base = clientErrorFromApiFailure(result).message;
+            const errMsg =
+              result.error.code === "tier_limit"
+                ? `${base} Open the Phantom dashboard → Billing to upgrade.`
+                : base;
+            sendResponse({ ok: false, error: errMsg });
           }
         } catch (err: unknown) {
           devLog("generate alias failed", err);
-          sendResponse({ ok: false, error: "network_error" });
+          sendResponse({
+            ok: false,
+            error: normalizeClientError({
+              code: "network_error",
+              message: "",
+            }).userMessage,
+          });
         }
       })();
       return true;

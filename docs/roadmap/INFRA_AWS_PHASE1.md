@@ -2,9 +2,9 @@
 
 ## What is in the repo (Phase 1)
 
-- **No** Terraform or CloudFormation modules ship with Phantom today (`PHASE_1_FOUNDATION.md` lists Terraform at **0%** as *application* code).
+- **Terraform:** minimal **root module** at [`infra/terraform/`](../../infra/terraform/) (`terraform.tf`, `variables.tf`, `outputs.tf`, **`.gitignore`**, README) — **`terraform validate`** when the CLI is installed; **~24%** toward “IaC in repo” (no AWS resources yet; avoids **0%** while staying honest).
 - **Deployment contract** is documented in [`DEPLOYMENT.md`](./DEPLOYMENT.md): PostgreSQL, optional Redis, Node API, static dashboard, env-only secrets, **`GET /health/live`** (liveness) and **`GET /health`** (readiness).
-- **CI** (`.github/workflows/ci.yml`) mirrors a minimal prod check: migrate, lint, test, build against Postgres.
+- **CI** — same step order as [`DEPLOYMENT.md`](./DEPLOYMENT.md) **§ CI**: `npm ci` → migrate → **seed** → lint → test → build (`.github/workflows/ci.yml`).
 
 ## Recommended AWS shape (operator choice)
 
@@ -34,6 +34,6 @@ Typical production layout (not prescriptive):
 | **Migrations** | `npx prisma migrate deploy` in deploy pipeline before traffic. |
 | **Secrets** | Never bake into images; use parameter store / secrets manager. |
 
-## Terraform later
+## Growing the Terraform module
 
-When you add IaC, keep it in a dedicated directory (e.g. `infra/terraform/`) and reference this doc from `PHASE_2+` or a runbook — out of scope for Phase 1 application delivery.
+Add `required_providers`, `provider "aws" {}`, and resources under `infra/terraform/` as you provision RDS, ElastiCache, and compute. Keep this doc aligned with health probes and env names in [`DEPLOYMENT.md`](./DEPLOYMENT.md).

@@ -11,7 +11,7 @@ async function main(): Promise<void> {
   const password = "devpassword123";
   const hashedPassword = await bcrypt.hash(password, 12);
 
-  await prisma.user.upsert({
+  const user = await prisma.user.upsert({
     where: { email },
     create: {
       email,
@@ -22,6 +22,24 @@ async function main(): Promise<void> {
       hashedPassword,
     },
   });
+
+  const notifCount = await prisma.notification.count({
+    where: { userId: user.id },
+  });
+  const seededDemoNotification = notifCount === 0;
+  if (seededDemoNotification) {
+    await prisma.notification.create({
+      data: {
+        userId: user.id,
+        layer: "shield",
+        priority: "low",
+        category: "system",
+        title: "Welcome to Phantom (seed)",
+        body: "Local dev account — open the dashboard to try inbox, broker scan, and vault.",
+        linkTo: "/inbox",
+      },
+    });
+  }
 
   for (const b of BROKER_CATALOG_SEED) {
     await prisma.dataBroker.upsert({
@@ -48,6 +66,9 @@ async function main(): Promise<void> {
 
   process.stdout.write(`Seed user: ${email} / ${password} (tier: free)\n`);
   process.stdout.write(`Seeded ${String(BROKER_CATALOG_SEED.length)} data brokers\n`);
+  if (seededDemoNotification) {
+    process.stdout.write("Seeded 1 demo notification (bell)\n");
+  }
 }
 
 main()

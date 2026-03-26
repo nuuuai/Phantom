@@ -58,64 +58,66 @@ stripeWebhookRouter.post(
       return;
     }
 
+    /**
+     * Single transaction: insert `StripeWebhookEvent` + handler writes. On handler failure
+     * the transaction rolls back (no row for `event.id`), so Stripe retries remain safe.
+     * Duplicate `event.id` → unique violation → `{ duplicate: true }`.
+     */
     try {
-      switch (event.type) {
-        case "checkout.session.completed": {
-          const session = event.data.object as Stripe.Checkout.Session;
-          await applyProSubscriptionFromCheckoutSession(session);
-          break;
-        }
-        case "customer.subscription.updated":
-        case "customer.subscription.deleted": {
-          const sub = event.data.object as Stripe.Subscription;
-          const paidStatuses = new Set(["active", "trialing", "past_due"]);
-          const tier =
-            event.type === "customer.subscription.deleted"
-              ? "free"
-              : paidStatuses.has(sub.status)
-                ? "paid"
-                : "free";
-          const subStatus =
-            event.type === "customer.subscription.deleted"
-              ? "canceled"
-              : sub.status;
+      await prisma.$transaction(async (tx) => {
+        await tx.stripeWebhookEvent.create({
+          data: { stripeEventId: event.id },
+        });
+        switch (event.type) {
+          case "checkout.session.completed": {
+            const session = event.data.object as Stripe.Checkout.Session;
+            await applyProSubscriptionFromCheckoutSession(session, tx);
+            break;
+          }
+          case "customer.subscription.updated":
+          case "customer.subscription.deleted": {
+            const sub = event.data.object as Stripe.Subscription;
+            const paidStatuses = new Set(["active", "trialing", "past_due"]);
+            const tier =
+              event.type === "customer.subscription.deleted"
+                ? "free"
+                : paidStatuses.has(sub.status)
+                  ? "paid"
+                  : "free";
+            const subStatus =
+              event.type === "customer.subscription.deleted"
+                ? "canceled"
+                : sub.status;
 
-          await prisma.user.updateMany({
-            where: { stripeSubscriptionId: sub.id },
-            data: {
-              tier,
-              subscriptionStatus: subStatus,
-              ...(event.type === "customer.subscription.deleted"
-                ? { stripeSubscriptionId: null }
-                : {}),
-            },
-          });
-          break;
+            await tx.user.updateMany({
+              where: { stripeSubscriptionId: sub.id },
+              data: {
+                tier,
+                subscriptionStatus: subStatus,
+                ...(event.type === "customer.subscription.deleted"
+                  ? { stripeSubscriptionId: null }
+                  : {}),
+              },
+            });
+            break;
+          }
+          default:
+            break;
         }
-        default:
-          break;
-      }
-    } catch (err) {
-      process.stderr.write(
-        `stripe webhook handler: ${err instanceof Error ? err.message : String(err)}\n`
-      );
-      res.status(500).json({
-        ok: false,
-        error: { code: "webhook_handler_error", message: "Handler failed" },
-      });
-      return;
-    }
-
-    try {
-      await prisma.stripeWebhookEvent.create({
-        data: { stripeEventId: event.id },
       });
     } catch (e) {
       if (isPrismaUniqueViolation(e)) {
         res.json({ received: true, duplicate: true });
         return;
       }
-      throw e;
+      process.stderr.write(
+        `stripe webhook handler: ${e instanceof Error ? e.message : String(e)}\n`
+      );
+      res.status(500).json({
+        ok: false,
+        error: { code: "webhook_handler_error", message: "Handler failed" },
+      });
+      return;
     }
 
     res.json({ received: true });

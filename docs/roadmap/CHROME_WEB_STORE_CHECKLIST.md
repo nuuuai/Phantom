@@ -26,6 +26,27 @@ External blockers: developer account, review time, policy compliance, and **lega
 - [ ] Justify any broad patterns (e.g. `https://*/*`) in the listing if retained.
 - [ ] MV3 service worker lifecycle: no long-lived blocking work; background messaging documented.
 
+### Permissions justification (repo)
+
+Declared in `src/extension/package.json` under Plasmo `manifest` (merged into `build/chrome-mv3-prod/manifest.json`).
+
+| Entry | Why it stays |
+|-------|----------------|
+| **`storage`** | Session tokens (`chrome.storage.local`), optional API base URL override (`phantom_api_base_url`), vault-related keys per `storage.ts` / `vaultStorage`. |
+| **`scripting`** | Inject / manage content scripts for form detection and the shield UI (`src/extension/src/contents/`). |
+| **`host_permissions`: `https://*/*`** | **HTTPS** pages where the user may generate aliases and autofill; required for content scripts and `fetch` to arbitrary HTTPS APIs the user configures (prod API host). Narrowing to a single production API origin only would break autofill on third-party sites — keep and justify in the store listing. |
+| **`host_permissions`: `http://localhost:8787/*`** | Local development against the default API; omit from a strictly production-only build if policy requires (then use staging HTTPS only). |
+
+**Removed:** `tabs` — not used by the codebase (MV3 review: least privilege).
+
+**Not used:** `activeTab` — product uses persistent content injection on form pages; `activeTab` alone is insufficient for that model.
+
+**Content scripts:** Plasmo emits **`matches`: `<all_urls>`** for `form-detector` (see prod `manifest.json`). Only the **bundled** script runs (no remote code). Narrowing to a site allowlist would break “generate alias on any signup form” — justify in the listing or add an optional future allowlist mode.
+
+### Shadow DOM / iframe limits (known)
+
+The shield UI uses a closed Shadow DOM on detected inputs. **No extra timeboxed fixes** in this sprint: nested **cross-origin iframes**, **closed** shadow trees above the field, or sites that block scripting may prevent detection or fill. Document for support; full matrix is Phase 2+ hardening.
+
 ## Privacy & security
 
 - [ ] No collection of page content beyond what the privacy policy discloses.
@@ -34,8 +55,14 @@ External blockers: developer account, review time, policy compliance, and **lega
 
 ## QA before submit
 
-- [ ] Repo CI green: from repository root run `npm run lint`, `npm test`, and `npm run build` (same as `.github/workflows/ci.yml`).
+- [ ] Repo CI green: use the **exact step order** in [`DEPLOYMENT.md`](./DEPLOYMENT.md) **§ CI** (table: `npm ci` → migrate → **seed** → lint → test → build) — matches [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) so integration tests that need **`DataBroker`** rows run in CI.
 - [ ] Smoke test on top sites (alias generate + autofill).
 - [ ] API base URL configurable for staging vs prod (`PLASMO_PUBLIC_API_URL`).
+
+## Store listing copy (paste into CWS; privacy policy URL is external)
+
+**Short description (example):** Phantom generates privacy-friendly email aliases and helps you autofill them on sign-up forms — with optional vault-backed passwords. Connects to your Phantom account over HTTPS.
+
+**Long description (one paragraph):** Phantom is the Shield layer for Phantom accounts: sign in with your Phantom email and password, generate aliases from the toolbar or inline on forms, and sync your encrypted vault when unlocked. The extension only talks to the API origin you configure (build-time default or Options). It does not execute remote code, load third-party scripts into pages beyond the bundled content script, or send page HTML to Phantom unless you use features that explicitly require server interaction (e.g. alias generation). Review the hosted privacy policy for full data practices.
 
 Review can still reject for policy updates; plan a buffer after submission.

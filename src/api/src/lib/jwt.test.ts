@@ -1,6 +1,10 @@
 import { generateKeyPairSync } from "node:crypto";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { signAccessToken, verifyAccessToken } from "./jwt.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  assertJwtEnvConfigured,
+  signAccessToken,
+  verifyAccessToken,
+} from "./jwt.js";
 
 describe("jwt", () => {
   const savedPriv = process.env.JWT_PRIVATE_KEY;
@@ -47,6 +51,21 @@ describe("jwt", () => {
       const t = signAccessToken("user-2", "c@d.com");
       const p = verifyAccessToken(t);
       expect(p).toEqual({ sub: "user-2", email: "c@d.com" });
+    });
+  });
+
+  describe("assertJwtEnvConfigured", () => {
+    it("no-ops in test mode (vitest)", () => {
+      expect(() => assertJwtEnvConfigured()).not.toThrow();
+    });
+
+    it("throws in development when neither RS256 nor HS256 secret is set", () => {
+      vi.stubEnv("NODE_ENV", "development");
+      delete process.env.JWT_PRIVATE_KEY;
+      delete process.env.JWT_PUBLIC_KEY;
+      delete process.env.JWT_SECRET;
+      expect(() => assertJwtEnvConfigured()).toThrow(/JWT:/);
+      vi.unstubAllEnvs();
     });
   });
 });

@@ -15,6 +15,7 @@ export type {
   UserAccountSnapshot,
 } from "./types/userAccount.js";
 export { FREE_TIER_ALIAS_MAX } from "./constants/tierLimits.js";
+export { isFreeTierAliasTypeAtCap } from "./lib/tierQuota.js";
 export { FREE_TIER_BROKER_SCAN_MAX_PER_24H } from "./constants/brokerScanQuota.js";
 export { RATE_LIMIT_RETRY_MS } from "./constants/http.js";
 export type { ThreatPattern } from "./types/threatPattern.js";
@@ -29,6 +30,7 @@ export type {
 } from "./types/brokerScan.js";
 export {
   brokerRemovalLinkLabel,
+  brokerRemovalMethodLabel,
   brokerRemovalSearchUrl,
   resolveBrokerRemovalHref,
 } from "./lib/brokerRemovalHelp.js";
@@ -41,7 +43,21 @@ export type {
   DashboardOverview,
   SystemLayerStatus,
 } from "./types/dashboardOverview.js";
-export type { ApiResponse, ApiFailure, ApiSuccess } from "./types/apiResponse.js";
+export type {
+  ApiResponse,
+  ApiFailure,
+  ApiSuccess,
+  ApiErrorBody,
+} from "./types/apiResponse.js";
+export type { BillingStatus } from "./types/billing.js";
+export {
+  normalizeClientError,
+  clientErrorFromApiFailure,
+  formatBrokerScanRateLimit,
+  getQueryErrorMessage,
+  type ClientErrorCode,
+  type ClientErrorMeta,
+} from "./lib/clientError.js";
 export type {
   NotificationCategory,
   NotificationPrefItem,
@@ -81,4 +97,6 @@ export type {
   VaultSyncPlaintext,
   VaultSyncEntryV1,
   VaultSyncPutResult,
+  VaultSyncGetResponse,
+  VaultSyncPutRequest,
 } from "./lib/vaultSyncMerge.js";

@@ -1,6 +1,8 @@
-import type { UserTier } from "@prisma/client";
+import type { PrismaClient, UserTier } from "@prisma/client";
 import { FREE_TIER_BROKER_SCAN_MAX_PER_24H } from "@phantom/shared";
 import { prisma } from "./prisma.js";
+
+type ScanQuotaDb = Pick<PrismaClient, "brokerScanRun">;
 
 /** Rolling window for free-tier scan frequency (ms). */
 export const FREE_TIER_BROKER_SCAN_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -27,6 +29,7 @@ export function resolveFreeTierBrokerScanCap(): number {
 export async function assertCanStartBrokerScan(
   userId: string,
   tier: UserTier,
+  db: ScanQuotaDb = prisma
 ): Promise<
   | { ok: true }
   | {
@@ -42,13 +45,13 @@ export async function assertCanStartBrokerScan(
   if (cap >= Number.MAX_SAFE_INTEGER / 2) return { ok: true };
 
   const since = new Date(Date.now() - FREE_TIER_BROKER_SCAN_WINDOW_MS);
-  const count = await prisma.brokerScanRun.count({
+  const count = await db.brokerScanRun.count({
     where: { userId, startedAt: { gte: since } },
   });
 
   if (count < cap) return { ok: true };
 
-  const oldest = await prisma.brokerScanRun.findFirst({
+  const oldest = await db.brokerScanRun.findFirst({
     where: { userId, startedAt: { gte: since } },
     orderBy: { startedAt: "asc" },
     select: { startedAt: true },

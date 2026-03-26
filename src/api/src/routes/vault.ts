@@ -132,12 +132,21 @@ vaultRouter.put("/sync", async (req, res) => {
     return;
   }
 
-  const current = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { vaultSyncVersion: true },
+  /** Atomic compare-and-swap: only one concurrent writer wins; avoids lost updates. */
+  const updated = await prisma.user.updateMany({
+    where: { id: userId, vaultSyncVersion: clientVersion },
+    data: {
+      vaultSyncCiphertext: ciphertext,
+      vaultSyncVersion: clientVersion + 1,
+    },
   });
-  const serverVersion = current?.vaultSyncVersion ?? 0;
-  if (serverVersion > clientVersion) {
+
+  if (updated.count === 0) {
+    const current = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { vaultSyncVersion: true },
+    });
+    const serverVersion = current?.vaultSyncVersion ?? 0;
     res.status(409).json({
       ok: false,
       error: {
@@ -148,15 +157,7 @@ vaultRouter.put("/sync", async (req, res) => {
     return;
   }
 
-  const nextVersion = serverVersion + 1;
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      vaultSyncCiphertext: ciphertext,
-      vaultSyncVersion: nextVersion,
-    },
-  });
-
+  const nextVersion = clientVersion + 1;
   const response: ApiResponse<{ version: number }> = {
     ok: true,
     data: { version: nextVersion },

@@ -1,4 +1,18 @@
-import type { DataBroker } from "../types/brokerScan.js";
+import type { BrokerRemovalMethod, DataBroker } from "../types/brokerScan.js";
+
+/** Human-readable label for catalog `removalMethod` (dashboard expanded row). */
+export function brokerRemovalMethodLabel(method: BrokerRemovalMethod): string {
+  switch (method) {
+    case "api":
+      return "API queue (simulated)";
+    case "form":
+      return "Web form (DIY)";
+    case "email":
+      return "Email opt-out (DIY)";
+    case "manual":
+      return "Manual / DIY";
+  }
+}
 
 /** Privacy-friendly search for opt-out instructions when we have no verified URL. */
 export function brokerRemovalSearchUrl(brokerName: string): string {

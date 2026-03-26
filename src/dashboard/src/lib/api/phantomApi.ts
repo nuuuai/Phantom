@@ -2,6 +2,7 @@ import {
   type Alias,
   type AliasInboxItem,
   type ApiResponse,
+  type BillingStatus,
   type BrokerScanResult,
   type BrokerScanStartResponse,
   type BrokerScanSummary,
@@ -14,6 +15,8 @@ import {
   type PhantomNotification,
   type User,
   type UserAccountSnapshot,
+  type VaultSyncGetResponse,
+  type VaultSyncPutRequest,
   RATE_LIMIT_RETRY_MS,
 } from "@phantom/shared";
 import { useSessionStore } from "@/stores/useSessionStore.js";
@@ -425,14 +428,14 @@ export const phantomApi = {
 
     getSync: async (
       accessToken: Token
-    ): Promise<ApiResponse<{ ciphertext: string | null; version: number }>> => {
+    ): Promise<ApiResponse<VaultSyncGetResponse>> => {
       const res = await fetchWithRefresh("/api/vault/sync", accessToken, {});
       return parseApiResponseJson(res);
     },
 
     putSync: async (
       accessToken: Token,
-      body: { ciphertext: string; clientVersion: number }
+      body: VaultSyncPutRequest
     ): Promise<ApiResponse<{ version: number }>> => {
       const res = await fetchWithRefresh("/api/vault/sync", accessToken, {
         method: "PUT",
@@ -446,18 +449,7 @@ export const phantomApi = {
   billing: {
     status: async (
       accessToken: Token
-    ): Promise<
-      ApiResponse<{
-        tier: string;
-        subscriptionStatus: string;
-        stripeCustomerId: string | null;
-        stripeSubscriptionId: string | null;
-        billingProviderReady: boolean;
-        hasStripeClient: boolean;
-        manageUrl: string | null;
-        checkoutUrl: string | null;
-      }>
-    > => {
+    ): Promise<ApiResponse<BillingStatus>> => {
       const res = await fetchWithRefresh("/api/billing/status", accessToken, {});
       return parseApiResponseJson(res);
     },

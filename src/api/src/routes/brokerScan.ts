@@ -4,8 +4,13 @@ import type {
   BrokerScanStartResponse,
   BrokerScanSummary,
 } from "@phantom/shared";
+import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import type { BrokerScanStatus } from "@prisma/client";
+import {
+  BrokerCatalogEmptyError,
+  BrokerScanRateLimitedError,
+} from "../lib/brokerScanErrors.js";
 import { assertCanStartBrokerScan } from "../lib/brokerScanQuota.js";
 import { isPaidTier } from "../lib/userTierPaid.js";
 import { prisma } from "../lib/prisma.js";
@@ -17,6 +22,7 @@ import {
   mapWithConcurrency,
   randomDelayInRange,
 } from "../lib/brokerScanPipeline.js";
+import { augmentBrokerScanSummary } from "../lib/brokerScanSummaryAugment.js";
 import { computeBrokerScanSummaryFromRows } from "../lib/computeBrokerScanSummary.js";
 import { mapBroker, mapBrokerScanResult } from "../lib/mapBrokerScan.js";
 import {
@@ -72,44 +78,63 @@ brokerScanRouter.post("/start", async (req, res) => {
     return;
   }
 
-  const gate = await assertCanStartBrokerScan(userId, user.tier);
-  if (!gate.ok) {
-    res.setHeader("Retry-After", String(gate.retryAfterSeconds));
-    res.status(429).json({
-      ok: false,
-      error: {
-        code: gate.code,
-        message: gate.message,
-      },
+  let run: { id: string };
+  let brokers: Awaited<ReturnType<typeof prisma.dataBroker.findMany>>;
+  try {
+    const started = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw(
+        Prisma.sql`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`
+      );
+      const gate = await assertCanStartBrokerScan(userId, user.tier, tx);
+      if (!gate.ok) {
+        throw new BrokerScanRateLimitedError(gate);
+      }
+      const brokerRows = await tx.dataBroker.findMany({
+        where: { isActive: true },
+        orderBy: { name: "asc" },
+      });
+      if (brokerRows.length === 0) {
+        throw new BrokerCatalogEmptyError();
+      }
+      const scanRun = await tx.brokerScanRun.create({
+        data: {
+          userId,
+          totalBrokers: brokerRows.length,
+          foundCount: 0,
+        },
+      });
+      return { run: scanRun, brokers: brokerRows };
     });
-    return;
-  }
-
-  const brokers = await prisma.dataBroker.findMany({
-    where: { isActive: true },
-    orderBy: { name: "asc" },
-  });
-  if (brokers.length === 0) {
-    res.status(503).json({
-      ok: false,
-      error: {
-        code: "broker_catalog_empty",
-        message: "Broker catalog not seeded",
-      },
-    });
-    return;
+    run = started.run;
+    brokers = started.brokers;
+  } catch (e) {
+    if (e instanceof BrokerScanRateLimitedError) {
+      res.setHeader("Retry-After", String(e.gate.retryAfterSeconds));
+      res.status(429).json({
+        ok: false,
+        error: {
+          code: e.gate.code,
+          message: e.gate.message,
+          retryAfterSeconds: e.gate.retryAfterSeconds,
+        },
+      });
+      return;
+    }
+    if (e instanceof BrokerCatalogEmptyError) {
+      res.status(503).json({
+        ok: false,
+        error: {
+          code: "broker_catalog_empty",
+          message: "Broker catalog not seeded",
+        },
+      });
+      return;
+    }
+    throw e;
   }
 
   const target = randomTargetFoundFraction(userId);
   const foundIndices = selectFoundBrokerIndices(brokers, userId, target);
-
-  const run = await prisma.brokerScanRun.create({
-    data: {
-      userId,
-      totalBrokers: brokers.length,
-      foundCount: 0,
-    },
-  });
 
   const delayRange = getBrokerScanWorkerDelayMs();
   const scanConcurrency = getBrokerScanConcurrency();
@@ -135,14 +160,15 @@ brokerScanRouter.post("/start", async (req, res) => {
     if (row.status === "found") foundCount += 1;
   }
 
-  await prisma.brokerScanResult.createMany({ data: createRows });
-
-  await prisma.brokerScanRun.update({
-    where: { id: run.id },
-    data: {
-      completedAt: new Date(),
-      foundCount,
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.brokerScanResult.createMany({ data: createRows });
+    await tx.brokerScanRun.update({
+      where: { id: run.id },
+      data: {
+        completedAt: new Date(),
+        foundCount,
+      },
+    });
   });
 
   const estimatedTime = Math.max(120, Math.round(brokers.length * 2.4));
@@ -168,17 +194,16 @@ brokerScanRouter.get("/summary", async (req, res) => {
   await advanceRemovalSimulation(userId);
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  const canRequestRemoval = user ? isPaidTier(user.tier) : false;
 
   const latest = await prisma.brokerScanRun.findFirst({
     where: { userId },
     orderBy: { startedAt: "desc" },
   });
   if (!latest) {
-    const empty: BrokerScanSummary = {
-      ...computeBrokerScanSummaryFromRows([]),
-      canRequestRemoval,
-    };
+    const empty = augmentBrokerScanSummary(
+      user,
+      computeBrokerScanSummaryFromRows([])
+    );
     const response: ApiResponse<BrokerScanSummary> = { ok: true, data: empty };
     res.json(response);
     return;
@@ -187,10 +212,10 @@ brokerScanRouter.get("/summary", async (req, res) => {
   const rows = await prisma.brokerScanResult.findMany({
     where: { userId, brokerScanRunId: latest.id },
   });
-  const summary: BrokerScanSummary = {
-    ...computeBrokerScanSummaryFromRows(rows),
-    canRequestRemoval,
-  };
+  const summary = augmentBrokerScanSummary(
+    user,
+    computeBrokerScanSummaryFromRows(rows)
+  );
   const response: ApiResponse<BrokerScanSummary> = { ok: true, data: summary };
   res.json(response);
 });

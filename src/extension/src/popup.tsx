@@ -44,7 +44,7 @@ export function Popup() {
         if (res?.ok) {
           setAuthStatus("Signed out");
         } else {
-          setAuthStatus("Sign-out failed");
+          setAuthStatus(res?.error ?? "Sign-out failed");
         }
       })
       .catch(() => {
@@ -68,7 +68,7 @@ export function Popup() {
         if (res.ok) {
           setAuthStatus("Signed in");
         } else {
-          setAuthStatus("Sign-in failed");
+          setAuthStatus(res.error);
         }
       })
       .catch(() => {
@@ -137,6 +137,15 @@ export function Popup() {
       <div className="popup__mini" aria-live="polite">
         {authStatus}
       </div>
+      <p className="popup__mini">
+        <button
+          type="button"
+          className="popup__secondary"
+          onClick={() => void chrome.runtime.openOptionsPage()}
+        >
+          API settings
+        </button>
+      </p>
       <hr className="popup__hr" />
       <button type="button" className="popup__action" onClick={onGenerate}>
         Generate alias

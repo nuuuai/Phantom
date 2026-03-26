@@ -62,6 +62,7 @@ billingRouter.get("/status", async (req, res) => {
 /**
  * After Stripe redirects to the dashboard with ?session_id=…, call this so the user
  * is upgraded even if `checkout.session.completed` webhooks are delayed.
+ * Safe to call repeatedly for the same `session_id` (idempotent `User` update from session).
  */
 billingRouter.post("/sync-checkout-session", async (req, res) => {
   const userId = req.user?.id;
@@ -164,7 +165,9 @@ billingRouter.post("/sync-checkout-session", async (req, res) => {
     return;
   }
 
-  await applyProSubscriptionFromCheckoutSession(session);
+  await prisma.$transaction(async (tx) => {
+    await applyProSubscriptionFromCheckoutSession(session, tx);
+  });
 
   const response: ApiResponse<{ synced: true }> = {
     ok: true,

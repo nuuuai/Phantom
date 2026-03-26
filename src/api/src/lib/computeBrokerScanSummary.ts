@@ -12,7 +12,7 @@ function emptyBreakdown(): Record<BrokerDataType, number> {
 
 export function computeBrokerScanSummaryFromRows(
   rows: PrismaResult[]
-): Omit<BrokerScanSummary, "canRequestRemoval"> {
+): Omit<BrokerScanSummary, "canRequestRemoval" | "freeTierBrokerScanMaxPer24h"> {
   const dataTypesBreakdown = emptyBreakdown();
   let found = 0;
   let removed = 0;

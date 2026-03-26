@@ -1,12 +1,15 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useEscapeKey } from "@/hooks/useEscapeKey.js";
-import type { AliasCategory } from "@phantom/shared";
 import {
+  clientErrorFromApiFailure,
   encryptVaultValue,
   generatePassword,
   importKeyHex,
+  isFreeTierAliasTypeAtCap,
+  type AliasCategory,
 } from "@phantom/shared";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import {
@@ -38,6 +41,22 @@ export function VaultGenerateModal({ open, onClose }: Props) {
   const accessToken = useSessionStore((s) => s.accessToken);
   const vaultKeyHex = useSessionStore((s) => s.vaultKeyHex);
   const qc = useQueryClient();
+
+  const userMeQuery = useQuery({
+    queryKey: queryKeys.userMe(accessToken),
+    queryFn: async () => {
+      const res = await phantomApi.user.me(accessToken);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
+      return res.data;
+    },
+    enabled: Boolean(open && accessToken),
+  });
+
+  const passwordAtCap = useMemo(() => {
+    const d = userMeQuery.data;
+    if (!d) return false;
+    return isFreeTierAliasTypeAtCap(d.user.tier, "password", d.aliasUsage);
+  }, [userMeQuery.data]);
   const [category, setCategory] = useState<AliasCategory>("work");
   const [serviceName, setServiceName] = useState("");
   const [serviceUrl, setServiceUrl] = useState("");
@@ -58,7 +77,7 @@ export function VaultGenerateModal({ open, onClose }: Props) {
         serviceUrl: serviceUrl.trim() || undefined,
         encryptedValue,
       });
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     onSuccess: () => {
@@ -129,6 +148,22 @@ export function VaultGenerateModal({ open, onClose }: Props) {
             never sees the plaintext.
           </p>
 
+          {passwordAtCap ? (
+            <div
+              className="mt-4 rounded-md border border-ph-warning/40 bg-ph-warning/10 px-3 py-2 font-sans text-[11px] text-ph-warning"
+              role="status"
+            >
+              Free tier password-alias limit reached. Remove a password alias or{" "}
+              <Link
+                to="/billing"
+                className="font-medium text-ph-accent-light underline-offset-2 hover:underline"
+              >
+                upgrade to Phantom Pro
+              </Link>{" "}
+              for unlimited.
+            </div>
+          ) : null}
+
           <div className="mt-5 space-y-4">
             <div>
               <label className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-ph-text-muted">
@@ -194,7 +229,12 @@ export function VaultGenerateModal({ open, onClose }: Props) {
             </button>
             <button
               type="button"
-              disabled={generateMutation.isPending}
+              disabled={generateMutation.isPending || passwordAtCap}
+              title={
+                passwordAtCap
+                  ? "Free tier limit — upgrade or remove a password alias"
+                  : undefined
+              }
               onClick={() => generateMutation.mutate()}
               className="cursor-pointer rounded-md border border-ph-accent-border bg-ph-accent px-4 py-2 font-sans text-xs font-medium text-white disabled:opacity-50"
             >

@@ -2,11 +2,19 @@ import type { AliasType, UserTier } from "@prisma/client";
 import { FREE_TIER_ALIAS_MAX } from "@phantom/shared";
 import { prisma } from "./prisma.js";
 
+export type AssertCanCreateAliasResult =
+  | { ok: true }
+  | {
+      ok: false;
+      message: string;
+      tierLimit: { aliasType: AliasType; used: number; max: number };
+    };
+
 export async function assertCanCreateAlias(
   userId: string,
   tier: UserTier,
   type: AliasType
-): Promise<{ ok: true } | { ok: false; message: string }> {
+): Promise<AssertCanCreateAliasResult> {
   if (tier !== "free") {
     return { ok: true };
   }
@@ -19,6 +27,7 @@ export async function assertCanCreateAlias(
     return {
       ok: false,
       message: `Free tier allows ${String(max)} ${type} ${label}. Upgrade to Phantom Pro for unlimited.`,
+      tierLimit: { aliasType: type, used, max },
     };
   }
   return { ok: true };

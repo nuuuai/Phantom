@@ -30,9 +30,14 @@ Phantom’s API **generates** `@phantom.id` aliases. **Receiving** mail requires
 }
 ```
 
-- **Behavior:** Resolves an active `email` alias by address, stores `AliasInboxMessage`, bumps alias `lastActivityAt`, creates a low-priority **system** notification linking to `/inbox`. Duplicate **`providerMessageId`** returns success with dedupe (`data: { deduped: true }`). If **`providerMessageId` is omitted**, the API computes a deterministic **`phantom:v1:<sha256>`** key from alias + from + subject + `receivedAt` + snippet so worker retries still dedupe without upstream IDs.
+- **Behavior:** Resolves an active `email` alias by address, stores `AliasInboxMessage`, bumps alias `lastActivityAt`, creates a low-priority **system** notification linking to `/inbox`. Duplicate **`providerMessageId`** returns success with dedupe (`data: { deduped: true }`). If **`providerMessageId` is omitted**, the API computes a deterministic **`phantom:v1:<sha256>`** key from alias + from + subject + `receivedAt` + snippet so worker retries still dedupe without upstream IDs. Concurrent duplicate POSTs that race past the read check are caught via **unique** `providerMessageId` and return **`deduped: true`** (no duplicate inbox rows).
 
 - **503** if `INBOUND_WEBHOOK_SECRET` is unset (forces explicit operator setup).
+
+## Outbound / digest email (not wired)
+
+- **In-app + desktop notifications** use the API + dashboard (`/api/notifications`, preferences). **Outbound email** (breach digests, removal confirmations) is **not** implemented in the API sender path.
+- Reserved: **`NOTIFICATIONS_EMAIL_ENABLED`** in **`.env.example`** / **`DEPLOYMENT.md`** — keep **`0`** or unset until an SES/SMTP worker exists; no emails are sent from this repo in Phase 1.
 
 ## Dashboard
 
@@ -48,3 +53,7 @@ Phantom’s API **generates** `@phantom.id` aliases. **Receiving** mail requires
 ## Environment
 
 See repo root `.env.example`: `INBOUND_WEBHOOK_SECRET`.
+
+## Outbound email (notifications channel — stub)
+
+Phase 1 does **not** send email from the API. Reserved env: **`NOTIFICATIONS_EMAIL_ENABLED`** (`0` / unset = off). When a worker or SES integration is added, set to **`1`** and supply provider credentials via your secret store (see [`DEPLOYMENT.md`](./DEPLOYMENT.md)). No SMTP or SES calls ship in this repo today.

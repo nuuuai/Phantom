@@ -1,6 +1,8 @@
 import {
+  clientErrorFromApiFailure,
   encryptVaultValue,
   generatePassword,
+  getQueryErrorMessage,
   importKeyHex,
 } from "@phantom/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -86,7 +88,7 @@ export function AliasesPage() {
     ),
     queryFn: async () => {
       const res = await phantomApi.aliases.list(accessToken, queryParams);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data.items;
     },
     enabled: accessToken !== null,
@@ -96,7 +98,7 @@ export function AliasesPage() {
     queryKey: queryKeys.userMe(accessToken),
     queryFn: async () => {
       const res = await phantomApi.user.me(accessToken);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: accessToken !== null,
@@ -114,7 +116,7 @@ export function AliasesPage() {
         }
       }
       const res = await phantomApi.aliases.rotate(accessToken, id, body);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     onSuccess: async () => {
@@ -133,7 +135,7 @@ export function AliasesPage() {
   const deactivateMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await phantomApi.aliases.remove(accessToken, id);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     onSuccess: async () => {
@@ -245,7 +247,7 @@ export function AliasesPage() {
       ) : null}
       {listQuery.isError ? (
         <p className="mt-8 font-sans text-sm text-ph-danger">
-          Could not load aliases. Is the API running with PostgreSQL migrated?
+          {getQueryErrorMessage(listQuery.error)}
         </p>
       ) : null}
 

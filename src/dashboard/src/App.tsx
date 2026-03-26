@@ -1,4 +1,8 @@
-import { deriveVaultKey, exportKeyHex } from "@phantom/shared";
+import {
+  clientErrorFromApiFailure,
+  deriveVaultKey,
+  exportKeyHex,
+} from "@phantom/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
@@ -63,9 +67,7 @@ function SessionBootstrap() {
             if (!cancelled) setVaultKeyHex(await exportKeyHex(key));
           }
         } else {
-          setDevBootstrapError(
-            res.error?.message ?? "Login failed. Check API logs and credentials."
-          );
+          setDevBootstrapError(clientErrorFromApiFailure(res).message);
         }
       } catch {
         if (!cancelled) {
@@ -108,9 +110,7 @@ function SessionBootstrap() {
     queryKey: queryKeys.dashboardOverview(accessToken),
     queryFn: async () => {
       const res = await phantomApi.dashboard.overview(accessToken ?? undefined);
-      if (!res.ok) {
-        throw new Error(res.error.message);
-      }
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: accessToken !== null,

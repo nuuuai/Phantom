@@ -138,6 +138,11 @@ aliasesRouter.post("/generate", async (req, res) => {
       error: {
         code: "tier_limit",
         message: limitCheck.message,
+        tierLimit: {
+          aliasType: limitCheck.tierLimit.aliasType,
+          used: limitCheck.tierLimit.used,
+          max: limitCheck.tierLimit.max,
+        },
       },
     });
     return;

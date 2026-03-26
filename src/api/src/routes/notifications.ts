@@ -5,15 +5,12 @@ import type {
 } from "@phantom/shared";
 import type { NotificationCategory as PrismaNotifCategory } from "@prisma/client";
 import { Router } from "express";
+import {
+  categoryWhereForDisabled,
+  NOTIFICATION_CATEGORIES,
+} from "../lib/notificationCategoryFilter.js";
 import { prisma } from "../lib/prisma.js";
 import { mapNotification } from "../lib/mapNotification.js";
-
-const NOTIF_CATEGORIES: PrismaNotifCategory[] = [
-  "alias_health",
-  "broker_removal",
-  "security_alert",
-  "system",
-];
 
 async function getDisabledNotificationCategories(
   userId: string
@@ -23,13 +20,6 @@ async function getDisabledNotificationCategories(
     select: { category: true },
   });
   return rows.map((r) => r.category);
-}
-
-function categoryWhere(
-  disabled: PrismaNotifCategory[]
-): { category: { notIn: PrismaNotifCategory[] } } | Record<string, never> {
-  if (disabled.length === 0) return {};
-  return { category: { notIn: disabled } };
 }
 
 export const notificationsRouter = Router();
@@ -51,7 +41,7 @@ notificationsRouter.get("/", async (req, res) => {
   );
 
   const disabled = await getDisabledNotificationCategories(userId);
-  const catFilter = categoryWhere(disabled);
+  const catFilter = categoryWhereForDisabled(disabled);
 
   const rows = await prisma.notification.findMany({
     where: {
@@ -95,7 +85,7 @@ notificationsRouter.get("/count", async (req, res) => {
   }
 
   const disabled = await getDisabledNotificationCategories(userId);
-  const catFilter = categoryWhere(disabled);
+  const catFilter = categoryWhereForDisabled(disabled);
 
   const count = await prisma.notification.count({
     where: { userId, isRead: false, ...catFilter },
@@ -151,7 +141,7 @@ notificationsRouter.post("/read-all", async (req, res) => {
   }
 
   const disabled = await getDisabledNotificationCategories(userId);
-  const catFilter = categoryWhere(disabled);
+  const catFilter = categoryWhereForDisabled(disabled);
 
   const result = await prisma.notification.updateMany({
     where: { userId, isRead: false, ...catFilter },
@@ -263,7 +253,7 @@ notificationsRouter.get("/preferences", async (req, res) => {
   });
 
   const prefMap = new Map(rows.map((r) => [r.category, r.enabled]));
-  const items: NotificationPrefItem[] = NOTIF_CATEGORIES.map((cat) => ({
+  const items: NotificationPrefItem[] = NOTIFICATION_CATEGORIES.map((cat) => ({
     category: cat,
     enabled: prefMap.get(cat) ?? true,
   }));
@@ -294,7 +284,7 @@ notificationsRouter.put("/preferences", async (req, res) => {
     return;
   }
 
-  const catSet = new Set<string>(NOTIF_CATEGORIES);
+  const catSet = new Set<string>(NOTIFICATION_CATEGORIES);
   for (const item of body.items) {
     if (!catSet.has(item.category)) continue;
     await prisma.notificationPref.upsert({
@@ -312,7 +302,7 @@ notificationsRouter.put("/preferences", async (req, res) => {
 
   const rows = await prisma.notificationPref.findMany({ where: { userId } });
   const prefMap = new Map(rows.map((r) => [r.category, r.enabled]));
-  const items: NotificationPrefItem[] = NOTIF_CATEGORIES.map((cat) => ({
+  const items: NotificationPrefItem[] = NOTIFICATION_CATEGORIES.map((cat) => ({
     category: cat,
     enabled: prefMap.get(cat) ?? true,
   }));

@@ -1,8 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
-import type { Alias, AliasCategory } from "@phantom/shared";
-import { ALIAS_CATEGORIES } from "@phantom/shared";
+import {
+  ALIAS_CATEGORIES,
+  clientErrorFromApiFailure,
+  type Alias,
+  type AliasCategory,
+} from "@phantom/shared";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import {
   aliasDetailAll,
@@ -39,7 +43,7 @@ export function EditAliasModal({ alias, open, onClose }: EditAliasModalProps) {
         category,
         serviceName: serviceName.length > 0 ? serviceName : null,
       });
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     onSuccess: async () => {

@@ -4,10 +4,10 @@ function isJsonContentType(contentType: string): boolean {
   return /application\/json|\+json/i.test(contentType);
 }
 
-function invalidResponse(message: string): ApiResponse<never> {
+function invalidResponse(message: string, httpStatus: number): ApiResponse<never> {
   return {
     ok: false,
-    error: { code: "invalid_response", message },
+    error: { code: "invalid_response", message, httpStatus },
   };
 }
 
@@ -23,13 +23,15 @@ export async function parseApiResponseJson<T>(
     return invalidResponse(
       response.ok
         ? "Empty response body"
-        : `HTTP ${String(response.status)} with empty body`
+        : `HTTP ${String(response.status)} with empty body`,
+      response.status
     );
   }
 
   if (!isJsonContentType(contentType)) {
     return invalidResponse(
-      `Expected JSON response but received ${contentType || "unknown content type"}`
+      `Expected JSON response but received ${contentType || "unknown content type"}`,
+      response.status
     );
   }
 
@@ -37,18 +39,22 @@ export async function parseApiResponseJson<T>(
   try {
     data = JSON.parse(trimmed) as ApiResponse<T>;
   } catch {
-    return invalidResponse("Response is not valid JSON");
+    return invalidResponse("Response is not valid JSON", response.status);
   }
 
   if (!response.ok) {
     if (data.ok === false) {
-      return data;
+      return {
+        ...data,
+        error: { ...data.error, httpStatus: response.status },
+      };
     }
     return {
       ok: false,
       error: {
         code: "http_error",
         message: `HTTP ${String(response.status)}`,
+        httpStatus: response.status,
       },
     };
   }

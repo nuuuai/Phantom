@@ -1,5 +1,6 @@
 import {
   type Alias,
+  clientErrorFromApiFailure,
   decryptVaultValue,
   encryptVaultValue,
   generatePassword,
@@ -68,7 +69,7 @@ export function AliasDetailPage() {
     queryKey: queryKeys.aliasDetail(accessToken, id),
     queryFn: async () => {
       const res = await phantomApi.aliases.get(accessToken, id!);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data.alias;
     },
     enabled: !!accessToken && !!id,
@@ -80,7 +81,7 @@ export function AliasDetailPage() {
     queryKey: queryKeys.phoneProvider(accessToken),
     queryFn: async () => {
       const res = await phantomApi.phone.provider(accessToken);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: Boolean(accessToken && alias?.type === "phone"),
@@ -121,7 +122,7 @@ export function AliasDetailPage() {
         body = { encryptedValue: await encryptVaultValue(key, newPw) };
       }
       const res = await phantomApi.aliases.rotate(accessToken, id!, body);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     onSuccess: (data) => {
@@ -147,7 +148,7 @@ export function AliasDetailPage() {
       const res = await phantomApi.aliases.patch(accessToken, id!, {
         phoneForwardTo: trimmed.length > 0 ? trimmed : null,
       });
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data.alias;
     },
     onSuccess: () => {
@@ -161,7 +162,7 @@ export function AliasDetailPage() {
   const deactivateMutation = useMutation({
     mutationFn: async () => {
       const res = await phantomApi.aliases.remove(accessToken, id!);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     onSuccess: () => {

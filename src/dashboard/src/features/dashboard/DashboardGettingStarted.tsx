@@ -10,8 +10,8 @@ export function DashboardGettingStarted() {
         Get started
       </div>
       <p className="mt-2 max-w-2xl font-sans text-sm text-ph-text-tertiary">
-        Create your first alias, run a broker exposure scan, and optionally install
-        the Chrome extension for autofill — all from Phantom in Phase 1.
+        Follow the path: alias → inbox → vault → broker scan → Pro. Install the
+        Chrome extension for autofill when you&apos;re ready (see onboarding).
       </p>
       <ul className="mt-3 flex flex-wrap gap-2">
         <li>
@@ -24,10 +24,10 @@ export function DashboardGettingStarted() {
         </li>
         <li>
           <Link
-            to="/brokers"
+            to="/inbox"
             className="inline-flex rounded-md border border-ph-border bg-ph-raised px-3 py-1.5 font-sans text-xs font-medium text-ph-text-secondary hover:bg-ph-border/40"
           >
-            Scan data brokers
+            Open alias inbox
           </Link>
         </li>
         <li>
@@ -36,6 +36,14 @@ export function DashboardGettingStarted() {
             className="inline-flex rounded-md border border-ph-border bg-ph-raised px-3 py-1.5 font-sans text-xs font-medium text-ph-text-secondary hover:bg-ph-border/40"
           >
             Open vault
+          </Link>
+        </li>
+        <li>
+          <Link
+            to="/brokers"
+            className="inline-flex rounded-md border border-ph-border bg-ph-raised px-3 py-1.5 font-sans text-xs font-medium text-ph-text-secondary hover:bg-ph-border/40"
+          >
+            Scan data brokers
           </Link>
         </li>
         <li>

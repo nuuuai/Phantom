@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { DataBroker } from "../types/brokerScan.js";
 import {
   brokerRemovalLinkLabel,
+  brokerRemovalMethodLabel,
   brokerRemovalSearchUrl,
   resolveBrokerRemovalHref,
 } from "./brokerRemovalHelp.js";
@@ -39,6 +40,13 @@ describe("brokerRemovalHelp", () => {
     expect(brokerRemovalSearchUrl("Foo & Bar")).toContain(
       encodeURIComponent("Foo & Bar")
     );
+  });
+
+  it("brokerRemovalMethodLabel maps catalog methods", () => {
+    expect(brokerRemovalMethodLabel("api")).toContain("API");
+    expect(brokerRemovalMethodLabel("form")).toContain("DIY");
+    expect(brokerRemovalMethodLabel("email")).toContain("Email");
+    expect(brokerRemovalMethodLabel("manual")).toContain("Manual");
   });
 
   it("brokerRemovalLinkLabel reflects URL presence", () => {

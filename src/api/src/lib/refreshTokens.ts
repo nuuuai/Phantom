@@ -1,8 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
 import { getRedis } from "./redis.js";
 
+/** Redis key: `phantom:refresh:<sha256(hex refresh token)>` → userId (opaque token is never stored). */
 const PREFIX = "phantom:refresh:";
-/** 7 days */
+/** 7 days — sliding session length for refresh rotation. */
 const TTL_SEC = 7 * 24 * 60 * 60;
 
 export function hashRefreshToken(token: string): string {

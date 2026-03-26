@@ -4,6 +4,7 @@ import express, { Router } from "express";
 import rateLimit from "express-rate-limit";
 import { prisma } from "../lib/prisma.js";
 import { computePhantomInboundDedupeKey } from "../lib/inboundWebhookDedupe.js";
+import { isPrismaUniqueViolation } from "../lib/prismaUnique.js";
 import { verifyInboundSignature } from "../lib/inboundWebhookSignature.js";
 
 export const webhookEmailInboundRouter = Router();
@@ -168,41 +169,70 @@ webhookEmailInboundRouter.post(
       return;
     }
 
-    const row = await prisma.aliasInboxMessage.create({
-      data: {
-        userId: alias.userId,
-        aliasId: alias.id,
-        subject,
-        fromAddress,
-        snippet,
-        receivedAt,
-        providerMessageId: resolvedMessageId,
-      },
-    });
-
-    await prisma.notification.create({
-      data: {
-        userId: alias.userId,
-        layer: "shield",
-        priority: "low",
-        category: "system",
-        title: `Mail to ${aliasAddress}`,
-        body:
-          snippet.length > 0
-            ? snippet.slice(0, 200)
-            : `From ${fromAddress}`,
-        linkTo: "/inbox",
-      },
-    });
-
-    await prisma.alias.update({
-      where: { id: alias.id },
-      data: { lastActivityAt: receivedAt },
-    });
+    let rowId: string;
+    try {
+      const outcome = await prisma.$transaction(async (tx) => {
+        const dup = await tx.aliasInboxMessage.findUnique({
+          where: { providerMessageId: resolvedMessageId },
+        });
+        if (dup) {
+          return { kind: "deduped" as const };
+        }
+        const row = await tx.aliasInboxMessage.create({
+          data: {
+            userId: alias.userId,
+            aliasId: alias.id,
+            subject,
+            fromAddress,
+            snippet,
+            receivedAt,
+            providerMessageId: resolvedMessageId,
+          },
+        });
+        await tx.notification.create({
+          data: {
+            userId: alias.userId,
+            layer: "shield",
+            priority: "low",
+            category: "system",
+            title: `Mail to ${aliasAddress}`,
+            body:
+              snippet.length > 0
+                ? snippet.slice(0, 200)
+                : `From ${fromAddress}`,
+            linkTo: "/inbox",
+          },
+        });
+        await tx.alias.update({
+          where: { id: alias.id },
+          data: { lastActivityAt: receivedAt },
+        });
+        return { kind: "created" as const, id: row.id };
+      });
+      if (outcome.kind === "deduped") {
+        const response: ApiResponse<{ deduped: true }> = {
+          ok: true,
+          data: { deduped: true },
+        };
+        res.json(response);
+        return;
+      }
+      rowId = outcome.id;
+    } catch (e) {
+      if (isPrismaUniqueViolation(e)) {
+        const response: ApiResponse<{ deduped: true }> = {
+          ok: true,
+          data: { deduped: true },
+        };
+        res.json(response);
+        return;
+      }
+      throw e;
+    }
 
     const response: ApiResponse<{ id: string }> = {
       ok: true,
-      data: { id: row.id },
+      data: { id: rowId },
     };
     res.status(201).json(response);
   }

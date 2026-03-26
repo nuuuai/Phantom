@@ -1,4 +1,8 @@
-import type { NotificationPrefItem } from "@phantom/shared";
+import {
+  clientErrorFromApiFailure,
+  getQueryErrorMessage,
+  type NotificationPrefItem,
+} from "@phantom/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
@@ -15,7 +19,7 @@ export function SettingsPage() {
     queryKey: queryKeys.userMe(accessToken),
     queryFn: async () => {
       const res = await phantomApi.user.me(accessToken);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: accessToken !== null,
@@ -36,7 +40,9 @@ export function SettingsPage() {
   if (meQuery.isError || !meQuery.data) {
     return (
       <div className="px-8 py-6 font-sans text-sm text-ph-danger">
-        Could not load account settings.
+        {meQuery.isError
+          ? getQueryErrorMessage(meQuery.error)
+          : "Could not load account settings."}
       </div>
     );
   }
@@ -191,7 +197,7 @@ function ForwardingSection({
       const res = await phantomApi.user.patchMe(accessToken, {
         forwardToEmail: next,
       });
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     onSuccess: () => {
@@ -276,7 +282,7 @@ function NotificationPrefsSection({
     queryKey: queryKeys.notificationPrefs(accessToken),
     queryFn: async () => {
       const res = await phantomApi.notifications.getPreferences(accessToken);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data.items;
     },
   });
@@ -287,7 +293,7 @@ function NotificationPrefsSection({
         accessToken,
         items
       );
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data.items;
     },
     onSuccess: (data) => {
@@ -324,6 +330,12 @@ function NotificationPrefsSection({
         </p>
       )}
 
+      {prefsQuery.isError && (
+        <p className="mt-4 font-sans text-xs text-ph-danger">
+          {getQueryErrorMessage(prefsQuery.error)}
+        </p>
+      )}
+
       {prefsQuery.data && (
         <ul className="mt-4 space-y-3">
           {prefsQuery.data.map((pref) => (
@@ -355,6 +367,12 @@ function NotificationPrefsSection({
             </li>
           ))}
         </ul>
+      )}
+
+      {updateMutation.isError && (
+        <p className="mt-4 font-sans text-xs text-ph-danger">
+          {getQueryErrorMessage(updateMutation.error)}
+        </p>
       )}
     </section>
   );

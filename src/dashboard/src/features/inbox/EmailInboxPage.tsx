@@ -1,3 +1,4 @@
+import { clientErrorFromApiFailure, getQueryErrorMessage } from "@phantom/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
@@ -26,7 +27,7 @@ export function EmailInboxPage() {
         q: debouncedQ || undefined,
         unread: unreadOnly || undefined,
       });
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data.items;
     },
     enabled: accessToken !== null,
@@ -40,7 +41,7 @@ export function EmailInboxPage() {
         args.id,
         args.isRead
       );
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data.item;
     },
     onSuccess: () => {
@@ -100,9 +101,15 @@ export function EmailInboxPage() {
       )}
       {inboxQuery.isError && (
         <p className="mt-8 font-sans text-sm text-ph-danger">
-          {inboxQuery.error instanceof Error
-            ? inboxQuery.error.message
-            : "Could not load inbox."}
+          {getQueryErrorMessage(inboxQuery.error)}
+        </p>
+      )}
+      {markReadMutation.isError && (
+        <p
+          className="mt-4 rounded-lg border border-ph-danger/40 bg-ph-danger/5 px-4 py-2 font-sans text-xs text-ph-danger"
+          role="alert"
+        >
+          {getQueryErrorMessage(markReadMutation.error)}
         </p>
       )}
       {inboxQuery.data && inboxQuery.data.length === 0 && (

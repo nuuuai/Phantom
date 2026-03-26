@@ -13,7 +13,28 @@ import {
   queryKeys,
 } from "@/lib/queryKeys.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
-import { FREE_TIER_BROKER_SCAN_MAX_PER_24H } from "@phantom/shared";
+import {
+  clientErrorFromApiFailure,
+  formatBrokerScanRateLimit,
+  getQueryErrorMessage,
+  type BrokerScanSummary,
+  type ClientErrorMeta,
+  FREE_TIER_BROKER_SCAN_MAX_PER_24H,
+} from "@phantom/shared";
+
+function freeTierScanFootnote(summary: BrokerScanSummary | undefined): string {
+  if (!summary) {
+    return `Rolling 24h cap defaults to ${String(FREE_TIER_BROKER_SCAN_MAX_PER_24H)} · server truth: GET /api/broker-scan/summary`;
+  }
+  if (summary.canRequestRemoval) {
+    return `Pro: unlimited scans / 24h · automated removal queue is simulated (Phase 1)`;
+  }
+  const cap = summary.freeTierBrokerScanMaxPer24h;
+  if (cap === null) {
+    return `Free tier: scans uncapped in this env · Pro adds simulated removal queue`;
+  }
+  return `Free tier: ${String(cap)} full scans / rolling 24h (same value as 429 scan_rate_limited) · Pro: unlimited`;
+}
 
 type TabId = "all" | "found" | "pending" | "removed" | "relisted";
 
@@ -53,7 +74,7 @@ export function BrokersPage() {
     queryKey: queryKeys.brokerScanSummary(accessToken),
     queryFn: async () => {
       const res = await phantomApi.brokerScan.summary(accessToken);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: accessToken !== null,
@@ -63,7 +84,7 @@ export function BrokersPage() {
     queryKey: queryKeys.brokerScanCatalog(accessToken),
     queryFn: async () => {
       const res = await phantomApi.brokerScan.catalog(accessToken);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data.items;
     },
     enabled: accessToken !== null,
@@ -80,7 +101,7 @@ export function BrokersPage() {
         status: statusParam,
         q: debouncedQ.length > 0 ? debouncedQ : undefined,
       });
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data.items;
     },
     enabled: accessToken !== null && (summaryQuery.data?.totalScanned ?? 0) > 0,
@@ -91,11 +112,7 @@ export function BrokersPage() {
   const startMutation = useMutation({
     mutationFn: async () => {
       const res = await phantomApi.brokerScan.start(accessToken);
-      if (!res.ok) {
-        const err = new Error(res.error.message) as Error & { code?: string };
-        err.code = res.error.code;
-        throw err;
-      }
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     onSuccess: (data) => {
@@ -121,9 +138,12 @@ export function BrokersPage() {
         })();
       }, duration);
     },
-    onError: (e: Error & { code?: string }) => {
-      if (e.code === "scan_rate_limited") {
-        setScanLimitMessage(e.message);
+    onError: (e: Error) => {
+      const ce = e as ClientErrorMeta;
+      if (ce.apiErrorCode === "scan_rate_limited") {
+        setScanLimitMessage(
+          formatBrokerScanRateLimit(e.message, ce.retryAfterSeconds)
+        );
       }
     },
   });
@@ -135,7 +155,7 @@ export function BrokersPage() {
         if (res.error.code === "upgrade_required") {
           setUpgradeOpen(true);
         }
-        throw new Error(res.error.message);
+        throw clientErrorFromApiFailure(res);
       }
       return res.data;
     },
@@ -167,7 +187,7 @@ export function BrokersPage() {
           if (res.error.code === "upgrade_required") {
             setUpgradeOpen(true);
           }
-          throw new Error(res.error.message);
+          throw clientErrorFromApiFailure(res);
         }
         return res.data;
       } finally {
@@ -203,6 +223,26 @@ export function BrokersPage() {
     return (
       <div className="px-8 py-6 font-sans text-sm text-ph-text-tertiary">
         Loading broker intelligence…
+      </div>
+    );
+  }
+
+  if (summaryQuery.isError && !summaryQuery.data) {
+    return (
+      <div className="px-8 py-6">
+        <h1 className="font-sans text-lg font-semibold text-ph-text-primary">
+          Data brokers
+        </h1>
+        <p className="mt-3 font-sans text-sm text-ph-danger">
+          {getQueryErrorMessage(summaryQuery.error)}
+        </p>
+        <button
+          type="button"
+          className="mt-4 rounded-md border border-ph-border bg-ph-raised px-4 py-2 font-sans text-xs text-ph-text-primary hover:bg-ph-border/40"
+          onClick={() => void summaryQuery.refetch()}
+        >
+          Retry
+        </button>
       </div>
     );
   }
@@ -246,7 +286,7 @@ export function BrokersPage() {
         {hasScan && !scanning ? (
           <button
             type="button"
-            disabled={startMutation.isPending}
+            disabled={startMutation.isPending || scanning}
             onClick={() => startMutation.mutate()}
             className="rounded-[7px] border border-ph-border bg-ph-raised px-4 py-2 font-sans text-xs font-medium text-ph-text-secondary transition-colors duration-150 hover:border-ph-text-muted hover:text-ph-text-primary disabled:opacity-50"
           >
@@ -258,7 +298,7 @@ export function BrokersPage() {
       {showPreScan ? (
         <div className="rounded-xl border border-ph-border bg-ph-surface p-8">
           <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-ph-text-tertiary">
-            Layer 1 · Shield
+            Layer 1 · Shield · First exposure scan
           </div>
           <h2 className="mt-3 max-w-xl font-sans text-xl font-semibold text-ph-text-primary">
             See who&apos;s selling your data
@@ -274,18 +314,28 @@ export function BrokersPage() {
             Production workers will parallelize real scans with rate limits per
             site.
           </p>
+          <p className="mt-4 max-w-2xl font-sans text-[11px] leading-relaxed text-ph-text-muted">
+            <span className="font-medium text-ph-text-tertiary">Status legend:</span>{" "}
+            <span className="text-ph-warning">Pending</span> = removal queued (Pro
+            simulation). <span className="text-ph-success">Removed</span> =
+            confirmed in sim. <span className="text-ph-danger">Re-listed</span> =
+            exposure returned — re-queue or DIY.
+          </p>
           <button
             type="button"
-            disabled={startMutation.isPending}
+            disabled={startMutation.isPending || scanning}
             onClick={() => startMutation.mutate()}
             className="mt-8 rounded-[8px] border border-ph-accent-border bg-[#6C3AED15] px-6 py-3 font-sans text-sm font-semibold text-ph-accent-light shadow-[0_0_20px_rgba(108,58,237,0.12)] transition-[transform,background-color] duration-200 hover:bg-[#6C3AED22] disabled:opacity-50"
           >
-            {startMutation.isPending ? "Starting…" : "Start free scan"}
+            {startMutation.isPending
+              ? "Starting…"
+              : summary?.canRequestRemoval
+                ? "Start exposure scan"
+                : "Start free scan"}
           </button>
           <p className="mt-4 font-mono text-[11px] text-ph-text-ghost">
-            ~2 minutes · {catalogNames.length || 50}+ broker sites in registry · Free
-            tier: up to {FREE_TIER_BROKER_SCAN_MAX_PER_24H} full scans / 24h (Pro:
-            unlimited)
+            ~2 minutes · {catalogNames.length || 50}+ broker sites ·{" "}
+            {freeTierScanFootnote(summary)}
           </p>
         </div>
       ) : null}

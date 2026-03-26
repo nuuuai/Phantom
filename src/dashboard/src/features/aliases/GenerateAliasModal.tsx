@@ -1,13 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useCallback, useState } from "react";
-import type { Alias, AliasCategory, AliasType } from "@phantom/shared";
 import {
   ALIAS_CATEGORIES,
+  clientErrorFromApiFailure,
   encryptVaultValue,
   generatePassword,
   importKeyHex,
+  isFreeTierAliasTypeAtCap,
   isValidE164Phone,
+  type Alias,
+  type AliasCategory,
+  type AliasType,
 } from "@phantom/shared";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import {
@@ -19,6 +23,7 @@ import {
 } from "@/lib/queryKeys.js";
 import { useEscapeKey } from "@/hooks/useEscapeKey.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
+import { Link } from "react-router-dom";
 
 const TYPES: { id: AliasType; label: string; hint: string }[] = [
   { id: "email", label: "Email", hint: "Phantom.id address" },
@@ -46,11 +51,21 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
   const [phoneForward, setPhoneForward] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  const userMeQuery = useQuery({
+    queryKey: queryKeys.userMe(accessToken),
+    queryFn: async () => {
+      const res = await phantomApi.user.me(accessToken);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
+      return res.data;
+    },
+    enabled: Boolean(open && accessToken),
+  });
+
   const phoneProviderQuery = useQuery({
     queryKey: queryKeys.phoneProvider(accessToken),
     queryFn: async () => {
       const res = await phantomApi.phone.provider(accessToken);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
     enabled: Boolean(open && accessToken && step === 2 && type === "phone"),
@@ -75,9 +90,7 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
           ? { phoneForwardTo: phoneForward.trim() }
           : {}),
       });
-      if (!res.ok) {
-        throw new Error(res.error.message);
-      }
+      if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data.alias;
     },
     onSuccess: async (alias: Alias) => {
@@ -157,29 +170,62 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
         </div>
 
         {step === 1 ? (
-          <div className="mt-6 grid grid-cols-2 gap-2">
-            {TYPES.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => {
-                  setType(t.id);
-                  setStep(2);
-                }}
-                className={`rounded-lg border px-3 py-4 text-left transition-colors ${
-                  type === t.id
-                    ? "border-ph-accent bg-[#6C3AED15] text-ph-accent-light"
-                    : "border-ph-border bg-ph-bg hover:border-ph-text-ghost"
-                }`}
-              >
-                <div className="font-sans text-sm font-semibold text-ph-text-primary">
-                  {t.label}
-                </div>
-                <div className="mt-1 font-mono text-[10px] text-ph-text-tertiary">
-                  {t.hint}
-                </div>
-              </button>
-            ))}
+          <div className="mt-6 space-y-3">
+            {userMeQuery.data?.user.tier === "free" ? (
+              <p className="rounded-md border border-ph-border bg-ph-bg px-3 py-2 font-sans text-[11px] text-ph-text-tertiary">
+                Free tier: limited aliases per type (see Settings).{" "}
+                <Link
+                  to="/billing"
+                  className="font-medium text-ph-accent-light underline-offset-2 hover:underline"
+                >
+                  Upgrade to Pro
+                </Link>{" "}
+                for unlimited.
+              </p>
+            ) : null}
+            <div className="grid grid-cols-2 gap-2">
+              {TYPES.map((t) => {
+                const atCap = userMeQuery.data
+                  ? isFreeTierAliasTypeAtCap(
+                      userMeQuery.data.user.tier,
+                      t.id,
+                      userMeQuery.data.aliasUsage
+                    )
+                  : false;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    disabled={atCap}
+                    title={
+                      atCap
+                        ? "Free tier limit reached for this type — upgrade or remove an alias"
+                        : undefined
+                    }
+                    onClick={() => {
+                      if (atCap) return;
+                      setType(t.id);
+                      setStep(2);
+                    }}
+                    className={`rounded-lg border px-3 py-4 text-left transition-colors ${
+                      atCap
+                        ? "cursor-not-allowed border-ph-border/60 bg-ph-bg/50 opacity-50"
+                        : type === t.id
+                          ? "border-ph-accent bg-[#6C3AED15] text-ph-accent-light"
+                          : "border-ph-border bg-ph-bg hover:border-ph-text-ghost"
+                    }`}
+                  >
+                    <div className="font-sans text-sm font-semibold text-ph-text-primary">
+                      {t.label}
+                      {atCap ? " · at cap" : ""}
+                    </div>
+                    <div className="mt-1 font-mono text-[10px] text-ph-text-tertiary">
+                      {t.hint}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         ) : (
           <div className="mt-6">

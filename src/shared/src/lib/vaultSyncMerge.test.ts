@@ -10,6 +10,7 @@ import {
   decryptVaultSyncBlob,
   emptyVaultSyncPlaintext,
   encryptVaultSyncBlob,
+  executeVaultSyncPush,
   mergeVaultSyncForServer,
   mergeVaultSyncPlaintexts,
   parseVaultSyncPlaintext,
@@ -35,6 +36,27 @@ const baseAlias = (over: Partial<Alias>): Alias => ({
 });
 
 describe("vaultSyncMerge", () => {
+  it("mergeVaultSyncPlaintexts breaks ties on equal updatedAt via encryptedValue order", () => {
+    const a = emptyVaultSyncPlaintext();
+    a.entries["x"] = {
+      id: "x",
+      updatedAt: 5,
+      encryptedValue: "aaa",
+      serviceName: null,
+      serviceUrl: null,
+    };
+    const b = emptyVaultSyncPlaintext();
+    b.entries["x"] = {
+      id: "x",
+      updatedAt: 5,
+      encryptedValue: "zzz",
+      serviceName: null,
+      serviceUrl: null,
+    };
+    const m = mergeVaultSyncPlaintexts(a, b);
+    expect(m.entries["x"]?.encryptedValue).toBe("aaa");
+  });
+
   it("mergeVaultSyncPlaintexts picks higher updatedAt", () => {
     const older = emptyVaultSyncPlaintext();
     older.entries["x"] = {
@@ -125,5 +147,56 @@ describe("vaultSyncMerge", () => {
     ];
     const p = pruneMergedToActivePasswordAliases(merged, aliases);
     expect(Object.keys(p.entries)).toEqual(["a1"]);
+  });
+});
+
+describe("executeVaultSyncPush", () => {
+  it("fails when remote ciphertext decrypts with a different passphrase (wrong vault key)", async () => {
+    const salt = generateVaultSalt();
+    const keyCorrect = await deriveVaultKey("correct-passphrase", salt);
+    const hexWrong = await exportKeyHex(
+      await deriveVaultKey("wrong-passphrase", salt)
+    );
+    const plain = emptyVaultSyncPlaintext();
+    const ct = await encryptVaultSyncBlob(keyCorrect, plain);
+
+    const result = await executeVaultSyncPush(
+      hexWrong,
+      [],
+      async () => ({ ciphertext: ct, version: 1 }),
+      async () => ({ ok: true, version: 2 })
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toMatch(/decrypt|password|vault/i);
+    }
+  });
+
+  it("retries after simulated 409 (sync_conflict): refetch then PUT succeeds", async () => {
+    const salt = generateVaultSalt();
+    const key = await deriveVaultKey("merge-retry-pw", salt);
+    const hex = await exportKeyHex(key);
+
+    let getCalls = 0;
+    let putCalls = 0;
+
+    const result = await executeVaultSyncPush(
+      hex,
+      [baseAlias({ id: "a1", isActive: true })],
+      async () => {
+        getCalls++;
+        return { ciphertext: null, version: 0 };
+      },
+      async () => {
+        putCalls++;
+        if (putCalls === 1) return { ok: false, conflict: true };
+        return { ok: true, version: 1 };
+      }
+    );
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.version).toBe(1);
+    expect(getCalls).toBe(2);
+    expect(putCalls).toBe(2);
   });
 });

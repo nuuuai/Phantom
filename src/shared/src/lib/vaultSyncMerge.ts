@@ -62,7 +62,10 @@ export function parseVaultSyncPlaintext(raw: unknown): VaultSyncPlaintext | null
   return { v: VAULT_SYNC_SCHEMA_VERSION, entries };
 }
 
-/** Last-write-wins per id by `updatedAt` (ties prefer `b`). */
+/**
+ * Last-write-wins per id by `updatedAt`.
+ * Equal timestamps: deterministic tie-break via `encryptedValue` lexicographic compare (stable across clients).
+ */
 export function mergeVaultSyncPlaintexts(
   a: VaultSyncPlaintext | null,
   b: VaultSyncPlaintext | null
@@ -80,15 +83,26 @@ export function mergeVaultSyncPlaintexts(
     const eb = B.entries[id];
     if (!ea) entries[id] = eb!;
     else if (!eb) entries[id] = ea;
-    else
-      entries[id] =
-        ea.updatedAt > eb.updatedAt
-          ? ea
-          : eb.updatedAt > ea.updatedAt
-            ? eb
-            : eb;
+    else if (ea.updatedAt > eb.updatedAt) entries[id] = ea;
+    else if (eb.updatedAt > ea.updatedAt) entries[id] = eb;
+    else {
+      const cmp = (ea.encryptedValue ?? "").localeCompare(eb.encryptedValue ?? "");
+      entries[id] = cmp < 0 ? ea : cmp > 0 ? eb : ea;
+    }
   }
   return { v: VAULT_SYNC_SCHEMA_VERSION, entries };
+}
+
+/** Response `data` from GET /api/vault/sync (opaque blob; server never decrypts). */
+export interface VaultSyncGetResponse {
+  ciphertext: string | null;
+  version: number;
+}
+
+/** JSON body for PUT /api/vault/sync (`clientVersion` must match server for non-conflicting write). */
+export interface VaultSyncPutRequest {
+  ciphertext: string;
+  clientVersion: number;
 }
 
 export function passwordAliasesToVaultSyncPlaintext(aliases: Alias[]): VaultSyncPlaintext {

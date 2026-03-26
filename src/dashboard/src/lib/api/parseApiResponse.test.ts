@@ -23,6 +23,7 @@ describe("parseApiResponseJson", () => {
     expect(out.ok).toBe(false);
     if (!out.ok) {
       expect(out.error.code).toBe("validation_error");
+      expect(out.error.httpStatus).toBe(400);
     }
   });
 
@@ -36,6 +37,7 @@ describe("parseApiResponseJson", () => {
     if (!out.ok) {
       expect(out.error.code).toBe("http_error");
       expect(out.error.message).toContain("502");
+      expect(out.error.httpStatus).toBe(502);
     }
   });
 
@@ -49,6 +51,7 @@ describe("parseApiResponseJson", () => {
     if (!out.ok) {
       expect(out.error.code).toBe("invalid_response");
       expect(out.error.message).toContain("empty");
+      expect(out.error.httpStatus).toBe(500);
     }
   });
 
@@ -62,6 +65,7 @@ describe("parseApiResponseJson", () => {
     if (!out.ok) {
       expect(out.error.code).toBe("invalid_response");
       expect(out.error.message).toContain("text/html");
+      expect(out.error.httpStatus).toBe(500);
     }
   });
 

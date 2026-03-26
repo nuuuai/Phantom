@@ -3,6 +3,7 @@ import { Fragment, useMemo, useState } from "react";
 import {
   BROKER_DATA_TYPES,
   brokerRemovalLinkLabel,
+  brokerRemovalMethodLabel,
   resolveBrokerRemovalHref,
   type BrokerDataType,
   type BrokerScanResult,
@@ -317,7 +318,8 @@ export function BrokerResultsPanel({
                                 Removal method
                               </div>
                               <p className="mt-1 font-sans text-sm text-ph-text-secondary">
-                                {row.broker.removalMethod.toUpperCase()} · typical{" "}
+                                {brokerRemovalMethodLabel(row.broker.removalMethod)} ·
+                                typical{" "}
                                 <span className="font-mono text-ph-text-tertiary">
                                   {row.broker.avgRemovalDays}d
                                 </span>
@@ -429,8 +431,9 @@ function RemovalAction({
         type="button"
         onClick={onUpgrade}
         className="rounded-md border border-ph-border px-2.5 py-1 font-mono text-[11px] text-ph-text-secondary"
+        title="Phantom Pro simulates re-queue; DIY opt-out is in the expanded row"
       >
-        Upgrade
+        Upgrade · Pro queue
       </button>
     );
   }
@@ -458,8 +461,9 @@ function RemovalAction({
         type="button"
         onClick={onUpgrade}
         className="rounded-md border border-ph-border px-2.5 py-1 font-mono text-[11px] text-ph-text-secondary"
+        title="Use self-service links in the row above on Free tier; Pro adds simulated queue"
       >
-        Request removal
+        Upgrade · Pro queue
       </button>
     );
   }
