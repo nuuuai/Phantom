@@ -15,6 +15,7 @@ export type {
   UserAccountSnapshot,
 } from "./types/userAccount.js";
 export { FREE_TIER_ALIAS_MAX } from "./constants/tierLimits.js";
+export { FREE_TIER_BROKER_SCAN_MAX_PER_24H } from "./constants/brokerScanQuota.js";
 export { RATE_LIMIT_RETRY_MS } from "./constants/http.js";
 export type { ThreatPattern } from "./types/threatPattern.js";
 export type {

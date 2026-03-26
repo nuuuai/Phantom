@@ -116,6 +116,81 @@ describe.skipIf(!hasDb)("launch integration (auth + Stripe webhook)", () => {
     expect(updated?.stripeSubscriptionId).toBe(subId);
     expect(updated?.subscriptionStatus).toBe("active");
 
+    await prisma.stripeWebhookEvent.deleteMany({
+      where: { stripeEventId: event.id },
+    });
+    await prisma.user.delete({ where: { id: user.id } });
+  });
+
+  it("same Stripe event id is idempotent (duplicate delivery)", async () => {
+    process.env.STRIPE_SECRET_KEY = SK;
+    process.env.STRIPE_WEBHOOK_SECRET = WH_SECRET;
+    resetStripeClientForTests();
+
+    const email = `stripe_dup_${randomUUID()}@example.com`;
+    const user = await prisma.user.create({
+      data: {
+        email,
+        hashedPassword: "$2b$04$placeholder.hash.placeholder.placeholder",
+        tier: "free",
+      },
+    });
+
+    const stripe = new Stripe(SK, { typescript: true });
+    const subId = `sub_test_${randomUUID().slice(0, 8)}`;
+    const eventId = `evt_dup_${randomUUID()}`;
+    const event = {
+      id: eventId,
+      object: "event",
+      api_version: "2024-11-20.acacia",
+      created: Math.floor(Date.now() / 1000),
+      type: "checkout.session.completed",
+      livemode: false,
+      pending_webhooks: 0,
+      request: null,
+      data: {
+        object: {
+          id: "cs_test_checkout_dup",
+          object: "checkout.session",
+          mode: "subscription",
+          client_reference_id: user.id,
+          subscription: subId,
+          customer: "cus_test_customer",
+        },
+      },
+    };
+    const payload = JSON.stringify(event);
+    const signature = stripe.webhooks.generateTestHeaderString({
+      payload,
+      secret: WH_SECRET,
+    });
+
+    const res1 = await request(app)
+      .post("/api/webhooks/stripe")
+      .set("Content-Type", "application/json")
+      .set("Stripe-Signature", signature)
+      .send(payload);
+    expect(res1.status).toBe(200);
+    expect(res1.body.received).toBe(true);
+    expect(res1.body.duplicate).toBeUndefined();
+
+    const res2 = await request(app)
+      .post("/api/webhooks/stripe")
+      .set("Content-Type", "application/json")
+      .set("Stripe-Signature", signature)
+      .send(payload);
+    expect(res2.status).toBe(200);
+    expect(res2.body.received).toBe(true);
+    expect(res2.body.duplicate).toBe(true);
+
+    const rows = await prisma.stripeWebhookEvent.findMany({
+      where: { stripeEventId: eventId },
+    });
+    expect(rows).toHaveLength(1);
+
+    await prisma.stripeWebhookEvent.deleteMany({
+      where: { stripeEventId: eventId },
+    });
     await prisma.user.delete({ where: { id: user.id } });
   });
 
@@ -174,6 +249,9 @@ describe.skipIf(!hasDb)("launch integration (auth + Stripe webhook)", () => {
     expect(updated?.stripeSubscriptionId).toBeNull();
     expect(updated?.subscriptionStatus).toBe("canceled");
 
+    await prisma.stripeWebhookEvent.deleteMany({
+      where: { stripeEventId: event.id },
+    });
     await prisma.user.delete({ where: { id: user.id } });
   });
 });

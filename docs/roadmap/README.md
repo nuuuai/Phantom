@@ -18,16 +18,19 @@ All roadmap docs use **percent complete** as a manual engineering estimate (not 
 
 | File | Scope | Document-level summary |
 |------|--------|-------------------------|
-| [PHASE_1_FOUNDATION.md](./PHASE_1_FOUNDATION.md) | Months 1–6, desktop MVP | Deliverables avg **~55%** (see table at top of file). |
+| [PHASE_1_FOUNDATION.md](./PHASE_1_FOUNDATION.md) | Months 1–6, desktop MVP | Deliverables avg **~64%** (see table at top of file; updated per ship). |
+| [INFRA_AWS_PHASE1.md](./INFRA_AWS_PHASE1.md) | AWS / Terraform gap (Phase 1) | No IaC in repo; recommended layout, probes, CI parity. |
+| [AUTH_AND_VAULT_PHASE1.md](./AUTH_AND_VAULT_PHASE1.md) | JWT vs vault KDF vs SRP | Phase 1 policy (PBKDF2 vault; RS256/HS256 JWT). |
+| [BROKER_REMOVAL_QUEUE.md](./BROKER_REMOVAL_QUEUE.md) | Removal jobs / workers | Simulated today; queue + Playwright direction. |
 | [PHASE_2_INTELLIGENCE.md](./PHASE_2_INTELLIGENCE.md) | Months 6–12, Brain + telephony | **0%** (not started). |
 | [PHASE_3_AUTONOMY.md](./PHASE_3_AUTONOMY.md) | Months 12–18, Autopilot | **0%** (not started). |
 | [PHASE_4_MOBILE_ECOSYSTEM.md](./PHASE_4_MOBILE_ECOSYSTEM.md) | Months 18–24, mobile + ecosystem | **0%** (not started). |
 | [MILESTONES.md](./MILESTONES.md) | Critical path + North Star + guardrails | Milestone **Progress** column + metric tables. |
 | [PHASE_1_AGENT_RUNS.md](./PHASE_1_AGENT_RUNS.md) | Sequential Cursor/agent prompts (Runs 1–5) | One run = one baseline commit or tag. |
-| [DEPLOYMENT.md](./DEPLOYMENT.md) | API/dashboard/extension env for prod | Health `/health/live` + `/health`; Stripe; CI integration tests. |
+| [DEPLOYMENT.md](./DEPLOYMENT.md) | API/dashboard/extension env for prod | Health `/health/live` + `/health`; **docker-compose** port/env table; **`X-Request-Id`** + Redis policies; links **`INFRA_AWS_PHASE1.md`**; Stripe; CI integration tests. |
 | [EXTENSION_STORE_BUILD.md](./EXTENSION_STORE_BUILD.md) | Plasmo prod zip / M8 | Store-ready extension build. |
 | [CHROME_WEB_STORE_CHECKLIST.md](./CHROME_WEB_STORE_CHECKLIST.md) | CWS submission | Permissions, privacy, external blockers. |
-| [QA_MANUAL.md](./QA_MANUAL.md) | Automated vs manual QA | Pre-launch checklist; integration test notes. |
+| [QA_MANUAL.md](./QA_MANUAL.md) | Automated vs manual QA | Pre-launch checklist; billing duplicate webhook, vault sync, scan cap, **`NOTIFICATIONS_EMAIL_ENABLED`** stub. |
 
 ## Conventions
 
@@ -38,6 +41,9 @@ All roadmap docs use **percent complete** as a manual engineering estimate (not 
 
 ## Recently shipped (examples)
 
+- **Inbox read state**: Prisma **`isRead`** on `AliasInboxMessage`; **`GET /api/email-inbox?unread=1`**; **`PATCH …/:id/read`**; dashboard filter + actions.
+- **Stripe webhooks**: DB **`StripeWebhookEvent`** (`event.id` unique); duplicate POSTs → **`{ duplicate: true }`** after idempotent handler work.
+- **API reliability**: **`passOnStoreError`** on HTTP rate limiters; refresh-token Redis I/O wrapped (no silent success on failure); JWT **`clockTolerance`**.
 - **GitHub Actions CI** (`.github/workflows/ci.yml`): lint, test, build on push/PR.
 - **Free-tier alias caps** (API): email 3, phone 1, username 5, password 25 for `tier === free`; `GET /api/user/me` returns usage. Dashboard **Settings** + **Aliases** show quotas.
 - **Notification system**: Prisma `Notification` model (priority, category, layer), API endpoints (`GET /api/notifications`, `POST /read-all`, `POST /seed-demo`), dashboard bell icon in TopBar with dropdown, mark-read, and demo seeding.
@@ -53,6 +59,9 @@ All roadmap docs use **percent complete** as a manual engineering estimate (not 
 - **Email path (code)**: `POST /api/webhooks/email-inbound` (HMAC `X-Phantom-Signature: sha256=…`, `INBOUND_WEBHOOK_SECRET`), `AliasInboxMessage` + `GET /api/email-inbox`, dashboard **`/inbox`**, optional **`forwardToEmail`** via `PATCH /api/user/me`.
 - **Infra**: Global API rate limit uses **Redis** when `REDIS_URL` is set (`rate-limit-redis`); in-memory fallback if not.
 - **Launch prep**: `CHROME_WEB_STORE_CHECKLIST.md` for Web Store submission.
-- **M8/M9 billing & launch**: Stripe **Checkout** + **Customer Portal**, **`POST /api/webhooks/stripe`** → `User.tier` + `subscriptionStatus`, dashboard **`/billing`**; **`GET /health/live`** (liveness) + **`GET /health`** (readiness); **`launch.integration.test.ts`** (signed Stripe webhooks + auth) in CI with Postgres. Env: `STRIPE_*`, `DASHBOARD_PUBLIC_URL`. See `DEPLOYMENT.md`, `QA_MANUAL.md`.
-- **Phone (M5)**: `provisionPhoneAlias`, `phoneProvider` / `phoneForwardTo` on aliases, alias detail **Phone routing**; `PHONE_PROVIDER` + Twilio env (stub branch).
-- **Tests**: `vaultSyncMerge`, `brokerRemovalHelp`, `mapBrokerScan`, `userTierPaid`, `phoneConfig`, `validateForward`, `provisionPhone`; webhook smoke in `app.test.ts`.
+- **M8/M9 billing & launch**: Stripe **Checkout** + **Customer Portal**, **`POST /api/webhooks/stripe`** + **`POST /api/billing/sync-checkout-session`** (return URL `?session_id=`) → `User.tier` + `subscriptionStatus`, dashboard **`/billing`**; **`GET /health/live`** + **`GET /health`**; **`launch.integration.test.ts`** in CI with Postgres. Env: `STRIPE_*`, `DASHBOARD_PUBLIC_URL`. See `DEPLOYMENT.md`, `QA_MANUAL.md`.
+- **Phone (M5)**: `provisionPhoneAlias`, `phoneProvider` / `phoneForwardTo` on aliases, alias detail **Phone routing**; `PHONE_PROVIDER` + Twilio env (stub branch); **503** if Twilio misconfigured.
+- **Email inbound**: **`POST /api/webhooks/email-inbound`** hardened (**415** media type, **`X-Phantom-Request-Id`**, tests in `webhookEmailInbound.test.ts`).
+- **Broker scan**: optional **`BROKER_SCAN_CONCURRENCY`** (1–32); env in `.env.example` + `DEPLOYMENT.md`.
+- **Extension store**: root script **`npm run build:extension:store`** (shared + extension prod build).
+- **Tests**: `vaultSyncMerge`, `brokerRemovalHelp`, `mapBrokerScan`, `userTierPaid`, `phoneConfig`, `validateForward`, `provisionPhone`, `webhookEmailInbound`; webhook smoke in `app.test.ts`.

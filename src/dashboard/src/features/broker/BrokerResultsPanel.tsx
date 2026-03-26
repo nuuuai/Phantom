@@ -94,6 +94,13 @@ export function BrokerResultsPanel({
 
   return (
     <div className="space-y-5">
+      <p className="max-w-3xl font-sans text-[11px] leading-relaxed text-ph-text-muted">
+        <span className="font-medium text-ph-text-tertiary">Status:</span>{" "}
+        <span className="text-ph-warning">Pending</span> = removal queued (Pro
+        simulation). <span className="text-ph-success">Removed</span> =
+        confirmed in sim. <span className="text-ph-danger">Re-listed</span> =
+        exposure came back — re-queue or DIY.
+      </p>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-ph-text-tertiary">
@@ -406,6 +413,8 @@ function RemovalAction({
     );
   }
   if (row.status === "re_listed") {
+    const relistLabel =
+      row.broker.removalMethod === "api" ? "Re-queue auto (sim)" : "Re-remove";
     return canRequestRemoval ? (
       <button
         type="button"
@@ -413,7 +422,7 @@ function RemovalAction({
         onClick={onPaid}
         className="rounded-md border border-ph-danger/40 bg-ph-danger/10 px-2.5 py-1 font-mono text-[11px] text-ph-danger hover:bg-ph-danger/15"
       >
-        {busy ? "…" : "Re-remove"}
+        {busy ? "…" : relistLabel}
       </button>
     ) : (
       <button
@@ -426,14 +435,23 @@ function RemovalAction({
     );
   }
   if (row.status === "found") {
+    const paidLabel =
+      row.broker.removalMethod === "api"
+        ? "Queue auto opt-out (sim)"
+        : "Request removal";
     return canRequestRemoval ? (
       <button
         type="button"
         disabled={busy}
         onClick={onPaid}
         className="rounded-md border border-ph-accent-border bg-[#6C3AED15] px-2.5 py-1 font-mono text-[11px] font-medium text-ph-accent-light hover:bg-[#6C3AED22]"
+        title={
+          row.broker.removalMethod === "api"
+            ? "Simulated API opt-out queue — real partner automation is not live in Phase 1"
+            : undefined
+        }
       >
-        {busy ? "…" : "Request removal"}
+        {busy ? "…" : paidLabel}
       </button>
     ) : (
       <button

@@ -1,7 +1,9 @@
+import { randomUUID } from "node:crypto";
 import type { ApiResponse } from "@phantom/shared";
 import express, { Router } from "express";
 import rateLimit from "express-rate-limit";
 import { prisma } from "../lib/prisma.js";
+import { computePhantomInboundDedupeKey } from "../lib/inboundWebhookDedupe.js";
 import { verifyInboundSignature } from "../lib/inboundWebhookSignature.js";
 
 export const webhookEmailInboundRouter = Router();
@@ -18,6 +20,9 @@ webhookEmailInboundRouter.post(
   webhookLimiter,
   express.raw({ type: "application/json", limit: "256kb" }),
   async (req, res) => {
+    const requestId = randomUUID();
+    res.setHeader("X-Phantom-Request-Id", requestId);
+
     const secret = process.env.INBOUND_WEBHOOK_SECRET?.trim();
     if (!secret || secret.length < 16) {
       res.status(503).json({
@@ -26,6 +31,19 @@ webhookEmailInboundRouter.post(
           code: "webhook_unconfigured",
           message:
             "INBOUND_WEBHOOK_SECRET is not set (min 16 chars). Required for inbound email ingestion.",
+        },
+      });
+      return;
+    }
+
+    const ctRaw = req.headers["content-type"];
+    const ct = Array.isArray(ctRaw) ? ctRaw[0] : ctRaw ?? "";
+    if (!/application\/json/i.test(ct)) {
+      res.status(415).json({
+        ok: false,
+        error: {
+          code: "unsupported_media_type",
+          message: "Content-Type must be application/json (raw body bytes for HMAC)",
         },
       });
       return;
@@ -70,12 +88,12 @@ webhookEmailInboundRouter.post(
 
     const aliasAddress =
       typeof body.aliasAddress === "string" ? body.aliasAddress.trim() : "";
-    if (!aliasAddress.includes("@")) {
+    if (!aliasAddress.includes("@") || aliasAddress.length > 254) {
       res.status(400).json({
         ok: false,
         error: {
           code: "validation_error",
-          message: "aliasAddress must be a full email",
+          message: "aliasAddress must be a full email (max 254 chars)",
         },
       });
       return;
@@ -99,24 +117,32 @@ webhookEmailInboundRouter.post(
       if (!Number.isNaN(d.getTime())) receivedAt = d;
     }
 
-    const providerMessageId =
+    const providerFromBody =
       typeof body.providerMessageId === "string" &&
-      body.providerMessageId.length > 0
-        ? body.providerMessageId.slice(0, 512)
+      body.providerMessageId.trim().length > 0
+        ? body.providerMessageId.trim().slice(0, 512)
         : null;
 
-    if (providerMessageId) {
-      const existing = await prisma.aliasInboxMessage.findUnique({
-        where: { providerMessageId },
-      });
-      if (existing) {
-        const response: ApiResponse<{ deduped: true }> = {
-          ok: true,
-          data: { deduped: true },
-        };
-        res.json(response);
-        return;
-      }
+    const resolvedMessageId =
+      providerFromBody ??
+      computePhantomInboundDedupeKey(
+        aliasAddress,
+        fromAddress,
+        subject,
+        receivedAt,
+        snippet,
+      );
+
+    const existing = await prisma.aliasInboxMessage.findUnique({
+      where: { providerMessageId: resolvedMessageId },
+    });
+    if (existing) {
+      const response: ApiResponse<{ deduped: true }> = {
+        ok: true,
+        data: { deduped: true },
+      };
+      res.json(response);
+      return;
     }
 
     const normalizedAddr = aliasAddress.trim().toLowerCase();
@@ -150,7 +176,7 @@ webhookEmailInboundRouter.post(
         fromAddress,
         snippet,
         receivedAt,
-        providerMessageId,
+        providerMessageId: resolvedMessageId,
       },
     });
 

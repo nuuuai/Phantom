@@ -23,6 +23,7 @@ import {
   getVaultKeyHex,
   persistVaultKeyHex,
 } from "./lib/vaultStorage";
+import { devLog } from "./lib/devLog.js";
 import { pushVaultSyncFromExtension } from "./lib/vaultSync.js";
 
 async function loginRequest(
@@ -161,7 +162,8 @@ chrome.runtime.onMessage.addListener(
             sendResponse({ ok: false, error: result.error.message });
           }
         })
-        .catch(() => {
+        .catch((err: unknown) => {
+          devLog("login failed", err);
           sendResponse({ ok: false, error: "network_error" });
         });
       return true;
@@ -205,7 +207,8 @@ chrome.runtime.onMessage.addListener(
           } else {
             sendResponse({ ok: false, error: result.error.message });
           }
-        } catch {
+        } catch (err: unknown) {
+          devLog("generate alias failed", err);
           sendResponse({ ok: false, error: "network_error" });
         }
       })();

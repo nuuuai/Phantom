@@ -17,7 +17,12 @@ export async function storeRefreshToken(userId: string): Promise<string | null> 
   if (!redis) return null;
   const token = randomBytes(32).toString("hex");
   const key = PREFIX + hashRefreshToken(token);
-  await redis.setex(key, TTL_SEC, userId);
+  try {
+    await redis.setex(key, TTL_SEC, userId);
+  } catch {
+    /** Fail closed: no opaque token issued if Redis write fails. */
+    return null;
+  }
   return token;
 }
 
@@ -34,7 +39,11 @@ export async function getRefreshTokenUserId(
 export async function deleteRefreshToken(token: string): Promise<void> {
   const redis = getRedis();
   if (!redis) return;
-  await redis.del(PREFIX + hashRefreshToken(token));
+  try {
+    await redis.del(PREFIX + hashRefreshToken(token));
+  } catch {
+    /* best-effort revoke */
+  }
 }
 
 /** Revoke without issuing a new access token (logout). */

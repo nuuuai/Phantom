@@ -6,11 +6,13 @@ import type {
 } from "@phantom/shared";
 import { Router } from "express";
 import type { BrokerScanStatus } from "@prisma/client";
+import { assertCanStartBrokerScan } from "../lib/brokerScanQuota.js";
 import { isPaidTier } from "../lib/userTierPaid.js";
 import { prisma } from "../lib/prisma.js";
 import { advanceRemovalSimulation } from "../lib/brokerScanAdvance.js";
 import {
   delayMs,
+  getBrokerScanConcurrency,
   getBrokerScanWorkerDelayMs,
   mapWithConcurrency,
   randomDelayInRange,
@@ -22,9 +24,6 @@ import {
   selectFoundBrokerIndices,
   simulateOneBroker,
 } from "../lib/brokerScanSimulation.js";
-
-/** Simulated parallel workers (bounded concurrency + per-broker delay). */
-const SCAN_CONCURRENCY = 8;
 
 export const brokerScanRouter = Router();
 
@@ -64,6 +63,28 @@ brokerScanRouter.post("/start", async (req, res) => {
     return;
   }
 
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    res.status(401).json({
+      ok: false,
+      error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
+
+  const gate = await assertCanStartBrokerScan(userId, user.tier);
+  if (!gate.ok) {
+    res.setHeader("Retry-After", String(gate.retryAfterSeconds));
+    res.status(429).json({
+      ok: false,
+      error: {
+        code: gate.code,
+        message: gate.message,
+      },
+    });
+    return;
+  }
+
   const brokers = await prisma.dataBroker.findMany({
     where: { isActive: true },
     orderBy: { name: "asc" },
@@ -79,8 +100,6 @@ brokerScanRouter.post("/start", async (req, res) => {
     return;
   }
 
-  await prisma.brokerScanRun.deleteMany({ where: { userId } });
-
   const target = randomTargetFoundFraction(userId);
   const foundIndices = selectFoundBrokerIndices(brokers, userId, target);
 
@@ -93,9 +112,10 @@ brokerScanRouter.post("/start", async (req, res) => {
   });
 
   const delayRange = getBrokerScanWorkerDelayMs();
+  const scanConcurrency = getBrokerScanConcurrency();
   const createRows = await mapWithConcurrency(
     brokers,
-    SCAN_CONCURRENCY,
+    scanConcurrency,
     async (b, i) => {
       await delayMs(randomDelayInRange(delayRange.min, delayRange.max));
       const isFound = foundIndices.has(i);
@@ -344,6 +364,8 @@ brokerScanRouter.post("/:resultId/request-removal", async (req, res) => {
     },
     include: { broker: true },
   });
+  // Phase 1: `removalMethod === "api"` uses the same simulated pipeline as other methods;
+  // real partner API calls are not wired (see docs/roadmap/BROKER_REMOVAL_QUEUE.md).
 
   const response: ApiResponse<{ result: BrokerScanResult }> = {
     ok: true,

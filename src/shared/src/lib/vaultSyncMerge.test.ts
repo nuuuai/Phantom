@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { Alias } from "../types/alias.js";
 import {
+  deriveVaultKey,
+  exportKeyHex,
+  generateVaultSalt,
+  importKeyHex,
+} from "./vaultCrypto.js";
+import {
+  decryptVaultSyncBlob,
   emptyVaultSyncPlaintext,
+  encryptVaultSyncBlob,
   mergeVaultSyncForServer,
   mergeVaultSyncPlaintexts,
   parseVaultSyncPlaintext,
@@ -82,6 +90,17 @@ describe("vaultSyncMerge", () => {
         entries: { x: { id: "y", updatedAt: 1, encryptedValue: null } },
       })
     ).toBeNull();
+  });
+
+  it("decryptVaultSyncBlob rejects tampered ciphertext", async () => {
+    const salt = generateVaultSalt();
+    const key = await deriveVaultKey("sync-merge-test-pw", salt);
+    const hex = await exportKeyHex(key);
+    const cryptoKey = await importKeyHex(hex);
+    const plain = emptyVaultSyncPlaintext();
+    const ct = await encryptVaultSyncBlob(cryptoKey, plain);
+    const tampered = ct.slice(0, -8) + "deadbeef";
+    await expect(decryptVaultSyncBlob(cryptoKey, tampered)).rejects.toThrow();
   });
 
   it("pruneMergedToActivePasswordAliases removes inactive ids", () => {

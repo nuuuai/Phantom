@@ -66,8 +66,23 @@ High-level only — full detail lives in [`docs/roadmap/README.md`](docs/roadmap
 - **Auth** — Optional **RS256** JWT; refresh tokens via **Redis** when `REDIS_URL` is set.
 - **Vault** — E2E encrypted blob sync (`/api/vault/sync`), LWW merge in `@phantom/shared`, extension DEK + IndexedDB.
 - **Brokers** — 150+ catalog seed; scan/removal simulation; **`canRequestRemoval`** on scan summary; tier-gated removal queue.
-- **Billing** — Stripe Checkout + Portal + webhook → **`User.tier`**; dashboard **`/billing`**.
-- **Launch ops** — **`DEPLOYMENT.md`** (env, health probes), **`EXTENSION_STORE_BUILD.md`** (prod zip), **`CHROME_WEB_STORE_CHECKLIST.md`**, **`QA_MANUAL.md`**.
+- **Billing** — Stripe Checkout + Portal + webhook → **`User.tier`** (webhook stores **`event.id`** in **`StripeWebhookEvent`**; duplicate deliveries → **`duplicate: true`**); **`POST /api/billing/sync-checkout-session`** after redirect; dashboard **`/billing`**.
+- **Email inbound webhook** — `Content-Type` enforcement, request id header, **`webhookEmailInbound.test.ts`**.
+- **Broker scan** — tunable **`BROKER_SCAN_CONCURRENCY`**; store build via **`npm run build:extension:store`**.
+- **Launch ops** — **`DEPLOYMENT.md`** (env, health probes, **`REDIS_URL`** behavior), **`EXTENSION_STORE_BUILD.md`** (prod zip), **`CHROME_WEB_STORE_CHECKLIST.md`**, **`QA_MANUAL.md`**.
+- **Auth/vault policy** — **`docs/roadmap/AUTH_AND_VAULT_PHASE1.md`** (JWT vs SRP/Argon2id); tenant boundary — **`docs/architecture/USER_DATA_SCOPE.md`**.
+- **Inbox + phone UX** — Email inbox **`q`** filter + dashboard search; phone provider **`lastError`** on generate + alias detail.
+- **Broker removal** — Queue/worker direction — **`docs/roadmap/BROKER_REMOVAL_QUEUE.md`**; Pro removal queue + **API-broker** UI labels (simulated automation).
+- **Free tier broker scans** — Rolling **24h** cap (**`FREE_TIER_BROKER_SCAN_MAX_PER_24H`**, default 3); **`429`** + **`Retry-After`** on excess; scan history retained (no per-user run wipe).
+- **Notifications** — Category **prefs** (API + Settings); **desktop** OS notifications when unread increases (if browser permission granted).
+- **Launch / AWS** — **`docs/roadmap/INFRA_AWS_PHASE1.md`** (recommended AWS layout, health probes, prod parity); **`DEPLOYMENT.md`** links it; extension store docs include **manifest path** + prod parity table.
+- **Email inbound** — **`phantom:v1:`** content hash dedupe when **`providerMessageId`** is omitted (worker retries); see **`docs/roadmap/EMAIL_INBOUND.md`**.
+- **Dashboard / extension UX** — Overview **Get started** (0 aliases), **Quick actions** wired to routes, overview **Retry** on load failure; onboarding **billing** step; broker **status legend**. Extension **`network_error`** JSON when API unreachable (**tests**).
+- **API ops** — **`X-Request-Id`** on every response; structured JSON **error** logs; JWT verify **`clockTolerance`** 60s; Redis: global rate limit **fail-open** on store errors, refresh tokens **fail closed** on Redis write/read errors; **`DEPLOYMENT.md`** documents compose + policies.
+- **Alias inbox** — **`isRead`** on messages; **`GET`** `unread=1`; **`PATCH /api/email-inbox/:id/read`**; dashboard **Unread only** + mark read/unread.
+- **Vault UX + tests** — Dashboard **Last synced** (relative time) + conflict copy; **`decryptVaultSyncBlob`** tamper test in **`@phantom/shared`**.
+- **Extension auth** — **`refreshSession`** one retry after **503** on **`/api/auth/refresh`** (fake-timer test).
+- **QA / notifications stub** — **`QA_MANUAL.md`** expanded (billing duplicate webhook, vault, scan cap, ops); **`NOTIFICATIONS_EMAIL_ENABLED`** in **`DEPLOYMENT.md`** + **`.env.example`** (outbound email not in API yet).
 
 **Agent playbook (sequential runs):** [`docs/roadmap/PHASE_1_AGENT_RUNS.md`](docs/roadmap/PHASE_1_AGENT_RUNS.md).
 
@@ -78,6 +93,7 @@ High-level only — full detail lives in [`docs/roadmap/README.md`](docs/roadmap
 - [`TECH_STACK.md`](docs/architecture/TECH_STACK.md) — Technology choices and rationale
 - [`DATA_FLOWS.md`](docs/architecture/DATA_FLOWS.md) — How data moves through the system
 - [`SECURITY_MODEL.md`](docs/architecture/SECURITY_MODEL.md) — Zero-knowledge encryption, vault design
+- [`USER_DATA_SCOPE.md`](docs/architecture/USER_DATA_SCOPE.md) — Logical multi-tenancy (`userId`) in Phase 1
 
 ### Features
 - [`LAYER_1_SHIELD.md`](docs/features/LAYER_1_SHIELD.md) — Defensive privacy features

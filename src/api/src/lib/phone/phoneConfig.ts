@@ -39,6 +39,7 @@ export function getPhoneProviderPublicStatus(): PhoneProviderStatus {
       provisioningMode: "mock",
       message:
         "Mock mode: +1-555 numbers only. No carrier. Safe for local development.",
+      lastError: null,
       capabilities: {
         forwardTargetStored: true,
         pstnInbound: false,
@@ -54,6 +55,8 @@ export function getPhoneProviderPublicStatus(): PhoneProviderStatus {
       provisioningMode: "unavailable",
       message:
         "PHONE_PROVIDER=twilio but TWILIO_ACCOUNT_SID is missing. Set it or use PHONE_PROVIDER=mock.",
+      lastError:
+        "TWILIO_ACCOUNT_SID is not set; phone provisioning is unavailable until configured.",
       capabilities: {
         forwardTargetStored: true,
         pstnInbound: false,
@@ -68,6 +71,7 @@ export function getPhoneProviderPublicStatus(): PhoneProviderStatus {
     provisioningMode: "twilio_stub",
     message:
       "Twilio stub: numbers and SIDs are simulated. Real Number API + PSTN/SMS are not wired in Phase 1.",
+    lastError: null,
     capabilities: {
       forwardTargetStored: true,
       pstnInbound: false,

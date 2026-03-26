@@ -5,6 +5,12 @@
 From the **repository root** (so workspace dependencies resolve):
 
 ```bash
+npm run build:extension:store
+```
+
+Equivalent to:
+
+```bash
 npm run build -w @phantom/shared
 npm run build -w @phantom/extension
 ```
@@ -14,6 +20,21 @@ Plasmo writes the MV3 bundle under:
 `src/extension/build/chrome-mv3-prod/`
 
 (Dev builds use `chrome-mv3-dev/` — do not upload those to the store.)
+
+**Verify output:** after a successful prod build, `manifest.json` must exist at:
+
+`src/extension/build/chrome-mv3-prod/manifest.json`
+
+Store review expects the **zipped folder** to list `manifest.json` at the **root** of the archive (not nested under another directory).
+
+## Production parity (extension)
+
+| Check | Notes |
+|-------|--------|
+| `NODE_ENV` | CI/build usually sets production implicitly for `plasmo build`; local store builds should use production API URL in `PLASMO_PUBLIC_API_URL`. |
+| API URL | Must be **HTTPS** in production (matches `CORS_ORIGIN` on the API). |
+| Version | `version` in `src/extension/package.json` — increment for each CWS upload. |
+| Full monorepo build | Root `npm run build` also builds shared + api + dashboard + extension; **store-only:** `npm run build:extension:store` (see root `package.json`). |
 
 ### Packaging for Chrome Web Store
 

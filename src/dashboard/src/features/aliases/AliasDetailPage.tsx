@@ -291,18 +291,25 @@ export function AliasDetailPage() {
                 Could not load phone provider status.
               </p>
             ) : phoneProviderQuery.data ? (
-              <div
-                className={[
-                  "mb-4 rounded-md border px-3 py-2 font-sans text-[11px] leading-snug",
-                  phoneProviderQuery.data.ready
-                    ? "border-ph-border bg-ph-bg text-ph-text-tertiary"
-                    : "border-ph-danger/50 bg-ph-danger/5 text-ph-danger",
-                ].join(" ")}
-              >
-                <span className="font-mono text-[10px] uppercase tracking-wide text-ph-text-muted">
-                  Adapter · {phoneProviderQuery.data.provisioningMode}
-                </span>
-                <p className="mt-1">{phoneProviderQuery.data.message}</p>
+              <div className="mb-4 space-y-2">
+                <div
+                  className={[
+                    "rounded-md border px-3 py-2 font-sans text-[11px] leading-snug",
+                    phoneProviderQuery.data.ready
+                      ? "border-ph-border bg-ph-bg text-ph-text-tertiary"
+                      : "border-ph-danger/50 bg-ph-danger/5 text-ph-danger",
+                  ].join(" ")}
+                >
+                  <span className="font-mono text-[10px] uppercase tracking-wide text-ph-text-muted">
+                    Adapter · {phoneProviderQuery.data.provisioningMode}
+                  </span>
+                  <p className="mt-1">{phoneProviderQuery.data.message}</p>
+                </div>
+                {phoneProviderQuery.data.lastError ? (
+                  <p className="rounded-md border border-ph-danger/40 bg-ph-danger/5 px-3 py-2 font-mono text-[10px] text-ph-danger">
+                    Last error: {phoneProviderQuery.data.lastError}
+                  </p>
+                ) : null}
               </div>
             ) : null}
 

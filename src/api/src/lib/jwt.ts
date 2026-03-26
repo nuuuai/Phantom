@@ -1,3 +1,10 @@
+/**
+ * Access JWT signing for Phase 1:
+ * - Prefer RS256 in production (`JWT_PRIVATE_KEY` / `JWT_PUBLIC_KEY` PEM).
+ * - HS256 fallback via `JWT_SECRET` (≥16 chars) for dev/small deploys.
+ * Refresh tokens are opaque and stored in Redis; they are not handled here.
+ * SRP / Argon2id for *login* are out of scope; see docs/roadmap/AUTH_AND_VAULT_PHASE1.md.
+ */
 import { createPrivateKey, createPublicKey } from "node:crypto";
 import jwt from "jsonwebtoken";
 
@@ -53,16 +60,19 @@ export function signAccessToken(userId: string, email: string): string {
 export function verifyAccessToken(token: string): JwtPayload {
   const opts = { issuer: "phantom-api" };
 
+  /** Tolerate small client/server clock skew (seconds). */
+  const verifyOpts = { ...opts, clockTolerance: 60 };
+
   if (hasRs256Keys()) {
     const publicKey = pemFromEnv("JWT_PUBLIC_KEY");
     const decoded = jwt.verify(token, publicKey, {
-      ...opts,
+      ...verifyOpts,
       algorithms: ["RS256"],
     });
     return assertPayload(decoded);
   }
 
-  const decoded = jwt.verify(token, getJwtSecret(), opts);
+  const decoded = jwt.verify(token, getJwtSecret(), verifyOpts);
   return assertPayload(decoded);
 }
 

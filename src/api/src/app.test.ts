@@ -11,6 +11,16 @@ describe("createApp", () => {
       status: "ok",
       service: "phantom-api",
     });
+    expect(res.body).not.toHaveProperty("db");
+    expect(typeof res.headers["x-request-id"]).toBe("string");
+  });
+
+  it("echoes incoming X-Request-Id", async () => {
+    const res = await request(app)
+      .get("/health/live")
+      .set("X-Request-Id", "client-req-abc")
+      .expect(200);
+    expect(res.headers["x-request-id"]).toBe("client-req-abc");
   });
 
   it("GET /health reports database status (200 connected or 503 disconnected)", async () => {
@@ -52,6 +62,14 @@ describe("createApp", () => {
     process.env.INBOUND_WEBHOOK_SECRET = prev;
     expect(res.status).toBe(503);
     expect(res.body.ok).toBe(false);
+  });
+
+  it("POST /api/billing/sync-checkout-session requires auth", async () => {
+    const res = await request(app)
+      .post("/api/billing/sync-checkout-session")
+      .set("Content-Type", "application/json")
+      .send(JSON.stringify({ sessionId: "cs_test_123" }));
+    expect(res.status).toBe(401);
   });
 
   it("POST /api/auth/login without body returns 400", async () => {

@@ -1,13 +1,16 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 const actions = [
-  { label: "New alias", color: "#6C3AED" },
-  { label: "Run scan", color: "#34D399" },
-  { label: "View threats", color: "#FBBF24" },
-  { label: "Exposure report", color: "#60A5FA" },
+  { label: "New alias", to: "/aliases", color: "#6C3AED" },
+  { label: "Run broker scan", to: "/brokers", color: "#34D399" },
+  { label: "Alias inbox", to: "/inbox", color: "#FBBF24" },
+  { label: "Billing & Pro", to: "/billing", color: "#60A5FA" },
 ] as const;
 
 export function QuickActionsGrid() {
+  const navigate = useNavigate();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -23,6 +26,7 @@ export function QuickActionsGrid() {
           <button
             key={a.label}
             type="button"
+            onClick={() => void navigate(a.to)}
             className="cursor-pointer rounded-lg border px-3 py-2.5 text-center font-sans text-xs font-medium transition-colors duration-200"
             style={{
               backgroundColor: `${a.color}08`,

@@ -87,6 +87,7 @@ model AliasInboxMessage {
   receivedAt        DateTime
   /** Idempotency key from upstream (SES, Mailgun, etc.); null = no dedupe. */
   providerMessageId String?  @unique
+  isRead            Boolean  @default(false)
 
   @@index([userId, receivedAt(sort: Desc)])
   @@index([aliasId, receivedAt(sort: Desc)])
@@ -215,4 +216,11 @@ enum BrokerScanStatus {
   removal_submitted
   removal_confirmed
   re_listed
+}
+
+/** One row per Stripe `event.id` successfully processed (webhook idempotency / retries). */
+model StripeWebhookEvent {
+  id            String   @id @default(cuid())
+  stripeEventId String   @unique
+  createdAt     DateTime @default(now())
 }

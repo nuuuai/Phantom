@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { queryKeys } from "@/lib/queryKeys.js";
@@ -7,6 +9,9 @@ import { useSessionStore } from "@/stores/useSessionStore.js";
 export function BillingPage() {
   const accessToken = useSessionStore((s) => s.accessToken);
   const qc = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const checkoutSessionId = searchParams.get("session_id");
+  const canceledCheckout = searchParams.get("canceled");
 
   const billingQuery = useQuery({
     queryKey: queryKeys.billingStatus(accessToken),
@@ -38,6 +43,45 @@ export function BillingPage() {
       if (url) window.location.href = url;
     },
   });
+
+  useEffect(() => {
+    if (canceledCheckout === "1") {
+      const next = new URLSearchParams(searchParams);
+      next.delete("canceled");
+      setSearchParams(next, { replace: true });
+    }
+  }, [canceledCheckout, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (!accessToken || !checkoutSessionId) return;
+    let cancelled = false;
+    void (async () => {
+      const res = await phantomApi.billing.syncCheckoutSession(
+        accessToken,
+        checkoutSessionId
+      );
+      if (cancelled) return;
+      if (!res.ok) return;
+      const next = new URLSearchParams(searchParams);
+      next.delete("session_id");
+      setSearchParams(next, { replace: true });
+      await qc.invalidateQueries({
+        queryKey: queryKeys.userMe(accessToken),
+      });
+      await qc.invalidateQueries({
+        queryKey: queryKeys.billingStatus(accessToken),
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    accessToken,
+    checkoutSessionId,
+    qc,
+    searchParams,
+    setSearchParams,
+  ]);
 
   const portalMutation = useMutation({
     mutationFn: async () => {

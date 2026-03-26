@@ -25,6 +25,15 @@ export function randomDelayInRange(min: number, max: number): number {
   return min + Math.floor(Math.random() * (max - min + 1));
 }
 
+/** Parallel workers for `/broker-scan/start`. Override with `BROKER_SCAN_CONCURRENCY` (1–32). */
+export function getBrokerScanConcurrency(): number {
+  const raw = process.env.BROKER_SCAN_CONCURRENCY?.trim();
+  if (!raw) return 8;
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n)) return 8;
+  return Math.max(1, Math.min(32, n));
+}
+
 export async function mapWithConcurrency<T, R>(
   items: readonly T[],
   concurrency: number,

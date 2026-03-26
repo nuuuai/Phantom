@@ -20,6 +20,7 @@ const authRateLimiter = rateLimit({
   max: 40,
   standardHeaders: true,
   legacyHeaders: false,
+  passOnStoreError: true,
 });
 
 authRouter.use(authRateLimiter);

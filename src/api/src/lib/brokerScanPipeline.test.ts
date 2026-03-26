@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   delayMs,
+  getBrokerScanConcurrency,
   getBrokerScanWorkerDelayMs,
   mapWithConcurrency,
   randomDelayInRange,
@@ -19,6 +20,17 @@ describe("brokerScanPipeline", () => {
   it("getBrokerScanWorkerDelayMs falls back on invalid env", () => {
     vi.stubEnv("BROKER_SCAN_WORKER_DELAY_MS", "not-a-range");
     expect(getBrokerScanWorkerDelayMs()).toEqual({ min: 5, max: 25 });
+  });
+
+  it("getBrokerScanConcurrency clamps and defaults", () => {
+    vi.stubEnv("BROKER_SCAN_CONCURRENCY", "");
+    expect(getBrokerScanConcurrency()).toBe(8);
+    vi.stubEnv("BROKER_SCAN_CONCURRENCY", "4");
+    expect(getBrokerScanConcurrency()).toBe(4);
+    vi.stubEnv("BROKER_SCAN_CONCURRENCY", "99");
+    expect(getBrokerScanConcurrency()).toBe(32);
+    vi.stubEnv("BROKER_SCAN_CONCURRENCY", "not-a-number");
+    expect(getBrokerScanConcurrency()).toBe(8);
   });
 
   it("randomDelayInRange is within bounds", () => {

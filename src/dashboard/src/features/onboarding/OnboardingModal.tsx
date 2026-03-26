@@ -30,6 +30,12 @@ const STEPS = [
     link: "/brokers",
   },
   {
+    title: "Phantom Pro (optional)",
+    body: "Free tier includes exposure scans and DIY opt-out links. Upgrade for automated removal queue, unlimited aliases, and billing in one place.",
+    cta: "Next",
+    link: "/billing",
+  },
+  {
     title: "Install the extension",
     body: "The Phantom Chrome extension detects signup forms and auto-fills aliases and encrypted passwords directly in the browser.",
     cta: "Done",

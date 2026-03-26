@@ -198,14 +198,44 @@ export const phantomApi = {
   emailInbox: {
     list: async (
       accessToken: Token,
-      limit?: number
+      limitOrOpts?: number | { limit?: number; q?: string; unread?: boolean }
     ): Promise<ApiResponse<{ items: AliasInboxItem[] }>> => {
-      const q =
-        limit !== undefined ? `?limit=${String(limit)}` : "";
+      const opts =
+        typeof limitOrOpts === "number"
+          ? { limit: limitOrOpts }
+          : (limitOrOpts ?? {});
+      const params = new URLSearchParams();
+      if (opts.limit !== undefined) {
+        params.set("limit", String(opts.limit));
+      }
+      if (opts.q?.trim()) {
+        params.set("q", opts.q.trim());
+      }
+      if (opts.unread) {
+        params.set("unread", "1");
+      }
+      const qs = params.toString() ? `?${params.toString()}` : "";
       const res = await fetchWithRefresh(
-        `/api/email-inbox${q}`,
+        `/api/email-inbox${qs}`,
         accessToken,
         {}
+      );
+      return parseApiResponseJson(res);
+    },
+
+    patchRead: async (
+      accessToken: Token,
+      id: string,
+      isRead: boolean
+    ): Promise<ApiResponse<{ item: AliasInboxItem }>> => {
+      const res = await fetchWithRefresh(
+        `/api/email-inbox/${encodeURIComponent(id)}/read`,
+        accessToken,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isRead }),
+        }
       );
       return parseApiResponseJson(res);
     },
@@ -455,6 +485,22 @@ export const phantomApi = {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+        }
+      );
+      return parseApiResponseJson(res);
+    },
+
+    syncCheckoutSession: async (
+      accessToken: Token,
+      sessionId: string
+    ): Promise<ApiResponse<{ synced: true }>> => {
+      const res = await fetchWithRefresh(
+        "/api/billing/sync-checkout-session",
+        accessToken,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId }),
         }
       );
       return parseApiResponseJson(res);

@@ -43,8 +43,12 @@ export const queryKeys = {
   brokerScanCatalog: (accessToken: string | null) =>
     ["broker-scan-catalog", accessToken] as const,
   userMe: (accessToken: string | null) => ["user-me", accessToken] as const,
-  emailInbox: (accessToken: string | null) =>
-    ["email-inbox", accessToken] as const,
+  emailInbox: (
+    accessToken: string | null,
+    q?: string,
+    unreadOnly?: boolean
+  ) =>
+    ["email-inbox", accessToken, q ?? "", unreadOnly ?? false] as const,
   billingStatus: (accessToken: string | null) =>
     ["billing-status", accessToken] as const,
   phoneProvider: (accessToken: string | null) =>

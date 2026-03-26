@@ -13,6 +13,7 @@ import {
   queryKeys,
 } from "@/lib/queryKeys.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
+import { FREE_TIER_BROKER_SCAN_MAX_PER_24H } from "@phantom/shared";
 
 type TabId = "all" | "found" | "pending" | "removed" | "relisted";
 
@@ -39,6 +40,7 @@ export function BrokersPage() {
   } | null>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [removalBusyId, setRemovalBusyId] = useState<string | null>(null);
+  const [scanLimitMessage, setScanLimitMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedQ(searchQ), 320);
@@ -89,10 +91,15 @@ export function BrokersPage() {
   const startMutation = useMutation({
     mutationFn: async () => {
       const res = await phantomApi.brokerScan.start(accessToken);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) {
+        const err = new Error(res.error.message) as Error & { code?: string };
+        err.code = res.error.code;
+        throw err;
+      }
       return res.data;
     },
     onSuccess: (data) => {
+      setScanLimitMessage(null);
       setScanMeta({
         totalBrokers: data.totalBrokers,
         estimatedTime: data.estimatedTime,
@@ -113,6 +120,11 @@ export function BrokersPage() {
           setScanning(false);
         })();
       }, duration);
+    },
+    onError: (e: Error & { code?: string }) => {
+      if (e.code === "scan_rate_limited") {
+        setScanLimitMessage(e.message);
+      }
     },
   });
 
@@ -207,6 +219,15 @@ export function BrokersPage() {
         onClose={() => setUpgradeOpen(false)}
       />
 
+      {scanLimitMessage ? (
+        <div
+          className="mb-4 rounded-lg border border-ph-warning/40 bg-ph-warning/10 px-4 py-3 font-sans text-sm text-ph-warning"
+          role="alert"
+        >
+          {scanLimitMessage}
+        </div>
+      ) : null}
+
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-sans text-lg font-semibold text-ph-text-primary">
@@ -262,7 +283,9 @@ export function BrokersPage() {
             {startMutation.isPending ? "Starting…" : "Start free scan"}
           </button>
           <p className="mt-4 font-mono text-[11px] text-ph-text-ghost">
-            ~2 minutes · {catalogNames.length || 50}+ broker sites in registry
+            ~2 minutes · {catalogNames.length || 50}+ broker sites in registry · Free
+            tier: up to {FREE_TIER_BROKER_SCAN_MAX_PER_24H} full scans / 24h (Pro:
+            unlimited)
           </p>
         </div>
       ) : null}

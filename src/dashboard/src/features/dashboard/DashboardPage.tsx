@@ -4,6 +4,7 @@ import { QuickActionsGrid } from "./QuickActionsGrid.js";
 import { StatGrid } from "./StatGrid.js";
 import { SystemLayersPanel } from "./SystemLayersPanel.js";
 import { WeeklyScamsChart } from "./WeeklyScamsChart.js";
+import { DashboardGettingStarted } from "./DashboardGettingStarted.js";
 import { shouldSkipDevBootstrap } from "@/lib/devBootstrap.js";
 import { queryKeys } from "@/lib/queryKeys.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
@@ -69,9 +70,30 @@ export function DashboardPage() {
   }
 
   if (overviewQuery.isError || !overviewQuery.data) {
+    const detail =
+      overviewQuery.error instanceof Error
+        ? overviewQuery.error.message
+        : "Could not load overview.";
     return (
-      <div className="px-8 py-6 font-sans text-sm text-ph-danger">
-        Could not load overview. Is the API running on port 8787?
+      <div className="px-8 py-6">
+        <h1 className="font-sans text-xl font-semibold text-ph-text-primary">
+          Overview
+        </h1>
+        <p className="mt-3 max-w-lg font-sans text-sm text-ph-danger">
+          {detail}
+        </p>
+        <p className="mt-2 font-sans text-xs text-ph-text-muted">
+          Check that the API is running and reachable (see{" "}
+          <span className="font-mono">DEPLOYMENT.md</span> /{" "}
+          <span className="font-mono">VITE_API_URL</span>).
+        </p>
+        <button
+          type="button"
+          onClick={() => void overviewQuery.refetch()}
+          className="mt-4 rounded-md border border-ph-border bg-ph-raised px-4 py-2 font-sans text-xs font-medium text-ph-text-primary hover:bg-ph-border/50"
+        >
+          Retry
+        </button>
       </div>
     );
   }
@@ -80,6 +102,7 @@ export function DashboardPage() {
 
   return (
     <div className="px-8 py-6">
+      {data.activeAliases === 0 ? <DashboardGettingStarted /> : null}
       <StatGrid data={data} />
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">

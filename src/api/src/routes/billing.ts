@@ -1,6 +1,8 @@
 import type { ApiResponse } from "@phantom/shared";
+import type Stripe from "stripe";
 import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
+import { applyProSubscriptionFromCheckoutSession } from "../lib/stripeCheckoutSessionApply.js";
 import { getStripe, stripeConfigured } from "../lib/stripeClient.js";
 
 export const billingRouter = Router();
@@ -54,6 +56,120 @@ billingRouter.get("/status", async (req, res) => {
   };
 
   const response: ApiResponse<typeof data> = { ok: true, data };
+  res.json(response);
+});
+
+/**
+ * After Stripe redirects to the dashboard with ?session_id=…, call this so the user
+ * is upgraded even if `checkout.session.completed` webhooks are delayed.
+ */
+billingRouter.post("/sync-checkout-session", async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({
+      ok: false,
+      error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
+
+  const raw = (req.body as { sessionId?: unknown })?.sessionId;
+  const sessionId =
+    typeof raw === "string" ? raw.trim() : "";
+  if (!sessionId.startsWith("cs_")) {
+    res.status(400).json({
+      ok: false,
+      error: {
+        code: "invalid_session",
+        message: "Valid Stripe Checkout session id (cs_…) required",
+      },
+    });
+    return;
+  }
+
+  const stripe = getStripe();
+  if (!stripe) {
+    res.status(503).json({
+      ok: false,
+      error: {
+        code: "billing_unconfigured",
+        message: "Stripe is not configured (STRIPE_SECRET_KEY)",
+      },
+    });
+    return;
+  }
+
+  let session: Stripe.Checkout.Session;
+  try {
+    session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ["subscription", "customer"],
+    });
+  } catch {
+    res.status(404).json({
+      ok: false,
+      error: {
+        code: "session_not_found",
+        message: "Checkout session not found",
+      },
+    });
+    return;
+  }
+
+  const ref =
+    session.client_reference_id ??
+    (typeof session.metadata?.userId === "string"
+      ? session.metadata.userId
+      : undefined);
+  if (!ref || ref !== userId) {
+    res.status(403).json({
+      ok: false,
+      error: {
+        code: "session_not_owned",
+        message: "This checkout session does not belong to your account",
+      },
+    });
+    return;
+  }
+
+  if (session.mode !== "subscription") {
+    res.status(400).json({
+      ok: false,
+      error: {
+        code: "invalid_mode",
+        message: "Not a subscription checkout",
+      },
+    });
+    return;
+  }
+
+  if (session.status !== "complete") {
+    res.status(409).json({
+      ok: false,
+      error: {
+        code: "checkout_incomplete",
+        message: "Checkout is not complete yet",
+      },
+    });
+    return;
+  }
+
+  if (!session.subscription) {
+    res.status(409).json({
+      ok: false,
+      error: {
+        code: "subscription_pending",
+        message: "Subscription not ready on this session yet",
+      },
+    });
+    return;
+  }
+
+  await applyProSubscriptionFromCheckoutSession(session);
+
+  const response: ApiResponse<{ synced: true }> = {
+    ok: true,
+    data: { synced: true },
+  };
   res.json(response);
 });
 

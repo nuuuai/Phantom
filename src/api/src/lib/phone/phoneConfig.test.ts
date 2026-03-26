@@ -13,6 +13,7 @@ describe("getPhoneProviderPublicStatus", () => {
     const s = getPhoneProviderPublicStatus();
     expect(s.ready).toBe(true);
     expect(s.provisioningMode).toBe("mock");
+    expect(s.lastError).toBeNull();
   });
 
   it("twilio without SID is unavailable", () => {
@@ -21,6 +22,7 @@ describe("getPhoneProviderPublicStatus", () => {
     const s = getPhoneProviderPublicStatus();
     expect(s.ready).toBe(false);
     expect(s.provisioningMode).toBe("unavailable");
+    expect(s.lastError).toContain("TWILIO_ACCOUNT_SID");
   });
 
   it("twilio with SID is stub-ready", () => {
@@ -29,5 +31,6 @@ describe("getPhoneProviderPublicStatus", () => {
     const s = getPhoneProviderPublicStatus();
     expect(s.ready).toBe(true);
     expect(s.provisioningMode).toBe("twilio_stub");
+    expect(s.lastError).toBeNull();
   });
 });

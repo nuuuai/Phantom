@@ -9,6 +9,7 @@ import { authenticateJwt } from "./middleware/authJwt.js";
 import { errorJsonHandler } from "./middleware/errorJson.js";
 import { jsonBody } from "./middleware/jsonBody.js";
 import { notFoundJson } from "./middleware/notFoundJson.js";
+import { requestIdMiddleware } from "./middleware/requestId.js";
 import { requestLog } from "./middleware/requestLog.js";
 import { authRouter } from "./routes/auth.js";
 import { billingRouter } from "./routes/billing.js";
@@ -37,6 +38,7 @@ export function createApp() {
       credentials: true,
     })
   );
+  app.use(requestIdMiddleware);
   app.use(requestLog);
   app.use("/api/webhooks", webhookEmailInboundRouter);
   app.use("/api/webhooks", stripeWebhookRouter);

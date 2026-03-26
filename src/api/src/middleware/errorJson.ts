@@ -22,6 +22,28 @@ function statusAndCode(err: unknown): { status: number; code: string } {
   return { status: 500, code: "server_error" };
 }
 
+function logStructuredError(
+  method: string,
+  path: string,
+  requestId: string | undefined,
+  err: unknown
+) {
+  const message = err instanceof Error ? err.message : String(err);
+  const { status, code } = statusAndCode(err);
+  const line = JSON.stringify({
+    level: "error",
+    service: "phantom-api",
+    ts: new Date().toISOString(),
+    method,
+    path,
+    requestId: requestId ?? null,
+    httpStatus: status,
+    errorCode: code,
+    message: message.slice(0, 2000),
+  });
+  console.error(line);
+}
+
 /** Last middleware: always respond with JSON for failed requests (never empty body). */
 export const errorJsonHandler: ErrorRequestHandler = (err, req, res, next) => {
   const method = req.method ?? "?";
@@ -29,7 +51,7 @@ export const errorJsonHandler: ErrorRequestHandler = (err, req, res, next) => {
   const message = err instanceof Error ? err.message : String(err);
   const stack = err instanceof Error ? err.stack : undefined;
 
-  console.error("[API ERROR]", method, path, message);
+  logStructuredError(method, path, req.requestId, err);
   if (stack) {
     console.error(stack);
   }

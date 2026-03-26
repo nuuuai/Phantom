@@ -189,15 +189,35 @@ function VaultPageInner() {
             </p>
           )}
           {vaultSyncQuery.isSuccess && (
-            <p className="mt-1 font-mono text-[10px] text-ph-text-muted">
-              Encrypted backup · v{vaultSyncQuery.data}
-            </p>
+            <div className="mt-1 space-y-0.5">
+              <p className="font-mono text-[10px] text-ph-text-muted">
+                Encrypted backup · v{vaultSyncQuery.data}
+              </p>
+              {vaultSyncQuery.dataUpdatedAt > 0 && (
+                <p className="font-mono text-[10px] text-ph-text-muted">
+                  Last synced{" "}
+                  {formatRelativeTime(
+                    new Date(vaultSyncQuery.dataUpdatedAt).toISOString()
+                  )}
+                </p>
+              )}
+            </div>
           )}
           {vaultSyncQuery.isError && (
             <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-ph-danger/40 bg-ph-danger/5 px-3 py-2">
-              <p className="font-sans text-[11px] text-ph-danger">
-                {(vaultSyncQuery.error as Error).message}
-              </p>
+              <div className="min-w-0 flex-1">
+                <p className="font-sans text-[11px] text-ph-danger">
+                  {(vaultSyncQuery.error as Error).message}
+                </p>
+                {String((vaultSyncQuery.error as Error).message).includes(
+                  "could not complete after resolving"
+                ) && (
+                  <p className="mt-1 font-sans text-[10px] text-ph-text-tertiary">
+                    Another device may have updated the vault. Retry merges with
+                    the server copy (last-write-wins).
+                  </p>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => void vaultSyncQuery.refetch()}

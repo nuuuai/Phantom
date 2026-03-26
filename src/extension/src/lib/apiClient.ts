@@ -19,23 +19,50 @@ function resolveUrl(path: string): string {
   return `${getApiBaseUrl()}${p}`;
 }
 
+function networkFailureResponse(): Response {
+  return new Response(
+    JSON.stringify({
+      ok: false,
+      error: {
+        code: "network_error",
+        message:
+          "Could not reach the Phantom API. Check your network and PLASMO_PUBLIC_API_URL.",
+      },
+    }),
+    { status: 503, headers: { "Content-Type": "application/json" } }
+  );
+}
+
+const REFRESH_503_BACKOFF_MS = 2000;
+
 export async function refreshSession(): Promise<boolean> {
   const rt = await getRefreshToken();
   if (!rt) return false;
   const url = `${getApiBaseUrl()}/api/auth/refresh`;
   const body = JSON.stringify({ refreshToken: rt });
-  let res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body,
-  });
-  if (res.status === 429) {
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    res = await fetch(url, {
+  const postRefresh = () =>
+    fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body,
     });
+
+  let res: Response;
+  try {
+    res = await postRefresh();
+    /** Transient overload / deploy: retry once after backoff (Stripe-style idempotency elsewhere). */
+    if (res.status === 503) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, REFRESH_503_BACKOFF_MS)
+      );
+      res = await postRefresh();
+    }
+    if (res.status === 429) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      res = await postRefresh();
+    }
+  } catch {
+    return false;
   }
   const data = await parseApiResponseJson<{
     accessToken: string;
@@ -70,22 +97,26 @@ export async function fetchAuth(
   }
   const headers = new Headers(init.headers);
   headers.set("Authorization", `Bearer ${token}`);
-  let res = await fetch(url, { ...init, headers });
-  if (res.status === 429) {
-    await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_RETRY_MS));
-    res = await fetch(url, { ...init, headers });
+  try {
+    let res = await fetch(url, { ...init, headers });
+    if (res.status === 429) {
+      await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_RETRY_MS));
+      res = await fetch(url, { ...init, headers });
+    }
+    if (res.status !== 401) return res;
+    const ok = await refreshSession();
+    if (!ok) return res;
+    const token2 = await getAccessToken();
+    if (!token2) return res;
+    const h2 = new Headers(init.headers);
+    h2.set("Authorization", `Bearer ${token2}`);
+    let res2 = await fetch(url, { ...init, headers: h2 });
+    if (res2.status === 429) {
+      await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_RETRY_MS));
+      res2 = await fetch(url, { ...init, headers: h2 });
+    }
+    return res2;
+  } catch {
+    return networkFailureResponse();
   }
-  if (res.status !== 401) return res;
-  const ok = await refreshSession();
-  if (!ok) return res;
-  const token2 = await getAccessToken();
-  if (!token2) return res;
-  const h2 = new Headers(init.headers);
-  h2.set("Authorization", `Bearer ${token2}`);
-  let res2 = await fetch(url, { ...init, headers: h2 });
-  if (res2.status === 429) {
-    await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_RETRY_MS));
-    res2 = await fetch(url, { ...init, headers: h2 });
-  }
-  return res2;
 }

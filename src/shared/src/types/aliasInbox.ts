@@ -6,4 +6,5 @@ export interface AliasInboxItem {
   fromAddress: string;
   snippet: string;
   receivedAt: string;
+  isRead: boolean;
 }

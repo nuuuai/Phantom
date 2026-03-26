@@ -1,7 +1,9 @@
 import express, { Router } from "express";
 import type Stripe from "stripe";
 import rateLimit from "express-rate-limit";
+import { applyProSubscriptionFromCheckoutSession } from "../lib/stripeCheckoutSessionApply.js";
 import { prisma } from "../lib/prisma.js";
+import { isPrismaUniqueViolation } from "../lib/prismaUnique.js";
 import { getStripe } from "../lib/stripeClient.js";
 
 export const stripeWebhookRouter = Router();
@@ -11,6 +13,7 @@ const limiter = rateLimit({
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
+  passOnStoreError: true,
 });
 
 stripeWebhookRouter.post(
@@ -59,36 +62,7 @@ stripeWebhookRouter.post(
       switch (event.type) {
         case "checkout.session.completed": {
           const session = event.data.object as Stripe.Checkout.Session;
-          if (session.mode !== "subscription") break;
-          const userId =
-            session.client_reference_id ??
-            (typeof session.metadata?.userId === "string"
-              ? session.metadata.userId
-              : undefined);
-          if (!userId) break;
-          const subRaw = session.subscription;
-          const subId =
-            typeof subRaw === "string"
-              ? subRaw
-              : subRaw && typeof subRaw === "object" && "id" in subRaw
-                ? String(subRaw.id)
-                : null;
-          const custRaw = session.customer;
-          const customerId =
-            typeof custRaw === "string"
-              ? custRaw
-              : custRaw && typeof custRaw === "object" && "id" in custRaw
-                ? String(custRaw.id)
-                : null;
-          await prisma.user.update({
-            where: { id: userId },
-            data: {
-              tier: "paid",
-              stripeCustomerId: customerId ?? undefined,
-              stripeSubscriptionId: subId ?? undefined,
-              subscriptionStatus: "active",
-            },
-          });
+          await applyProSubscriptionFromCheckoutSession(session);
           break;
         }
         case "customer.subscription.updated":
@@ -130,6 +104,18 @@ stripeWebhookRouter.post(
         error: { code: "webhook_handler_error", message: "Handler failed" },
       });
       return;
+    }
+
+    try {
+      await prisma.stripeWebhookEvent.create({
+        data: { stripeEventId: event.id },
+      });
+    } catch (e) {
+      if (isPrismaUniqueViolation(e)) {
+        res.json({ received: true, duplicate: true });
+        return;
+      }
+      throw e;
     }
 
     res.json({ received: true });

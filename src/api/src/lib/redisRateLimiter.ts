@@ -14,6 +14,12 @@ export function createGlobalRateLimiter() {
       max: 10_000,
       standardHeaders: true,
       legacyHeaders: false,
+      /**
+       * If Redis is unreachable, allow the request (no global limit applied for that hit).
+       * **Fail-open** avoids a Redis outage taking down the API; abuse is still mitigated by
+       * per-route limiters (e.g. auth) and auth on protected routes. See `DEPLOYMENT.md`.
+       */
+      passOnStoreError: true,
       store: new RedisStore({
         // ioredis `call` return type is wider than rate-limit-redis' RedisReply; runtime is compatible.
         sendCommand: ((...args: string[]) => {
@@ -33,5 +39,6 @@ export function createGlobalRateLimiter() {
     max: 10_000,
     standardHeaders: true,
     legacyHeaders: false,
+    passOnStoreError: true,
   });
 }

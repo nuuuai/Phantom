@@ -8,6 +8,11 @@ export interface PhoneProviderStatus {
   provisioningMode: "mock" | "twilio_stub" | "unavailable";
   /** Human-readable status for dashboard copy. */
   message: string;
+  /**
+   * Last configuration or adapter error (non-secret), e.g. missing Twilio SID.
+   * Null when there is nothing to report.
+   */
+  lastError: string | null;
   capabilities: {
     /** We persist `phoneForwardTo` for future PSTN routing. */
     forwardTargetStored: boolean;

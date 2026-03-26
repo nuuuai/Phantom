@@ -50,6 +50,11 @@ export function generateVaultSalt(): string {
   return toBase64(getRandomBytes(SALT_BYTES));
 }
 
+/**
+ * Derives the vault encryption key from the user's master password and server-stored salt.
+ * Uses PBKDF2-SHA256 (Web Crypto). Argon2id is a possible future upgrade for vault-only KDF;
+ * it would not replace JWT session tokens. See docs/roadmap/AUTH_AND_VAULT_PHASE1.md.
+ */
 export async function deriveVaultKey(
   password: string,
   saltB64: string,

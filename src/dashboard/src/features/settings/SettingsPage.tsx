@@ -144,7 +144,11 @@ function DesktopNotificationsSection() {
       </div>
       <p className="mt-2 font-sans text-xs text-ph-text-tertiary">
         Browser notifications when Phantom surfaces high-priority alerts (permission
-        is per-site; email delivery is still TODO for Phase 1).
+        is per-site). Server-side email for alerts is not wired in Phase 1; see{" "}
+        <span className="font-mono text-[10px] text-ph-text-muted">
+          docs/roadmap/EMAIL_INBOUND.md
+        </span>
+        .
       </p>
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <span className="font-mono text-[11px] text-ph-text-secondary">

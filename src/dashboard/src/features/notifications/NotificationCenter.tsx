@@ -125,6 +125,32 @@ export function NotificationCenter() {
     refetchInterval: 30_000,
   });
 
+  const prevUnreadRef = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (countQuery.isPending || accessToken === null) return;
+    const u = countQuery.data?.unreadCount ?? 0;
+    if (
+      prevUnreadRef.current !== undefined &&
+      u > prevUnreadRef.current &&
+      typeof Notification !== "undefined" &&
+      Notification.permission === "granted"
+    ) {
+      const delta = u - prevUnreadRef.current;
+      try {
+        new Notification("Phantom", {
+          body:
+            delta === 1
+              ? "You have a new notification"
+              : `${String(delta)} new notifications`,
+          tag: "phantom-notification-delta",
+        });
+      } catch {
+        /* ignore if Notifications API unavailable */
+      }
+    }
+    prevUnreadRef.current = u;
+  }, [accessToken, countQuery.isPending, countQuery.data?.unreadCount]);
+
   const listQuery = useQuery({
     queryKey: queryKeys.notifications(accessToken),
     queryFn: async () => {
