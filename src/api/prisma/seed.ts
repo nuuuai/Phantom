@@ -1,3 +1,5 @@
+// Loads repo-root `.env` before PrismaClient (same as prisma.config + API entry).
+import "../src/loadRootEnv.js";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import { BROKER_CATALOG_SEED } from "./brokerCatalogSeed.js";

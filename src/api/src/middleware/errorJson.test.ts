@@ -1,10 +1,20 @@
 import "express-async-errors";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { errorJsonHandler } from "./errorJson.js";
 
 describe("errorJsonHandler", () => {
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+  });
+
   it("responds with JSON when handler throws (JWT config)", async () => {
     const app = express();
     app.get("/boom", () => {

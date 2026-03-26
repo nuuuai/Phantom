@@ -1,9 +1,9 @@
-import "dotenv/config";
+import "./src/loadRootEnv.js";
 import { defineConfig } from "prisma/config";
 
 /**
- * When Prisma config is present, the CLI may skip its own `.env` loading; `dotenv/config` runs first.
- * `prisma generate` must succeed without a real DB (e.g. CI install); schema still needs `DATABASE_URL`.
+ * Env: repo root `.env` via `./src/loadRootEnv.js` (same as API + seed).
+ * `prisma generate` must succeed without a real DB (e.g. CI install); placeholder below if unset.
  */
 if (!process.env.DATABASE_URL?.trim()) {
   process.env.DATABASE_URL =

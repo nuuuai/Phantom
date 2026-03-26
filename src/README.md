@@ -96,7 +96,12 @@ docker-compose up -d   # optional: PostgreSQL, Redis, Elasticsearch
 npm run dev
 ```
 
-**Environment file location:** Copy `.env.example` to a file named `.env`. The API uses `dotenv/config` with the process **current working directory**. `npm run dev -w @phantom/api` runs scripts with cwd **`src/api`**, so put **`src/api/.env`** (same variables as repo root) or symlink `src/api/.env` → `../../.env` if you keep a single `.env` at the repo root. Do not commit `.env`.
+**Environment file location:**
+
+- Copy `.env.example` to **`.env` at the repository root** (same folder as root `package.json`).
+- **`DATABASE_URL`**, **`JWT_SECRET`**, and other API vars come from that file. The API, Prisma (`migrate`, `generate`), and `db:seed` load it via **`src/api/src/loadRootEnv.ts`**, so vars work **regardless of npm cwd** (including `npm run -w @phantom/api`).
+- If you previously used only `src/api/.env`, move or symlink it to the root.
+- Do not commit `.env`.
 
 ### Local Postgres (no Docker)
 
@@ -106,7 +111,7 @@ Use this when you want PostgreSQL on the **host** (e.g. Windows) without Docker.
 2. **Create a database** for Phantom, e.g. `phantom`, using **pgAdmin**, **SQL Shell (psql)**, or:
    - `CREATE DATABASE phantom;`
    - For dev you may use the `postgres` superuser in `DATABASE_URL`, or create a dedicated role: `CREATE USER phantom WITH PASSWORD '…';` then grant usage on schema and DB as needed.
-3. **Configure `.env`** (see above — typically `src/api/.env` when using workspace scripts):
+3. **Configure the repo root `.env`** (see bullets above):
    - `DATABASE_URL=postgresql://USER:PASSWORD@127.0.0.1:5432/phantom` (use your real user, password, and port — usually **5432**, not an arbitrary port unless you changed PostgreSQL’s listen port).
    - `JWT_SECRET=` a long random string (**≥16 characters**).
    - `API_PORT=8787` (default).
@@ -126,6 +131,7 @@ The browser extension build generates `src/extension/.plasmo/` (gitignored). Pla
 
 - **Login fails or the dashboard stays on “Connecting…”**: confirm the API is listening on **8787** (same as the Vite proxy in `src/dashboard/vite.config.ts`), `.env` has a valid **`JWT_SECRET` (≥16 characters)** and **`DATABASE_URL`**, Postgres is running, migrations are applied (`npm run db:migrate:deploy -w @phantom/api` or `db:migrate` in dev), and the seed user exists (`npm run db:seed -w @phantom/api`) with credentials matching **`VITE_DEV_EMAIL`** / **`VITE_DEV_PASSWORD`** (see `src/api/prisma/seed.ts` and `.env.example`).
 - If **`REDIS_URL`** is set, Redis must be reachable; otherwise refresh-token storage during login can throw.
+- **Windows `npm run build` fails with `EPERM` … `query_engine-windows.dll.node`:** usually a **file lock** (API `npm run dev`, another terminal, IDE, or antivirus holding Prisma’s engine). Stop dev servers, wait a few seconds, retry `npm run build`. If it persists, exclude the repo from real-time scanning or reboot, then run `npx prisma generate` in `src/api` before the full build. This is environmental, not an application bug.
 
 ## Key Principles
 
