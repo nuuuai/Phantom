@@ -1,0 +1,158 @@
+# PHANTOM — Cursor AI Development Rules
+
+## Project Identity
+
+- **Product:** Phantom — AI Privacy Operations Center
+- **Ecosystem:** Part of Kova (agent factory) + VulnIQ (security intelligence) + Phantom (personal bodyguard)
+- **Platform strategy:** Desktop-first. Web dashboard + browser extension are PRIMARY. Mobile apps are PHASE 4 (last).
+- **Stack:** React + TypeScript + Vite (frontend), Chrome Extension Manifest V3 (extension), Node.js + Express (API), PostgreSQL + Redis (data), Python (AI/ML pipelines)
+
+---
+
+## Critical Rules — Never Break These
+
+### 1. SECURITY FIRST
+- Phantom is a PRIVACY product. Every line of code must treat user data as sacred.
+- NEVER log, console.log, or expose PII (emails, phone numbers, passwords, SSNs, real names) in any output, error message, or debug statement.
+- NEVER store plaintext credentials anywhere — not in state, not in localStorage, not in URLs, not in query params.
+- All sensitive data must be encrypted client-side BEFORE transmission. Zero-knowledge architecture.
+- NEVER use `eval()`, `innerHTML` with user input, or any pattern that opens XSS vectors.
+- NEVER hardcode API keys, secrets, or tokens. Use environment variables exclusively.
+- All API calls must use HTTPS. No exceptions.
+- Sanitize ALL user inputs. Trust nothing from the client.
+
+### 2. ARCHITECTURE RULES
+- Follow the four-layer model: Shield → Brain → Sword → Autopilot. Every feature belongs to exactly one layer.
+- Components must be modular and independently deployable. Each AI capability (call screening, alias management, breach response) is a separate agent module.
+- Desktop-first means: build for web dashboard and browser extension FIRST. Never design a feature mobile-first and port it to desktop.
+- The browser extension is the primary user touchpoint. It must be fast (<100ms for alias generation), lightweight (<5MB), and never block page rendering.
+- State management: use React Context for local UI state, dedicated stores for domain state (aliases, threats, user profile). No prop drilling past 2 levels.
+
+### 3. CODE QUALITY
+- TypeScript strict mode. No `any` types unless absolutely unavoidable (and add a comment explaining why).
+- Every component, function, and module must have a clear single responsibility.
+- File naming: `PascalCase` for components, `camelCase` for utilities/hooks, `SCREAMING_SNAKE` for constants.
+- Folder structure mirrors feature domains, not technical layers. Group by feature (aliases/, threats/, callGuard/) not by type (components/, hooks/, utils/).
+- No file should exceed 300 lines. If it does, split it.
+- Write descriptive variable names. `aliasHealthScore` not `ahs`. `isScamCallDetected` not `flag`.
+
+### 4. COMPONENT PATTERNS
+
+```typescript
+// CORRECT — Functional component with typed props
+interface AliasCardProps {
+  alias: Alias;
+  onRotate: (aliasId: string) => void;
+  isHealthy: boolean;
+}
+
+export function AliasCard({ alias, onRotate, isHealthy }: AliasCardProps) {
+  // Component logic here
+}
+
+// WRONG — Avoid these patterns
+export default function(props: any) { ... }  // No default exports, no any
+const AliasCard = (props) => { ... }         // Missing types
+```
+
+### 5. API & DATA PATTERNS
+
+```typescript
+// CORRECT — Typed API responses, error handling, loading states
+interface ApiResponse<T> {
+  data: T | null;
+  error: string | null;
+  loading: boolean;
+}
+
+// CORRECT — All API calls go through a centralized client
+import { phantomApi } from '@/lib/api';
+const aliases = await phantomApi.aliases.list();
+
+// WRONG — Direct fetch calls scattered across components
+const res = await fetch('/api/aliases');  // Never do this in components
+```
+
+### 6. NAMING CONVENTIONS
+
+| Thing | Convention | Example |
+|-------|-----------|---------|
+| Components | PascalCase | `AliasManager.tsx` |
+| Hooks | camelCase with `use` prefix | `useAliasHealth.ts` |
+| Utilities | camelCase | `formatPhoneNumber.ts` |
+| Constants | SCREAMING_SNAKE | `MAX_ALIAS_COUNT` |
+| Types/Interfaces | PascalCase | `AliasIdentity` |
+| API routes | kebab-case | `/api/alias-health` |
+| CSS classes | kebab-case | `.alias-card-header` |
+| Test files | Same name + `.test` | `AliasCard.test.tsx` |
+| Feature folders | camelCase | `aliasManager/` |
+| Doc files | SCREAMING_SNAKE.md | `SYSTEM_ARCHITECTURE.md` |
+
+---
+
+## Feature-Specific Rules
+
+### Alias System
+- Every alias MUST have a unique ID, creation timestamp, health score, and parent identity reference.
+- Alias generation must be deterministic given the same seed (for recovery purposes).
+- When an alias is compromised, the system must: (1) quarantine it, (2) notify the user, (3) queue a replacement — in that order.
+- Never expose the mapping between a real identity and its aliases in any client-facing code.
+
+### Call Guard / Telephony
+- Call screening decisions must resolve in <2 seconds. If the AI takes longer, default to "ring through with warning."
+- Never store raw call audio client-side. Transcripts only, and only after server-side processing.
+- Scam confidence scores range 0–100. Below 50 = pass through. 50–80 = screen with transcript. Above 80 = engage Scammer Engagement Engine.
+
+### Threat Intelligence
+- All cross-user threat data must be anonymized BEFORE aggregation. No user IDs, no IP addresses, no phone numbers in the threat intel store.
+- Threat patterns expire after 90 days unless refreshed by new matching data.
+- Never expose raw threat data to the client. Always serve through a scoring/summary layer.
+
+### Data Broker Removal
+- Track every removal request with: broker name, submission date, confirmation date, re-listing detection date.
+- Re-scan each broker at minimum every 14 days.
+- Legal escalation templates must be reviewed by counsel before deployment. Use placeholder text during development.
+
+---
+
+## Browser Extension Rules
+
+- Manifest V3 only. No Manifest V2 patterns.
+- Content scripts must be minimal — inject only what's needed for form detection and autofill.
+- Service worker must handle all API communication. Content scripts never call APIs directly.
+- Extension must work in incognito mode with explicit user opt-in.
+- Popup UI must load in <200ms. No heavy frameworks in the popup — keep it lean.
+- Storage: use `chrome.storage.local` for non-sensitive preferences, encrypted IndexedDB for credentials.
+- Never inject CSS that overrides website styles. Use Shadow DOM for any injected UI.
+
+---
+
+## Testing Rules
+
+- Every new feature needs at minimum: unit tests for business logic, integration tests for API interactions.
+- Test file lives next to the source file it tests.
+- Mock all external services (APIs, telephony, AI models) in tests. Never hit real endpoints.
+- Security-critical code (encryption, alias generation, vault operations) needs dedicated test suites with edge cases.
+- Aim for 80%+ coverage on core modules (alias system, vault, threat engine). UI components can be lower.
+
+---
+
+## Git Rules
+
+- Branch naming: `feature/alias-rotation`, `fix/call-guard-timeout`, `docs/phase-2-update`
+- Commit messages: imperative mood, concise. `Add alias health monitoring` not `Added alias health monitoring stuff`
+- Never commit `.env` files, API keys, test credentials, or node_modules.
+- PRs must reference a feature spec from `/docs/features/` or a phase task from `/docs/roadmap/`.
+
+---
+
+## What Cursor Should Always Remember
+
+1. This is a PRIVACY product. When in doubt, encrypt it, don't log it, don't expose it.
+2. Desktop-first. Browser extension + web dashboard are the primary platforms.
+3. Every feature belongs to one of the four layers (Shield, Brain, Sword, Autopilot).
+4. The Scammer Engagement Engine is our most differentiated feature. Treat it with care.
+5. Phantom is part of an ecosystem with Kova and VulnIQ. Design interfaces that can eventually connect to them.
+6. User trust is everything. Fail safe, fail private, fail with a clear explanation.
+7. Read the docs in `/docs/` before implementing any feature. The specs are comprehensive.
+8. When generating UI, match the Phantom brand: clean, confident, slightly dark/techy aesthetic. Purple (#6C3AED) is the primary accent color.

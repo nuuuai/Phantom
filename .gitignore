@@ -1,0 +1,110 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+
+# Environment & secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+*.crt
+
+# IDE & editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Cursor AI (keep .cursorrules, ignore workspace state)
+.cursor/workspace/
+.cursor/cache/
+.cursor/*.log
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Package manager locks (keep package-lock.json OR yarn.lock, not both)
+# Uncomment the one you DON'T use:
+# package-lock.json
+# yarn.lock
+
+# Compiled output
+*.js.map
+*.d.ts
+!src/**/*.d.ts
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Secrets & credentials — NEVER commit these
+secrets/
+credentials/
+*.secret
+*.credentials
+
+# Docker
+docker-compose.override.yml
+
+# Python (AI/ML pipelines)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+*.egg-info/
+.eggs/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Generated docs (only commit hand-written docs)
+docs/_generated/
+
+# Extension build artifacts
+extension/dist/
+extension/build/
+*.crx
+*.xpi
