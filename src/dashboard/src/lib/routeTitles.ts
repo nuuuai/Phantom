@@ -1,6 +1,7 @@
 export const ROUTE_TITLES: Record<string, string> = {
   "/": "Overview",
   "/aliases": "Aliases",
+  "/inbox": "Alias inbox",
   "/vault": "Vault",
   "/brokers": "Data brokers",
   "/broker-removal": "Data brokers",

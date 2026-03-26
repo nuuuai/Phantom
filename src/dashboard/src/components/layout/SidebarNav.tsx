@@ -5,6 +5,7 @@ import { useSessionStore } from "@/stores/useSessionStore.js";
 type NavId =
   | "overview"
   | "aliases"
+  | "inbox"
   | "vault"
   | "brokers"
   | "callguard"
@@ -32,6 +33,7 @@ const sections: readonly NavSection[] = [
     items: [
       { id: "overview", label: "Overview", path: "/" },
       { id: "aliases", label: "Aliases", path: "/aliases" },
+      { id: "inbox", label: "Alias inbox", path: "/inbox" },
       { id: "vault", label: "Vault", path: "/vault" },
     ],
   },

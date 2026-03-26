@@ -26,6 +26,18 @@ describe("createApp", () => {
     }
   });
 
+  it("POST /api/webhooks/email-inbound returns 503 when webhook secret unset", async () => {
+    const prev = process.env.INBOUND_WEBHOOK_SECRET;
+    delete process.env.INBOUND_WEBHOOK_SECRET;
+    const res = await request(app)
+      .post("/api/webhooks/email-inbound")
+      .set("Content-Type", "application/json")
+      .send("{}");
+    process.env.INBOUND_WEBHOOK_SECRET = prev;
+    expect(res.status).toBe(503);
+    expect(res.body.ok).toBe(false);
+  });
+
   it("POST /api/auth/login without body returns 400", async () => {
     const res = await request(app).post("/api/auth/login").send({}).expect(400);
     expect(res.body.ok).toBe(false);

@@ -27,4 +27,8 @@ describe("queryKeys", () => {
     expect(queryKeys.vaultList("tok", "all")[0]).toBe("vault");
     expect(queryKeys.notificationPrefs("tok")[0]).toBe("notification-prefs");
   });
+
+  it("emailInbox is scoped", () => {
+    expect(queryKeys.emailInbox("tok")[0]).toBe("email-inbox");
+  });
 });

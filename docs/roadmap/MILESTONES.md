@@ -8,15 +8,15 @@
 
 | Milestone | Target Date | Progress | Definition of Done |
 |-----------|------------|----------|---------------------|
-| M1: Infrastructure Ready | Month 1 | **45%** | API server, database, auth system deployed. CI/CD pipeline green. |
-| M2: Vault Operational | Month 2 | **25%** | Client-side encryption working. Extension ↔ dashboard vault sync. Vault page with card grid, strength meter, generate modal, search/filter. |
-| M3: Extension MVP | Month 2 | **55%** | Form detection (heuristic + label parsing), alias generation, autofill via Shadow DOM shield icon, working on top 20 sites. |
-| M4: Dashboard MVP | Month 3 | **55%** | Login, alias list, alias detail, create/delete alias, notification center (bell + dropdown + mark read). |
-| M5: Phone Aliases | Month 3 | **15%** | VoIP numbers provisioned. Call/SMS forwarding working. |
-| M6: Broker Scanner | Month 4 | **50%** | 150+ brokers searchable. Scan results display in dashboard. |
+| M1: Infrastructure Ready | Month 1 | **58%** | API server, database, auth system deployed. CI/CD pipeline green. |
+| M2: Vault Operational | Month 2 | **40%** | Client-side encryption working. Extension ↔ dashboard vault sync. Vault page with card grid, strength meter, generate modal, search/filter. |
+| M3: Extension MVP | Month 2 | **58%** | Form detection (heuristic + label parsing), alias generation, autofill via Shadow DOM shield icon, working on top 20 sites. |
+| M4: Dashboard MVP | Month 3 | **62%** | Login, alias list, alias detail, create/delete alias, notification center (bell + dropdown + mark read). |
+| M5: Phone Aliases | Month 3 | **22%** | VoIP numbers provisioned. Call/SMS forwarding working. |
+| M6: Broker Scanner | Month 4 | **58%** | 150+ brokers searchable. Scan results display in dashboard. |
 | M7: Broker Removal | Month 5 | **35%** | Automated removal for 50+ brokers. Manual guidance for rest. |
-| M8: Free Tier Launch | Month 6 | **0%** | Public launch. Extension in Chrome Web Store. Marketing begins. |
-| M9: Paid Tier Launch | Month 6 | **0%** | Payment integration. Paid features gated. Subscription management. |
+| M8: Free Tier Launch | Month 6 | **12%** | Public launch. Extension in Chrome Web Store. Marketing begins. |
+| M9: Paid Tier Launch | Month 6 | **15%** | Payment integration. Paid features gated. Subscription management. |
 
 ### Phase 2 (Months 6–12)
 

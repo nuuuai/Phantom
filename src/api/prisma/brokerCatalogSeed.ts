@@ -11,8 +11,18 @@ export interface BrokerSeedRow {
   avgRemovalDays: number;
 }
 
+const SCALE_CATEGORIES: BrokerCategory[] = [
+  "people_search",
+  "marketing",
+  "data_aggregator",
+  "background_check",
+  "public_records",
+];
+
+const SCALE_REMOVAL: RemovalMethod[] = ["form", "email", "manual", "api"];
+
 /** 50 real data broker sites — registry for Phase 1 simulation */
-export const BROKER_CATALOG_SEED: readonly BrokerSeedRow[] = [
+export const BROKER_CATALOG_CORE: readonly BrokerSeedRow[] = [
   { name: "Spokeo", domain: "spokeo.com", category: "people_search", removalMethod: "form", avgRemovalDays: 14 },
   { name: "WhitePages", domain: "whitepages.com", category: "people_search", removalMethod: "form", avgRemovalDays: 10 },
   { name: "BeenVerified", domain: "beenverified.com", category: "background_check", removalMethod: "form", avgRemovalDays: 21 },
@@ -63,4 +73,27 @@ export const BROKER_CATALOG_SEED: readonly BrokerSeedRow[] = [
   { name: "SmartBackgroundChecks", domain: "smartbackgroundchecks.com", category: "background_check", removalMethod: "form", avgRemovalDays: 22 },
   { name: "PeopleWhiz", domain: "peoplewhiz.com", category: "people_search", removalMethod: "form", avgRemovalDays: 15 },
   { name: "IDcrawl", domain: "idcrawl.com", category: "data_aggregator", removalMethod: "form", avgRemovalDays: 11 },
+];
+
+/**
+ * Synthetic registry rows (unique `.example` domains) so the catalog reaches 150+ brokers
+ * for scale testing; replace with additional real brokers over time.
+ */
+export const BROKER_CATALOG_SCALE: readonly BrokerSeedRow[] = Array.from(
+  { length: 100 },
+  (_, i) => {
+    const n = i + 51;
+    return {
+      name: `Registry broker ${String(n).padStart(3, "0")}`,
+      domain: `phantom-broker-${String(n).padStart(3, "0")}.example`,
+      category: SCALE_CATEGORIES[i % SCALE_CATEGORIES.length]!,
+      removalMethod: SCALE_REMOVAL[i % SCALE_REMOVAL.length]!,
+      avgRemovalDays: 7 + (i % 25),
+    };
+  }
+);
+
+export const BROKER_CATALOG_SEED: readonly BrokerSeedRow[] = [
+  ...BROKER_CATALOG_CORE,
+  ...BROKER_CATALOG_SCALE,
 ];

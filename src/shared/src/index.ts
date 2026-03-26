@@ -7,6 +7,7 @@ export type {
   PatchAliasRequest,
 } from "./types/alias.js";
 export type { User } from "./types/user.js";
+export type { AliasInboxItem } from "./types/aliasInbox.js";
 export type {
   AliasTypeUsage,
   UserAccountSnapshot,

@@ -13,8 +13,14 @@ model User {
   hashedPassword   String
   tier             UserTier @default(free)
   vaultSalt        String?
+  /** Real inbox address for forward notifications (optional; not verified in Phase 1 stub). */
+  forwardToEmail   String?
+  /** Opaque E2E-encrypted vault export blob (client holds keys; server is dumb storage). */
+  vaultSyncCiphertext String? @db.Text
+  vaultSyncVersion    Int     @default(0)
   createdAt        DateTime @default(now())
   aliases          Alias[]
+  aliasInboxMessages AliasInboxMessage[]
   brokerScanRuns   BrokerScanRun[]
   brokerScanResults BrokerScanResult[]
   notifications    Notification[]
@@ -56,6 +62,25 @@ model Alias {
   @@index([userId, createdAt(sort: Desc)])
   @@index([userId, category])
   @@index([userId, healthStatus])
+  aliasInboxMessages AliasInboxMessage[]
+}
+
+/** Inbound mail captured for an email alias (ingested via signed webhook from MX worker). */
+model AliasInboxMessage {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aliasId           String
+  alias             Alias    @relation(fields: [aliasId], references: [id], onDelete: Cascade)
+  subject           String
+  fromAddress       String
+  snippet           String   @db.Text
+  receivedAt        DateTime
+  /** Idempotency key from upstream (SES, Mailgun, etc.); null = no dedupe. */
+  providerMessageId String?  @unique
+
+  @@index([userId, receivedAt(sort: Desc)])
+  @@index([aliasId, receivedAt(sort: Desc)])
 }
 
 model DataBroker {

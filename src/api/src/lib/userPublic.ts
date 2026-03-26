@@ -12,6 +12,7 @@ export function toPublicUser(row: {
   email: string;
   createdAt: Date;
   tier: PrismaUserTier;
+  forwardToEmail?: string | null;
 }): User {
   const local = row.email.split("@")[0] ?? "user";
   return {
@@ -20,5 +21,6 @@ export function toPublicUser(row: {
     displayName: local.length > 0 ? local : "User",
     createdAt: row.createdAt.toISOString(),
     tier: mapTier(row.tier),
+    forwardToEmail: row.forwardToEmail ?? null,
   };
 }

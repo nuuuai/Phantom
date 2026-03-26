@@ -4,12 +4,12 @@
 
 | Section | Avg (of deliverables in section) |
 |---------|-------------------------------------|
-| Month 1–2 infrastructure | **~38%** |
-| Month 2–3 extension + dashboard | **~55%** |
-| Month 3–4 phone + brokers | **33%** |
-| Month 4–5 removal + notifications | **30%** |
-| Month 5–6 launch + QA | **~10%** |
-| **Phase 1 (all deliverables)** | **~32%** |
+| Month 1–2 infrastructure | **~52%** |
+| Month 2–3 extension + dashboard | **~62%** |
+| Month 3–4 phone + brokers | **~42%** |
+| Month 4–5 removal + notifications | **~36%** |
+| Month 5–6 launch + QA | **~22%** |
+| **Phase 1 (all deliverables)** | **~43%** |
 
 ## Objective
 
@@ -19,8 +19,8 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 | Platform | Status | Progress |
 |----------|--------|----------|
-| Chrome Extension | **BUILD** — primary user interface | **~55%** |
-| Web Dashboard | **BUILD** — command center | **~50%** |
+| Chrome Extension | **BUILD** — primary user interface | **~58%** |
+| Web Dashboard | **BUILD** — command center | **~58%** |
 | Firefox/Safari Extension | Not started | **0%** |
 | Mobile Apps | Not started | **0%** |
 
@@ -28,34 +28,34 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 ### Month 1–2: Core Infrastructure
 
-- [ ] **Project scaffolding** — **60%**
+- [ ] **Project scaffolding** — **72%**
   - React + TypeScript + Vite dashboard app — **90%**
-  - Plasmo Chrome extension (Manifest V3) — **70%**
-  - Node.js + Express API server — **85%**
+  - Plasmo Chrome extension (Manifest V3) — **72%**
+  - Node.js + Express API server — **88%**
   - PostgreSQL database with per-user schema isolation — **65%**
-  - Redis for sessions and cache — **0%**
-  - Docker Compose for local development — **80%**
+  - Redis for sessions and cache — **45%** (compose + `REDIS_URL`; refresh-token sessions; optional **Redis-backed global rate limit** via `rate-limit-redis`; `/health` reports redis)
+  - Docker Compose for local development — **85%**
   - CI/CD pipeline (GitHub Actions) — **80%** (lint + test + build on push/PR)
   - Terraform for AWS infrastructure — **0%**
 
-- [ ] **Authentication system** — **40%**
+- [ ] **Authentication system** — **52%**
   - SRP (Secure Remote Password) protocol implementation — **0%**
-  - Master passphrase → Argon2id key derivation — **0%**
-  - JWT with RS256 (15-min access, 7-day refresh) — **25%** (HS JWT stub; RS256/refresh TBD)
-  - Session management in Redis — **0%**
+  - Master passphrase → Argon2id key derivation — **0%** (vault uses PBKDF2-SHA256 via Web Crypto today)
+  - JWT with RS256 (15-min access, 7-day refresh) — **45%** (HS256 dev default; **RS256 when `JWT_PRIVATE_KEY`/`JWT_PUBLIC_KEY` set**; opaque refresh in Redis)
+  - Session management in Redis — **40%** (refresh token store; access JWT stateless)
 
-- [ ] **Encrypted vault (client-side)** — **5%**
-  - Web Crypto API integration (AES-256-GCM) — **0%**
-  - Encrypted IndexedDB in extension — **5%**
+- [ ] **Encrypted vault (client-side)** — **38%**
+  - Web Crypto API integration (AES-256-GCM) — **85%** (`@phantom/shared` vault crypto)
+  - Encrypted IndexedDB in extension — **45%** (DEK in `chrome.storage.session`; ciphertext in IndexedDB; legacy hex migration)
   - Per-user isolated database schemas — **0%**
-  - Vault sync between extension and dashboard — **0%**
+  - Vault sync between extension and dashboard — **35%** (opaque E2E blob: `GET`/`PUT /api/vault/sync` + `User.vaultSync*`; client merge TBD)
 
-- [ ] **Email alias engine** — **35%**
-  - Custom domain setup (phantom.id, shade.email) — **0%**
-  - Email alias generation API — **50%** (generated aliases; no MX)
-  - Email forwarding infrastructure (inbound → user's real email) — **0%**
-  - Alias inbox (view forwarded emails in dashboard) — **0%**
-  - SPF, DKIM, DMARC configuration for deliverability — **0%**
+- [ ] **Email alias engine** — **55%**
+  - Custom domain setup (phantom.id, shade.email) — **0%** (DNS still external)
+  - Email alias generation API — **50%** (generated `@phantom.id` aliases; no live MX in repo)
+  - Email forwarding infrastructure (inbound → user's real email) — **25%** (signed **`POST /api/webhooks/email-inbound`** + `INBOUND_WEBHOOK_SECRET`; optional `User.forwardToEmail` for future SMTP; worker/MX still external)
+  - Alias inbox (view forwarded emails in dashboard) — **45%** (`AliasInboxMessage` + **`GET /api/email-inbox`** + dashboard **`/inbox`**)
+  - SPF, DKIM, DMARC configuration for deliverability — **15%** (checklist: `docs/roadmap/EMAIL_INBOUND.md`)
 
 ### Month 2–3: Extension + Dashboard MVP
 
@@ -65,38 +65,39 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - Autofill for generated aliases — **50%** (shield-click fills field value + dispatches events)
   - Shadow DOM injected UI (shield icon on form fields) — **55%** (closed Shadow DOM, positioned icon on each detected field)
   - Service worker for API communication — **60%**
-  - Encrypted credential cache in IndexedDB — **10%**
+  - Encrypted credential cache in IndexedDB — **42%** (vault key material encrypted at rest; see extension `vaultStorage`)
 
-- [ ] **Web dashboard v1** — **55%**
-  - Login / account management — **45%** (dev login path)
+- [ ] **Web dashboard v1** — **62%**
+  - Login / account management — **50%** (dev login path; **`PATCH /api/user/me`** for `forwardToEmail`)
   - Alias list view (all generated aliases with metadata) — **60%**
   - Alias detail view (service, creation date, health status, forwarding rules) — **40%**
   - Create alias manually (not just from extension) — **55%**
   - Delete / disable alias — **50%**
-  - Basic settings (forwarding preferences, notification preferences) — **55%** (account + quotas UI; prefs partial)
+  - Basic settings (forwarding preferences, notification preferences) — **62%** (account + quotas + **forward-to email**; notification prefs)
   - Notification center (bell icon, unread count, mark read) — **65%** (UI + API + demo seeding)
 
 ### Month 3–4: Phone Aliases + Data Broker Scanning
 
-- [ ] **Phone alias engine** — **15%**
+- [ ] **Phone alias engine** — **22%**
   - VoIP number provisioning (temporary bridge until carrier partnership Phase 2) — **0%**
   - Phone alias generation API — **25%** (mock / placeholder numbers)
   - Call forwarding to user's real number — **0%**
   - SMS forwarding to dashboard inbox — **0%**
   - Basic call log in dashboard — **0%**
+  - Integration boundaries / env — **40%** (`docs/roadmap/PHONE_INTEGRATION.md`)
 
-- [ ] **Data broker scanner** — **55%**
-  - Broker registry database (initial 150+ brokers) — **35%** (50 seeded; path to 150+)
-  - Scanner workers (parallel, rate-limited) — **0%**
+- [ ] **Data broker scanner** — **62%**
+  - Broker registry database (initial 150+ brokers) — **75%** (50 real + 100 synthetic `.example` rows = 150 seeded)
+  - Scanner workers (parallel, rate-limited) — **45%** (bounded concurrency + per-broker delay in `/broker-scan/start`)
   - Search: name, phone, email, address variations — **40%** (simulated)
   - Results aggregation and storage — **60%**
   - Dashboard: exposure scan results view — **55%**
   - Free tier: scan only (show what's exposed) — **55%**
   - Paid tier: removal submission — **35%** (simulated queue)
 
-- [ ] **Password manager v1** — **35%**
+- [ ] **Password manager v1** — **38%**
   - Password generation (configurable length, complexity) — **40%** (alias-type passwords)
-  - Password storage in encrypted vault — **0%**
+  - Password storage in encrypted vault — **25%** (encrypted `encryptedValue` + extension vault path; sync blob API)
   - Vault dashboard page (card grid, search, filter, strength meter) — **60%**
   - Vault generate modal (service name, category, one-click generate) — **65%**
   - Import from 1Password, LastPass, Bitwarden (CSV import) — **0%**
@@ -112,8 +113,8 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - Verification re-scan 7–30 days after submission — **25%** (simulated advancement)
   - Dashboard: removal status per broker — **40%**
 
-- [ ] **Notification system** — **40%**
-  - Desktop notifications (browser notification API) — **0%**
+- [ ] **Notification system** — **45%**
+  - Desktop notifications (browser notification API) — **28%** (Settings → enable; delivery wiring TBD)
   - Email notifications (breach alerts, removal confirmations) — **0%**
   - Dashboard notification center (bell icon, unread count) — **65%** (API + TopBar bell + dropdown + mark read/all + demo seed)
   - Notification preferences (per-category: alias health, broker removal, security alerts) — **15%** (Prisma schema has category enum; UI prefs TBD)
@@ -129,25 +130,39 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - Community threat feed (read-only) — **0%**
   - No data broker removal (upsell to paid) — **40%** (tier gate stub)
 
-- [ ] **Paid tier ($9.99/mo)** — **0%**
+- [ ] **Paid tier ($9.99/mo)** — **18%**
   - Unlimited aliases (email + phone) — **15%** (tier field; not billing)
   - Data broker removal (150+ brokers) — **25%** (simulated removal)
   - Unlimited password storage — **0%**
+  - Billing / subscription surface — **20%** (`GET /api/billing/status` stub; Stripe env placeholders)
   - Dark web monitoring (basic) — **0%**
   - Priority support — **0%**
 
-- [ ] **Onboarding flow** — **10%**
+- [ ] **Onboarding flow** — **14%**
   - Extension install → account creation → first alias generation — **15%**
   - Guided exposure scan ("see who's selling your data") — **25%** (brokers page CTA)
   - Import existing passwords — **0%**
   - Generate aliases for top services (Gmail, Amazon, Facebook, etc.) — **0%**
 
-- [ ] **Testing and QA** — **15%**
-  - Unit tests for: vault encryption, alias generation, API auth — **15%** (tier limit constants + existing tests)
+- [ ] **Testing and QA** — **30%**
+  - Unit tests for: vault encryption, alias generation, API auth — **32%** (+ inbound webhook **HMAC** tests; global rate limit wiring typed)
   - Integration tests for: extension ↔ API, broker scanning — **0%**
   - E2E tests with Playwright (extension + dashboard flows) — **0%**
   - Security audit of encryption implementation — **0%**
   - Load testing for alias generation and broker scanning — **0%**
+
+## Phase 1 — remaining gaps (launch blockers vs nice-to-have)
+
+| Area | Still TODO / external |
+|------|------------------------|
+| **Auth** | SRP; Argon2id vault KDF (PBKDF2 today). |
+| **Vault** | Per-user DB isolation; full client merge for `vault/sync`. |
+| **Email** | Live MX + worker calling webhook; outbound forward to `forwardToEmail`; domain purchase/DNS automation. |
+| **Phone** | Real VoIP/SMS provider (see `PHONE_INTEGRATION.md`). |
+| **Billing** | Stripe Checkout / Portal; webhooks. |
+| **Brokers** | Real removal automation / Playwright workers; API brokers beyond simulation. |
+| **QA** | E2E (Playwright); extension↔API integration suite; load / security audit. |
+| **Store / legal** | CWS submission (`CHROME_WEB_STORE_CHECKLIST.md`); ToS/privacy legal review. |
 
 ## Success Metrics (End of Phase 1)
 
@@ -177,7 +192,8 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 | Dependency | Progress |
 |------------|----------|
-| Custom email domains registered and configured | **0%** |
+| Custom email domains registered and configured | **0%** (DNS/MX checklist + webhook contract in `docs/roadmap/EMAIL_INBOUND.md`) |
+| Chrome Web Store listing + review | **15%** (checklist: `docs/roadmap/CHROME_WEB_STORE_CHECKLIST.md`) |
 | VoIP provider partnership signed | **0%** |
 | AWS infrastructure provisioned | **0%** |
 | Chrome Web Store developer account | **0%** |

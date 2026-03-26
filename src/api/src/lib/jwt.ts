@@ -1,4 +1,24 @@
+import { createPrivateKey, createPublicKey } from "node:crypto";
 import jwt from "jsonwebtoken";
+
+function pemFromEnv(name: string): string {
+  const raw = process.env[name];
+  if (!raw || raw.length === 0) return "";
+  return raw.replace(/\\n/g, "\n").trim();
+}
+
+function hasRs256Keys(): boolean {
+  const priv = pemFromEnv("JWT_PRIVATE_KEY");
+  const pub = pemFromEnv("JWT_PUBLIC_KEY");
+  if (!priv || !pub) return false;
+  try {
+    createPrivateKey(priv);
+    createPublicKey(pub);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function getJwtSecret(): string {
   const fromEnv = process.env.JWT_SECRET;
@@ -9,7 +29,7 @@ function getJwtSecret(): string {
     return "test_jwt_secret_for_tests_only!!";
   }
   throw new Error(
-    "JWT_SECRET must be set (at least 16 characters) outside of test mode"
+    "JWT_SECRET must be set (at least 16 characters) outside of test mode when RS256 keys are not configured"
   );
 }
 
@@ -19,16 +39,34 @@ export interface JwtPayload {
 }
 
 export function signAccessToken(userId: string, email: string): string {
-  return jwt.sign({ sub: userId, email }, getJwtSecret(), {
-    expiresIn: "15m",
-    issuer: "phantom-api",
-  });
+  const payload = { sub: userId, email };
+  const opts = { expiresIn: "15m" as const, issuer: "phantom-api" };
+
+  if (hasRs256Keys()) {
+    const privateKey = pemFromEnv("JWT_PRIVATE_KEY");
+    return jwt.sign(payload, privateKey, { ...opts, algorithm: "RS256" });
+  }
+
+  return jwt.sign(payload, getJwtSecret(), opts);
 }
 
 export function verifyAccessToken(token: string): JwtPayload {
-  const decoded = jwt.verify(token, getJwtSecret(), {
-    issuer: "phantom-api",
-  });
+  const opts = { issuer: "phantom-api" };
+
+  if (hasRs256Keys()) {
+    const publicKey = pemFromEnv("JWT_PUBLIC_KEY");
+    const decoded = jwt.verify(token, publicKey, {
+      ...opts,
+      algorithms: ["RS256"],
+    });
+    return assertPayload(decoded);
+  }
+
+  const decoded = jwt.verify(token, getJwtSecret(), opts);
+  return assertPayload(decoded);
+}
+
+function assertPayload(decoded: jwt.JwtPayload | string): JwtPayload {
   if (
     typeof decoded !== "object" ||
     decoded === null ||

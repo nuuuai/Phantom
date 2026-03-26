@@ -8,6 +8,7 @@ import { Router } from "express";
 import type { BrokerScanStatus, UserTier } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { advanceRemovalSimulation } from "../lib/brokerScanAdvance.js";
+import { delayMs, mapWithConcurrency } from "../lib/brokerScanPipeline.js";
 import { computeBrokerScanSummaryFromRows } from "../lib/computeBrokerScanSummary.js";
 import { mapBroker, mapBrokerScanResult } from "../lib/mapBrokerScan.js";
 import {
@@ -15,6 +16,9 @@ import {
   selectFoundBrokerIndices,
   simulateOneBroker,
 } from "../lib/brokerScanSimulation.js";
+
+/** Simulated parallel workers (bounded concurrency + per-broker delay). */
+const SCAN_CONCURRENCY = 8;
 
 export const brokerScanRouter = Router();
 
@@ -86,21 +90,27 @@ brokerScanRouter.post("/start", async (req, res) => {
     },
   });
 
-  let foundCount = 0;
-  const createRows = brokers.map((b, i) => {
-    const isFound = foundIndices.has(i);
-    const sim = simulateOneBroker(b, userId, isFound);
-    if (sim.status === "found") {
-      foundCount += 1;
+  const createRows = await mapWithConcurrency(
+    brokers,
+    SCAN_CONCURRENCY,
+    async (b, i) => {
+      await delayMs(5 + Math.floor(Math.random() * 20));
+      const isFound = foundIndices.has(i);
+      const sim = simulateOneBroker(b, userId, isFound);
+      return {
+        userId,
+        brokerScanRunId: run.id,
+        brokerId: b.id,
+        dataTypesFound: [...sim.dataTypesFound],
+        status: sim.status,
+      };
     }
-    return {
-      userId,
-      brokerScanRunId: run.id,
-      brokerId: b.id,
-      dataTypesFound: [...sim.dataTypesFound],
-      status: sim.status,
-    };
-  });
+  );
+
+  let foundCount = 0;
+  for (const row of createRows) {
+    if (row.status === "found") foundCount += 1;
+  }
 
   await prisma.brokerScanResult.createMany({ data: createRows });
 

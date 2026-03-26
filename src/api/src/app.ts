@@ -1,36 +1,34 @@
 import "express-async-errors";
 import cors from "cors";
 import express from "express";
-import rateLimit from "express-rate-limit";
 import { resolveCorsOrigins } from "./lib/corsOrigins.js";
 import { prisma } from "./lib/prisma.js";
 import { pingRedis } from "./lib/redis.js";
+import { createGlobalRateLimiter } from "./lib/redisRateLimiter.js";
 import { authenticateJwt } from "./middleware/authJwt.js";
 import { errorJsonHandler } from "./middleware/errorJson.js";
 import { jsonBody } from "./middleware/jsonBody.js";
 import { notFoundJson } from "./middleware/notFoundJson.js";
 import { requestLog } from "./middleware/requestLog.js";
 import { authRouter } from "./routes/auth.js";
+import { billingRouter } from "./routes/billing.js";
 import { aliasesRouter } from "./routes/aliases.js";
 import { brokerScanRouter } from "./routes/brokerScan.js";
 import { dashboardRouter } from "./routes/dashboard.js";
 import { notificationsRouter } from "./routes/notifications.js";
+import { emailInboxRouter } from "./routes/emailInbox.js";
 import { userRouter } from "./routes/user.js";
 import { vaultRouter } from "./routes/vault.js";
+import { webhookEmailInboundRouter } from "./routes/webhookEmailInbound.js";
 
-const rateLimitStub = rateLimit({
-  windowMs: 60_000,
-  max: 10_000,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+const globalRateLimiter = createGlobalRateLimiter();
 
 export function createApp() {
   const app = express();
 
   app.disable("x-powered-by");
 
-  // Middleware order: cors → requestLog → jsonBody → rateLimit → routes → notFoundJson → errorJsonHandler
+  // Middleware order: cors → requestLog → raw webhooks → jsonBody → rateLimit → routes → notFoundJson → errorJsonHandler
   app.use(
     cors({
       origin: resolveCorsOrigins(),
@@ -38,8 +36,9 @@ export function createApp() {
     })
   );
   app.use(requestLog);
+  app.use("/api/webhooks", webhookEmailInboundRouter);
   app.use(jsonBody);
-  app.use(rateLimitStub);
+  app.use(globalRateLimiter);
 
   app.get("/health", async (_req, res) => {
     const redisConfigured = Boolean(
@@ -72,11 +71,13 @@ export function createApp() {
 
   app.use("/api/auth", authRouter);
   app.use("/api/user", authenticateJwt, userRouter);
+  app.use("/api/email-inbox", authenticateJwt, emailInboxRouter);
   app.use("/api/aliases", authenticateJwt, aliasesRouter);
   app.use("/api/broker-scan", authenticateJwt, brokerScanRouter);
   app.use("/api/notifications", authenticateJwt, notificationsRouter);
   app.use("/api/dashboard", authenticateJwt, dashboardRouter);
   app.use("/api/vault", authenticateJwt, vaultRouter);
+  app.use("/api/billing", authenticateJwt, billingRouter);
 
   app.use(notFoundJson);
   app.use(errorJsonHandler);

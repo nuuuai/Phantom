@@ -10,6 +10,7 @@ import { DashboardPage } from "@/features/dashboard/DashboardPage.js";
 import { OnboardingModal } from "@/features/onboarding/OnboardingModal.js";
 import { PlaceholderPage } from "@/features/placeholder/PlaceholderPage.js";
 import { SettingsPage } from "@/features/settings/SettingsPage.js";
+import { EmailInboxPage } from "@/features/inbox/EmailInboxPage.js";
 import { VaultPage } from "@/features/vault/VaultPage.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { shouldSkipDevBootstrap } from "@/lib/devBootstrap.js";
@@ -133,6 +134,7 @@ export function App() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/aliases" element={<AliasesPage />} />
           <Route path="/aliases/:id" element={<AliasDetailPage />} />
+          <Route path="/inbox" element={<EmailInboxPage />} />
           <Route path="/vault" element={<VaultPage />} />
           <Route path="/brokers" element={<BrokersPage />} />
           <Route

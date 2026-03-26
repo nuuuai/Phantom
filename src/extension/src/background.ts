@@ -17,13 +17,12 @@ import {
   type FieldKind,
 } from "./lib/messages";
 import { parseApiResponseJson } from "./lib/parseApiResponse.js";
+import { getRefreshToken, setAccessToken, setRefreshToken } from "./lib/storage";
 import {
-  getRefreshToken,
+  clearVaultStorage,
   getVaultKeyHex,
-  setAccessToken,
-  setRefreshToken,
-  setVaultKeyHex,
-} from "./lib/storage";
+  persistVaultKeyHex,
+} from "./lib/vaultStorage";
 
 async function loginRequest(
   email: string,
@@ -74,7 +73,7 @@ async function initVaultKey(
   if (!salt) return;
 
   const key = await deriveVaultKey(password, salt);
-  await setVaultKeyHex(await exportKeyHex(key));
+  await persistVaultKeyHex(await exportKeyHex(key));
 }
 
 function aliasTypeForField(kind: FieldKind | undefined): "email" | "password" | "username" {
@@ -170,7 +169,7 @@ chrome.runtime.onMessage.addListener(
         }
         await setAccessToken(null);
         await setRefreshToken(null);
-        await setVaultKeyHex(null);
+        await clearVaultStorage();
         sendResponse({ ok: true });
       })().catch(() => {
         sendResponse({ ok: false, error: "logout_failed" });

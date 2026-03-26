@@ -1,5 +1,6 @@
 import type { NotificationPrefItem } from "@phantom/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { queryKeys } from "@/lib/queryKeys.js";
@@ -73,6 +74,11 @@ export function SettingsPage() {
           </dl>
         </section>
 
+        <ForwardingSection
+          accessToken={accessToken}
+          forwardToEmail={user.forwardToEmail ?? null}
+        />
+
         <section className="rounded-xl border border-ph-border bg-ph-surface p-5">
           <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-ph-text-muted">
             Alias quotas
@@ -112,8 +118,139 @@ export function SettingsPage() {
         </section>
 
         <NotificationPrefsSection accessToken={accessToken} />
+
+        <DesktopNotificationsSection />
       </div>
     </div>
+  );
+}
+
+function DesktopNotificationsSection() {
+  const [perm, setPerm] = useState<NotificationPermission | "unsupported">(
+    () =>
+      typeof Notification !== "undefined"
+        ? Notification.permission
+        : "unsupported"
+  );
+
+  if (perm === "unsupported") {
+    return null;
+  }
+
+  return (
+    <section className="rounded-xl border border-ph-border bg-ph-surface p-5">
+      <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-ph-text-muted">
+        Desktop notifications
+      </div>
+      <p className="mt-2 font-sans text-xs text-ph-text-tertiary">
+        Browser notifications when Phantom surfaces high-priority alerts (permission
+        is per-site; email delivery is still TODO for Phase 1).
+      </p>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <span className="font-mono text-[11px] text-ph-text-secondary">
+          Status: {perm}
+        </span>
+        {perm === "default" && (
+          <button
+            type="button"
+            onClick={() => {
+              void Notification.requestPermission().then((p) => {
+                setPerm(p);
+              });
+            }}
+            className="rounded-md border border-ph-border bg-ph-raised px-3 py-1.5 font-sans text-xs text-ph-text-primary transition-colors hover:bg-ph-border/60"
+          >
+            Enable
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function ForwardingSection({
+  accessToken,
+  forwardToEmail,
+}: {
+  accessToken: string;
+  forwardToEmail: string | null;
+}) {
+  const qc = useQueryClient();
+  const [draft, setDraft] = useState(forwardToEmail ?? "");
+
+  useEffect(() => {
+    setDraft(forwardToEmail ?? "");
+  }, [forwardToEmail]);
+
+  const saveMutation = useMutation({
+    mutationFn: async (next: string | null) => {
+      const res = await phantomApi.user.patchMe(accessToken, {
+        forwardToEmail: next,
+      });
+      if (!res.ok) throw new Error(res.error.message);
+      return res.data;
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.userMe(accessToken) });
+    },
+  });
+
+  return (
+    <section className="rounded-xl border border-ph-border bg-ph-surface p-5">
+      <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-ph-text-muted">
+        Email forwarding (optional)
+      </div>
+      <p className="mt-2 font-sans text-xs text-ph-text-tertiary">
+        Real address for forward / digest notifications when SMTP is wired.
+        Stored on your account; not verified in Phase 1.
+      </p>
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+        <label className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <span className="font-sans text-[11px] text-ph-text-muted">
+            Forward-to email
+          </span>
+          <input
+            type="email"
+            autoComplete="email"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="you@example.com"
+            className="rounded-md border border-ph-border bg-ph-raised px-3 py-2 font-sans text-sm text-ph-text-primary outline-none ring-ph-accent/30 placeholder:text-ph-text-muted focus:ring-2"
+          />
+        </label>
+        <div className="flex shrink-0 gap-2">
+          <button
+            type="button"
+            disabled={saveMutation.isPending}
+            onClick={() => {
+              const t = draft.trim();
+              saveMutation.mutate(t.length === 0 ? null : t);
+            }}
+            className="rounded-md bg-ph-accent px-4 py-2 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            disabled={saveMutation.isPending}
+            onClick={() => {
+              setDraft("");
+              saveMutation.mutate(null);
+            }}
+            className="rounded-md border border-ph-border px-4 py-2 font-sans text-xs text-ph-text-secondary transition-colors hover:bg-ph-raised/80"
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+      {saveMutation.isError && (
+        <p className="mt-2 font-sans text-xs text-ph-danger">
+          {saveMutation.error instanceof Error
+            ? saveMutation.error.message
+            : "Save failed"}
+        </p>
+      )}
+    </section>
   );
 }
 

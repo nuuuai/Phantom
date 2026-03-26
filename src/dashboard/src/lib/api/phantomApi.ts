@@ -1,5 +1,6 @@
 import {
   type Alias,
+  type AliasInboxItem,
   type ApiResponse,
   type BrokerScanResult,
   type BrokerScanStartResponse,
@@ -179,6 +180,34 @@ export const phantomApi = {
       const res = await fetchWithRefresh("/api/user/me", accessToken, {});
       return parseApiResponseJson(res);
     },
+
+    patchMe: async (
+      accessToken: Token,
+      body: { forwardToEmail: string | null }
+    ): Promise<ApiResponse<UserAccountSnapshot>> => {
+      const res = await fetchWithRefresh("/api/user/me", accessToken, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      return parseApiResponseJson(res);
+    },
+  },
+
+  emailInbox: {
+    list: async (
+      accessToken: Token,
+      limit?: number
+    ): Promise<ApiResponse<{ items: AliasInboxItem[] }>> => {
+      const q =
+        limit !== undefined ? `?limit=${String(limit)}` : "";
+      const res = await fetchWithRefresh(
+        `/api/email-inbox${q}`,
+        accessToken,
+        {}
+      );
+      return parseApiResponseJson(res);
+    },
   },
 
   dashboard: {
@@ -351,6 +380,42 @@ export const phantomApi = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
+      return parseApiResponseJson(res);
+    },
+
+    getSync: async (
+      accessToken: Token
+    ): Promise<ApiResponse<{ ciphertext: string | null; version: number }>> => {
+      const res = await fetchWithRefresh("/api/vault/sync", accessToken, {});
+      return parseApiResponseJson(res);
+    },
+
+    putSync: async (
+      accessToken: Token,
+      body: { ciphertext: string; clientVersion: number }
+    ): Promise<ApiResponse<{ version: number }>> => {
+      const res = await fetchWithRefresh("/api/vault/sync", accessToken, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      return parseApiResponseJson(res);
+    },
+  },
+
+  billing: {
+    status: async (
+      accessToken: Token
+    ): Promise<
+      ApiResponse<{
+        tier: string;
+        subscriptionStatus: "none";
+        manageUrl: string | null;
+        checkoutUrl: string | null;
+        billingProviderReady: boolean;
+      }>
+    > => {
+      const res = await fetchWithRefresh("/api/billing/status", accessToken, {});
       return parseApiResponseJson(res);
     },
   },
