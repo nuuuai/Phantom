@@ -1,5 +1,6 @@
 # Phantom local dev — no Docker required.
-# Full stack: install PostgreSQL (or point DATABASE_URL elsewhere) and copy .env from .env.example.
+# Full stack: configure PostgreSQL (see src/README.md "Local Postgres") and .env from .env.example
+# (often src/api/.env when using npm workspaces — same vars as repo root).
 # Ports: API API_PORT (default 8787), dashboard Vite 5173 (proxies /api -> API), extension PLASMO_PUBLIC_API_URL -> API.
 # Dashboard-only: .\run.ps1 -DashboardOnly (skips API/extension if you only need the UI)
 

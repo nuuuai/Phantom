@@ -96,6 +96,28 @@ docker-compose up -d   # optional: PostgreSQL, Redis, Elasticsearch
 npm run dev
 ```
 
+**Environment file location:** Copy `.env.example` to a file named `.env`. The API uses `dotenv/config` with the process **current working directory**. `npm run dev -w @phantom/api` runs scripts with cwd **`src/api`**, so put **`src/api/.env`** (same variables as repo root) or symlink `src/api/.env` → `../../.env` if you keep a single `.env` at the repo root. Do not commit `.env`.
+
+### Local Postgres (no Docker)
+
+Use this when you want PostgreSQL on the **host** (e.g. Windows) without Docker.
+
+1. **Install PostgreSQL for Windows** from [postgresql.org/download/windows](https://www.postgresql.org/download/windows/) (official installer). During setup, note the **port** (default **5432**), **superuser password**, and ensure the service is set to start (Services → `postgresql-x64-…`).
+2. **Create a database** for Phantom, e.g. `phantom`, using **pgAdmin**, **SQL Shell (psql)**, or:
+   - `CREATE DATABASE phantom;`
+   - For dev you may use the `postgres` superuser in `DATABASE_URL`, or create a dedicated role: `CREATE USER phantom WITH PASSWORD '…';` then grant usage on schema and DB as needed.
+3. **Configure `.env`** (see above — typically `src/api/.env` when using workspace scripts):
+   - `DATABASE_URL=postgresql://USER:PASSWORD@127.0.0.1:5432/phantom` (use your real user, password, and port — usually **5432**, not an arbitrary port unless you changed PostgreSQL’s listen port).
+   - `JWT_SECRET=` a long random string (**≥16 characters**).
+   - `API_PORT=8787` (default).
+   - `VITE_DEV_EMAIL` / `VITE_DEV_PASSWORD` should match the seed user (defaults in `src/api/prisma/seed.ts`: `dev@phantom.local` / `devpassword123`).
+   - `CORS_ORIGIN` is optional in dev; the API defaults include `http://localhost:5173` and `127.0.0.1` variants (see `src/api/src/lib/corsOrigins.ts`).
+4. **Apply schema and seed** from the **repository root**:
+   - `npm run db:migrate -w @phantom/api` — first-time / dev migrations (`prisma migrate dev`).
+   - `npm run db:seed -w @phantom/api`
+5. **Redis (optional):** If **`REDIS_URL` is unset**, refresh-token storage in Redis is disabled; that is fine for most local work. To test refresh flows without Docker, install a Windows-compatible Redis (e.g. **Memurai**, or Redis under **WSL**) and set `REDIS_URL=redis://127.0.0.1:6379`.
+6. **Verify:** `npm run dev -w @phantom/api` or full `npm run dev` / `run.ps1`. Open `http://127.0.0.1:8787/health` — expect **`db: "connected"`** when PostgreSQL is reachable. Start the dashboard and sign in with the seeded credentials.
+
 CI runs Postgres as a service container, applies `prisma migrate deploy`, then lint / test / build. Refresh-token flows that need Redis are not exercised in CI unless `REDIS_URL` is added to the workflow.
 
 The browser extension build generates `src/extension/.plasmo/` (gitignored). Plasmo’s static entry shims use `@ts-ignore` for dynamic imports of your pages; do not hand-edit those files — they are regenerated on build.
