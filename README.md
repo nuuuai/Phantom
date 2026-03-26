@@ -44,13 +44,14 @@ See [`docs/architecture/TECH_STACK.md`](docs/architecture/TECH_STACK.md) for ful
 ```
 Phantom/
 ├── README.md                    # You are here
-├── .cursorrules                 # Cursor AI development rules
+├── .cursorrules                 # Cursor AI development rules + design system
 ├── .gitignore                   # Git ignore rules
 ├── docs/                        # All documentation
 │   ├── OVERVIEW.md              # Product vision and summary
 │   ├── architecture/            # Technical architecture docs
 │   ├── features/                # Feature specifications
 │   ├── roadmap/                 # Phase-by-phase development plan
+│   ├── design/                  # Design system + reference components
 │   ├── competitive/             # Competitive analysis
 │   ├── business/                # Business model and pricing
 │   └── ecosystem/               # Kova + VulnIQ integration
@@ -84,6 +85,10 @@ Phantom/
 - [`CLOAKED_TEARDOWN.md`](docs/competitive/CLOAKED_TEARDOWN.md) — Competitive analysis vs Cloaked
 - [`PRICING.md`](docs/business/PRICING.md) — Pricing tiers and strategy
 - [`REVENUE_MODEL.md`](docs/business/REVENUE_MODEL.md) — Revenue streams and projections
+
+### Design
+- [`DESIGN_SYSTEM.md`](docs/design/DESIGN_SYSTEM.md) — Midnight Editorial theme spec
+- [`REFERENCE_DASHBOARD.jsx`](docs/design/REFERENCE_DASHBOARD.jsx) — Reference dashboard implementation
 
 ### Ecosystem
 - [`ECOSYSTEM_OVERVIEW.md`](docs/ecosystem/ECOSYSTEM_OVERVIEW.md) — Kova + VulnIQ + Phantom integration
