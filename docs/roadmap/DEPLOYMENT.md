@@ -142,9 +142,14 @@ Workflow: [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) runs the 
 
 ## External blockers (not in repo)
 
-| Item | Notes |
-|------|--------|
-| **DNS / TLS** | Certificates and API + dashboard hostnames |
-| **Chrome Web Store** | Developer account, listing, review time |
-| **Legal** | Privacy policy URL, ToS — see [CHROME_WEB_STORE_CHECKLIST.md](./CHROME_WEB_STORE_CHECKLIST.md) |
-| **Stripe live mode** | Live keys + live webhook endpoint URL after API is on a public HTTPS host |
+| Item | Owner | Blocker / what’s needed |
+|------|--------|-------------------------|
+| **Live Stripe webhook URL** | Ops | Stripe Dashboard → webhook **`POST https://<api-host>/api/webhooks/stripe`**; **`STRIPE_WEBHOOK_SECRET`** from Stripe; API on **public HTTPS** |
+| **Dashboard public URL** | Ops | **`DASHBOARD_PUBLIC_URL`** for Checkout return / Portal; browser origin listed in API **`CORS_ORIGIN`** |
+| **API TLS + DNS** | Infra | Valid TLS cert; DNS **A/AAAA** (or CNAME) for API hostname used by dashboard + extension |
+| **Inbound email worker** | Ops | MX → provider; worker posts **raw JSON** to **`/api/webhooks/email-inbound`** with **`X-Phantom-Signature`** — see [EMAIL_INBOUND.md](./EMAIL_INBOUND.md) |
+| **Twilio production** | Ops | Real **SMS/PSTN** beyond Phase 1 **mock** / stub — **`TWILIO_*`**, **`PHONE_PROVIDER=twilio`** |
+| **Chrome Web Store** | Product | Developer account, listing assets, review — [CHROME_WEB_STORE_CHECKLIST.md](./CHROME_WEB_STORE_CHECKLIST.md) |
+| **Legal** | Legal | Hosted **privacy policy** URL (and ToS if required) for listing and in-app links |
+
+**Engineering in-repo vs waiting on ops:** CI, migrations, API routes, dashboard, extension MV3 bundle, and documentation are **ready for staging**. **Production cutover** requires the rows above (HTTPS hosts, live Stripe, inbound mail path, CWS listing, legal URLs). See also **`PHASE_1_FOUNDATION.md`** *Remaining before Phase 1 complete*.

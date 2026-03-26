@@ -133,10 +133,22 @@ export function Popup() {
         />
       </label>
       <div className="popup__row">
-        <button type="button" className="popup__secondary" onClick={onLogin}>
+        <button
+          type="button"
+          className="popup__secondary"
+          onClick={onLogin}
+          aria-busy={authStatus === "Signing in…"}
+          disabled={authStatus === "Signing in…" || authStatus === "Signing out…"}
+        >
           Sign in
         </button>
-        <button type="button" className="popup__secondary" onClick={onLogout}>
+        <button
+          type="button"
+          className="popup__secondary"
+          onClick={onLogout}
+          aria-busy={authStatus === "Signing out…"}
+          disabled={authStatus === "Signing in…" || authStatus === "Signing out…"}
+        >
           Sign out
         </button>
       </div>
@@ -185,7 +197,13 @@ export function Popup() {
           Password
         </button>
       </div>
-      <button type="button" className="popup__action" onClick={onGenerate}>
+      <button
+        type="button"
+        className="popup__action"
+        onClick={onGenerate}
+        aria-busy={status === "Generating…"}
+        disabled={status === "Generating…"}
+      >
         Generate alias
       </button>
       <div

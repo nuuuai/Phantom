@@ -56,6 +56,16 @@ describe("normalizeClientError", () => {
     expect(n.code).toBe("service_unavailable");
     expect(n.userMessage).toContain("TWILIO");
   });
+
+  it("maps broker_scan_config_invalid to service_unavailable", () => {
+    const n = normalizeClientError({
+      code: PHANTOM_API_ERROR_CODES.broker_scan_config_invalid,
+      message: "Invalid BROKER_SCAN_CONCURRENCY",
+      httpStatus: 503,
+    });
+    expect(n.code).toBe("service_unavailable");
+    expect(n.userMessage).toContain("BROKER_SCAN_CONCURRENCY");
+  });
 });
 
 describe("clientErrorFromApiFailure", () => {

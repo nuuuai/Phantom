@@ -120,6 +120,16 @@ For the rolling **% complete** model, see [`README.md`](./README.md) in this fol
 
 **Scope:** **`@phantom/shared`** **`forwardEmail`** (`parseForwardToEmailPatchBody`, **`isValidForwardEmailInput`**) — single validation path for **`PATCH /api/user/me`** and dashboard Settings; **`GET /api/email-inbox`** **`offset`** + **`data.meta`** with clamped limits; integration tests (invalid forward email, inbox clamp, idempotent read PATCH, existing auth/vault/notifications coverage retained). **Dashboard** **`FeatureRouteErrorBoundary`** around **`Outlet`** for lazy-route chunk failures. **Docs:** **`EMAIL_INBOUND.md`** + **`DEPLOYMENT.md`** (inbox query + readiness vs liveness); **`CONTRIBUTING.md`**; **`CHANGELOG.md`** Unreleased; **`README`** integration-test pointer; **`dashboardRoutes.test.ts`** notification deep-link sanity.
 
-**Deferred:** Playwright E2E; new broker-scan UI string for **`broker_scan_config_invalid`** (API message already surfaces via **`clientErrorFromApiFailure`**); Phase 2 surfaces.
+**Deferred:** Playwright E2E; Phase 2 surfaces.
 
 **External:** Unchanged.
+
+---
+
+## Run 10 — Launch handoff + last-mile polish (Phase 1 endgame)
+
+**Scope:** **Docs:** [CHROME_WEB_STORE_CHECKLIST.md](./CHROME_WEB_STORE_CHECKLIST.md) Run 10 manifest verification vs **`package.json`** / prod **`manifest.json`**; [EXTENSION_STORE_BUILD.md](./EXTENSION_STORE_BUILD.md) Run 10 **confirm** block (**`npm run build:extension:store`** → **`src/extension/build/chrome-mv3-prod/`**); [DEPLOYMENT.md](./DEPLOYMENT.md) **external blockers** table (**owner + blocker** per: Stripe webhook, dashboard URL, API TLS, inbound worker, Twilio prod, CWS, legal) + **engineering vs ops** pointer; [QA_MANUAL.md](./QA_MANUAL.md) stakeholder **engineering closed vs waiting on ops**; [PHASE_2_INTELLIGENCE.md](./PHASE_2_INTELLIGENCE.md) **5-bullet** Phase 1→2 handoff (**docs only**). **Extension:** extract **`setNativeInputValue`** → **`nativeInputValue.ts`** + **jsdom** unit test; content-script **shield** uses real **`<button type="button">`**; popup **Sign in** / **Sign out** / **Generate** **`aria-busy`** + disabled while pending. **Shared:** **`broker_scan_config_invalid`** code; **`normalizeClientError`** maps it; **BrokersPage** explicit copy + **DEPLOYMENT.md** pointer on scan **503** config errors.
+
+**Outcome:** Store/deploy docs aligned with repo; clear launch boundary for stakeholders; no new backends (Call Guard, SEE, SMTP, CSV).
+
+**External:** Unchanged (CWS, live Stripe, MX, legal, prod Twilio).

@@ -83,6 +83,7 @@ export function normalizeClientError(err: ApiErrorBody): {
 
   if (
     http === 503 ||
+    code === PHANTOM_API_ERROR_CODES.broker_scan_config_invalid ||
     code === PHANTOM_API_ERROR_CODES.service_unavailable ||
     code === PHANTOM_API_ERROR_CODES.overloaded ||
     code === PHANTOM_API_ERROR_CODES.phone_provider_unavailable

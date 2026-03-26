@@ -153,6 +153,12 @@ export function BrokersPage() {
         setScanErrorMessage(null);
         return;
       }
+      if (ce.apiErrorCode === PHANTOM_API_ERROR_CODES.broker_scan_config_invalid) {
+        setScanErrorMessage(
+          `${getQueryErrorMessage(e)} Fix BROKER_SCAN_CONCURRENCY (1–32) and BROKER_SCAN_WORKER_DELAY_MS on the API (see docs/roadmap/DEPLOYMENT.md).`
+        );
+        return;
+      }
       setScanErrorMessage(getQueryErrorMessage(e));
     },
   });

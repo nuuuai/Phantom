@@ -181,9 +181,9 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 - **Dashboard + API:** alias tiers, **`GET /api/user/me`** **`aliasUsage`**, vault page **Retry** on list error, alias detail **Retry** + email forwarding copy, onboarding **install → first alias** funnel, broker **429** UX, simulated removal per **`BROKER_REMOVAL_QUEUE.md`**, notification prefs + **`notificationCategoryFilter`**.
 - **Honesty:** **`NOTIFICATIONS_EMAIL_ENABLED`** is documented in **`.env.example`** / **`DEPLOYMENT.md`** and is **not** read by application code (no false email delivery).
 
-**External-only (not treated as missing repo work):** live **Stripe** + HTTPS webhook; **DNS/MX** + worker → email inbound; **CWS** + hosted legal URLs; production **Twilio**/carrier — see **Blocked (external)** above.
+**External-only (not treated as missing repo work):** live **Stripe** + HTTPS webhook; **DNS/MX** + worker → email inbound; **CWS** + hosted legal URLs; production **Twilio**/carrier — see **Blocked (external)** above and **`DEPLOYMENT.md`** *External blockers* (**owner + blocker** per row). Stakeholder wording: **`QA_MANUAL.md`** § *Stakeholder handoff* (**engineering closed vs waiting on ops**).
 
-**Phase 2+ / explicitly not required for this engineering close:** Brain, Call Guard, carrier-grade numbers, Firefox extension, **Playwright E2E** (deferred), CSV import, community threat feed — see **`PHASE_2_INTELLIGENCE.md`** and **Deferred** tables in this doc.
+**Phase 2+ / explicitly not required for this engineering close:** Brain, Call Guard, carrier-grade numbers, Firefox extension, **Playwright E2E** (deferred), CSV import, community threat feed — see **`PHASE_2_INTELLIGENCE.md`** (Phase 1→2 **handoff** bullets) and **Deferred** tables in this doc.
 
 ## Success Metrics (End of Phase 1)
 

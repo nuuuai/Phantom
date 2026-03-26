@@ -4,4 +4,5 @@ All notable changes to this project are documented here. The format is loose; ve
 
 ## Unreleased
 
+- **Run 10 (launch handoff):** [CHROME_WEB_STORE_CHECKLIST](./docs/roadmap/CHROME_WEB_STORE_CHECKLIST.md) / [EXTENSION_STORE_BUILD](./docs/roadmap/EXTENSION_STORE_BUILD.md) / [DEPLOYMENT](./docs/roadmap/DEPLOYMENT.md) / [QA_MANUAL](./docs/roadmap/QA_MANUAL.md) / [PHASE_2_INTELLIGENCE](./docs/roadmap/PHASE_2_INTELLIGENCE.md) updates; **`PHANTOM_API_ERROR_CODES.broker_scan_config_invalid`** + **BrokersPage** scan config copy; extension **`nativeInputValue`** helper + tests; popup **`aria-busy`**; shield **`<button>`**.
 - **Batch 5 (quality / verticals / resilience):** Shared **`forwardEmail`** validation for **`PATCH /api/user/me`** and dashboard Settings; **`GET /api/email-inbox`** adds **`offset`** (capped) and returns **`meta: { limit, offset }`**; integration tests for forward-email validation, inbox clamping, and idempotent read PATCH; dashboard **`FeatureRouteErrorBoundary`** around lazy routes; **`CONTRIBUTING.md`**; **`DEPLOYMENT.md`** / **`EMAIL_INBOUND.md`** aligned with inbox + health behavior; **`dashboardRoutes`** test for notification deep links.

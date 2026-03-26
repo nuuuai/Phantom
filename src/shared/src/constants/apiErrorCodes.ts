@@ -17,6 +17,8 @@ export const PHANTOM_API_ERROR_CODES = {
   sync_conflict: "sync_conflict",
   network_error: "network_error",
   invalid_response: "invalid_response",
+  /** Invalid `BROKER_SCAN_*` env — `POST /api/broker-scan/start` returns 503. */
+  broker_scan_config_invalid: "broker_scan_config_invalid",
 } as const;
 
 export type PhantomApiErrorCode =

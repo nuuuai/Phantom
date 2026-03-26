@@ -1,4 +1,5 @@
 import type { PlasmoCSConfig } from "plasmo";
+import { setNativeInputValue } from "../lib/nativeInputValue.js";
 import {
   MESSAGE_FIELD_SCAN,
   MESSAGE_GENERATE_ALIAS,
@@ -55,19 +56,6 @@ function classifyByLabel(el: HTMLInputElement): "email" | "username" | null {
   if (/e[-_]?mail/i.test(text)) return "email";
   if (/user\s?name|login/i.test(text)) return "username";
   return null;
-}
-
-/** Sets value in a way React/Vue controlled inputs observe (prototype setter). */
-function setNativeInputValue(el: HTMLInputElement, value: string): void {
-  const desc = Object.getOwnPropertyDescriptor(
-    HTMLInputElement.prototype,
-    "value"
-  );
-  if (desc?.set) {
-    desc.set.call(el, value);
-  } else {
-    el.value = value;
-  }
 }
 
 function collectFieldsInRoot(
@@ -152,6 +140,7 @@ function createShieldIcon(field: DetectedField): HTMLDivElement {
       border-radius:4px; background:rgba(108,58,237,0.15);
       border:1px solid rgba(108,58,237,0.3);
       transition: background 150ms, border-color 150ms;
+      margin:0; padding:0; font:inherit; color:inherit;
     }
     .ph-shield:hover {
       background:rgba(108,58,237,0.3);
@@ -171,7 +160,8 @@ function createShieldIcon(field: DetectedField): HTMLDivElement {
   errEl.setAttribute("role", "status");
   errEl.setAttribute("aria-live", "polite");
 
-  const btn = document.createElement("div");
+  const btn = document.createElement("button");
+  btn.type = "button";
   btn.className = "ph-shield";
   btn.title = `Phantom: generate ${field.kind} alias`;
   btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;

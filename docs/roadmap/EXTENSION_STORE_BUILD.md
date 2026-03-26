@@ -79,6 +79,12 @@ Set in repo-root `.env` or CI secrets **before** `plasmo build`:
 
 Bump `version` in `src/extension/package.json` before each store submission (Chrome Web Store requires monotonically increasing versions).
 
+## Run 10 confirmation
+
+- **Command:** from repo root, **`npm run build:extension:store`** (root **`package.json`** — builds **`@phantom/shared`** then **`@phantom/extension`**).
+- **Output directory:** **`src/extension/build/chrome-mv3-prod/`** (zip **contents** of this folder for Chrome Web Store upload — **`manifest.json`** at archive root).
+- **Dev builds** use **`chrome-mv3-dev/`** — never upload to the store.
+
 ## Run 12 status (CWS packaging sprint)
 
 | Status | Items |

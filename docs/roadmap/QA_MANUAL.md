@@ -125,3 +125,9 @@ Use **`@phantom/shared`** helpers **`normalizeClientError`** / **`clientErrorFro
 - Full **Playwright** E2E (dashboard + extension) — not wired in repo; add in a later milestone if desired.
 - **Load testing** and **third-party security audit** — manual engagement, not automated here.
 - **Outbound email notifications** (SES/SMTP) — reserved env names in **`DEPLOYMENT.md`**; no sender in repo yet.
+
+## Stakeholder handoff (engineering vs ops)
+
+**Engineering closed (in-repo):** Feature-complete Phase 1 paths documented here — **aliases** (dashboard + extension), **vault sync**, **broker scan** + removal simulation, **billing** (Stripe test/CI mocks), **inbox** (webhook + list + read), **notifications** (prefs, bell, seed-demo **403** in prod), **dark web** (tier + HIBP when **`DARK_WEB_HIBP_API_KEY`** set), **overview** (honest zeros or demo metrics via **`DASHBOARD_DEMO_METRICS`** / **`OVERVIEW_DEMO_METRICS`**), CI (**lint**, **test**, **build**, integration when **`DATABASE_URL`** is real), extension **store build** + **MV3** checklist.
+
+**Waiting on ops / legal (outside repo):** Public **HTTPS** for API and dashboard, **live Stripe** keys + **webhook URL**, **Chrome Web Store** account + listing + **hosted privacy policy**, **MX + inbound worker** for mail, **Twilio prod** for real telephony, legal **ToS**/**privacy** review — see **`DEPLOYMENT.md`** *External blockers* and **`PHASE_1_FOUNDATION.md`** *Remaining before Phase 1 complete*.

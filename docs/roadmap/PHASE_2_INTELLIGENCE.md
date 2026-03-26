@@ -1,5 +1,13 @@
 # Phase 2 — Intelligence (Months 6–12)
 
+## Phase 1 → Phase 2 handoff (docs only)
+
+- **Brain / risk:** Phase 1 ships **heuristic** overview metrics (optional **`DASHBOARD_DEMO_METRICS`**), **alias health** states on aliases, **broker scan** simulation, and **dark web** via **HIBP** when configured — **not** behavioral ML, cross-user baselines, or real-time threat fusion. Phase 2 Brain should build on existing **`userId`**, **`Alias`**, **`Notification`**, and **`GET /api/dashboard/metrics`** patterns.
+- **Call Guard / telephony:** Dashboard **placeholder** routes and extension **do not** include SIP, call recording, or carrier APIs. Phase 1 **phone** aliases use **mock** or **Twilio stub**; **PSTN** and **Call Guard** start from **`PHONE_INTEGRATION.md`** + env-driven adapters.
+- **Scammer Engagement Engine (SEE):** **Placeholder** “Scam engage” route only. No transcript pipeline, personas, or TTS in repo.
+- **Threat intel / community:** **Placeholder** “Threat intel” route; no cross-user network or marketplace feeds wired.
+- **Extension:** Shield (alias generation, form shield, vault sync, **`fetchAuth`**) is the baseline; Phase 2 adds **Call Guard UI**, **Firefox/Safari**, and richer **Brain** surfaces — assume **MV3** + **`host_permissions`** model unchanged unless product narrows **`matches`**.
+
 > **Progress:** Each deliverable shows **% complete** (0% = not started).
 
 | Track | Avg |
