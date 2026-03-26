@@ -67,22 +67,50 @@ async function fetchWithRefresh(
   const rt = useSessionStore.getState().refreshToken;
   if (!rt) return res;
   const r2 = await postRefresh(rt);
-  const data = (await r2.json()) as ApiResponse<{
+  const refreshParsed = await parseApiResponseJson<{
     user: User;
     accessToken: string;
     refreshToken: string;
-  }>;
-  if (!data.ok) return res;
-  useSessionStore.getState().setAccessToken(data.data.accessToken);
-  useSessionStore.getState().setRefreshToken(data.data.refreshToken);
+  }>(r2);
+  if (!refreshParsed.ok) return res;
+  useSessionStore.getState().setAccessToken(refreshParsed.data.accessToken);
+  useSessionStore.getState().setRefreshToken(refreshParsed.data.refreshToken);
   const headers2 = new Headers(init.headers);
-  headers2.set("Authorization", `Bearer ${data.data.accessToken}`);
+  headers2.set(
+    "Authorization",
+    `Bearer ${refreshParsed.data.accessToken}`
+  );
   let res2 = await fetch(url, { ...init, headers: headers2 });
   if (res2.status === 429) {
     await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_RETRY_MS));
     res2 = await fetch(url, { ...init, headers: headers2 });
   }
   return res2;
+}
+
+async function parseHealthPayload(
+  res: Response
+): Promise<{ status: string; service: string; redis?: string }> {
+  if (!res.ok) {
+    throw new Error("Health check failed");
+  }
+  const text = await res.text();
+  if (!text.trim()) {
+    throw new Error("Health check failed");
+  }
+  const contentType = res.headers.get("content-type") ?? "";
+  if (!/application\/json|\+json/i.test(contentType)) {
+    throw new Error("Health check failed");
+  }
+  try {
+    return JSON.parse(text) as {
+      status: string;
+      service: string;
+      redis?: string;
+    };
+  } catch {
+    throw new Error("Health check failed");
+  }
 }
 
 export const phantomApi = {
@@ -92,14 +120,7 @@ export const phantomApi = {
     redis?: string;
   }> => {
     const res = await fetch(buildUrl("/health"));
-    if (!res.ok) {
-      throw new Error("Health check failed");
-    }
-    return (await res.json()) as {
-      status: string;
-      service: string;
-      redis?: string;
-    };
+    return parseHealthPayload(res);
   },
 
   auth: {
