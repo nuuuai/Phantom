@@ -55,9 +55,9 @@ The shield UI uses a closed Shadow DOM on detected inputs. **No extra timeboxed 
 
 ## QA before submit
 
-- [ ] Repo CI green: use the **exact step order** in [`DEPLOYMENT.md`](./DEPLOYMENT.md) **§ CI** (table: `npm ci` → migrate → **seed** → lint → test → build) — matches [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) so integration tests that need **`DataBroker`** rows run in CI.
+- [ ] Repo CI green: use the **exact step order** in [`DEPLOYMENT.md`](./DEPLOYMENT.md) **§ CI** — `npm ci` → migrate → **seed** → **`npm run lint`** → **`npm run test`** → **`npm run build`** — matches [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) so integration tests that need **`DataBroker`** rows run in CI.
 - [ ] Smoke test on top sites (alias generate + autofill).
-- [ ] API base URL configurable for staging vs prod (`PLASMO_PUBLIC_API_URL`).
+- [ ] API base URL configurable for staging vs prod (`PLASMO_PUBLIC_API_URL` and/or extension Options).
 
 ## Store listing copy (paste into CWS; privacy policy URL is external)
 

@@ -24,4 +24,19 @@ describe("isFreeTierAliasTypeAtCap", () => {
       isFreeTierAliasTypeAtCap("free", "phone", usage)
     ).toBe(false);
   });
+
+  it("returns false when max is null (unlimited)", () => {
+    const u = [{ type: "email" as const, used: 99, max: null as number | null }];
+    expect(isFreeTierAliasTypeAtCap("free", "email", u)).toBe(false);
+  });
+
+  it("returns false when alias type has no usage row", () => {
+    expect(isFreeTierAliasTypeAtCap("free", "username", usage)).toBe(false);
+  });
+
+  it("returns false for enterprise tier", () => {
+    expect(
+      isFreeTierAliasTypeAtCap("enterprise", "email", usage)
+    ).toBe(false);
+  });
 });

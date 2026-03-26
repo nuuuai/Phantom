@@ -8,8 +8,8 @@
 | Month 2–3 extension + dashboard | **~74%** |
 | Month 3–4 phone + brokers | **~61%** |
 | Month 4–5 removal + notifications | **~58%** |
-| Month 5–6 launch + QA | **~65%** |
-| **Phase 1 (all deliverables)** | **~76%** |
+| Month 5–6 launch + QA | **~68%** |
+| **Phase 1 (all deliverables)** | **~78%** |
 
 ## Objective
 
@@ -145,10 +145,10 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - Import existing passwords — **0%**
   - Generate aliases for top services (Gmail, Amazon, Facebook, etc.) — **0%**
 
-- [ ] **Testing and QA** — **69%**
-  - Unit tests for: vault encryption, alias generation, API auth — **67%** (+ **`aliasTierLimits`**, **`tierQuota`**, **extension** `fetchAuth` **API 503** passthrough + **401** after failed refresh + **`network_error`**, **`refreshSession`** exponential backoff, **`inboundWebhookDedupe`**, **`brokerScanQuota`**, **`brokerScanSummaryAugment`**, **`notificationCategoryFilter`**, **`assertJwtEnvConfigured`**, **`operatorConfigLog`**, **vault sync** `executeVaultSyncPush` wrong passphrase + **409 retry**, **tampered blob**, **phone** `phoneConfig` / `validateForward` / `provisionPhone`, **paid tier** helper, webhook smoke tests, **broker** `computeBrokerScanSummary`, **`brokerRemovalPipeline`**, scan **delay env** parsing, **`prismaUnique`** Stripe dedupe helper)
-  - Integration tests for: API auth + vault + **Stripe webhooks (signed)** + **billing sync-checkout-session** + **broker scan free-tier 429** — **52%** (`auth.integration.test.ts`, `launch.integration.test.ts`, **`billingSyncSession.integration.test.ts`**, **`brokerScanQuota.integration.test.ts`** when Postgres + seeded catalog; **CI**; **duplicate `event.id`**); **`webhookEmailInbound.test.ts`** (503 / 415 / 401 / invalid JSON); **`app.test.ts`** health + route smoke + **`X-Request-Id`**
-  - E2E tests with Playwright (extension + dashboard flows) — **0%** (deferred; manual list in **`docs/roadmap/QA_MANUAL.md`**; **CHROME_WEB_STORE_CHECKLIST** references `npm run lint` / `npm test` / `npm run build`)
+- [ ] **Testing and QA** — **74%**
+  - Unit tests for: vault encryption, alias generation, API auth — **72%** (+ **`aliasTierLimits`**, **`tierQuota`** edge cases **max null** / missing row / **enterprise**, **extension** `fetchAuth` **429** retry + **401** refresh success path + **no token** synthetic **401**, **`validateApiBaseUrlInput`** + invalid storage override fallback, **`refreshSession`** exponential backoff, **`inboundWebhookDedupe`**, **`brokerScanQuota`**, **`brokerScanSummaryAugment`**, **`notificationCategoryFilter`**, **`assertJwtEnvConfigured`**, **`operatorConfigLog`**, **vault sync** `executeVaultSyncPush` wrong passphrase + **409 retry**, **tampered blob**, **phone** `phoneConfig` / `validateForward` / `provisionPhone`, **paid tier** helper, webhook smoke tests, **broker** `computeBrokerScanSummary`, **`brokerRemovalPipeline`** (**email** vs **manual**, clamp), scan **delay env** parsing, **`prismaUnique`** Stripe dedupe helper)
+  - Integration tests for: API auth + vault **409** + **Stripe webhooks (signed)** + **billing sync-checkout-session** idempotency + **broker scan free-tier 429** — **58%** (`auth.integration.test.ts`, `launch.integration.test.ts`, **`billingSyncSession.integration.test.ts`**, **`brokerScanQuota.integration.test.ts`** when Postgres + seeded catalog; **CI** `DATABASE_URL` + **duplicate `event.id`**); **`webhookEmailInbound.test.ts`** (503 / 415 / 401 / invalid JSON); **`app.test.ts`** health + route smoke + **`X-Request-Id`**
+  - E2E tests with Playwright (extension + dashboard flows) — **0%** (deferred; manual list in **`docs/roadmap/QA_MANUAL.md`**; **CHROME_WEB_STORE_CHECKLIST** / **`README.md`** / **`DEPLOYMENT.md`** document **`npm ci` → migrate → seed → lint → test → build**)
   - Security audit of encryption implementation — **0%**
   - Load testing for alias generation and broker scanning — **0%**
 

@@ -1,6 +1,10 @@
 # QA — automated vs manual (Phase 1)
 
-**CI commands:** see [`DEPLOYMENT.md`](./DEPLOYMENT.md) **§ CI** (same order as `.github/workflows/ci.yml` and [CHROME_WEB_STORE_CHECKLIST.md](./CHROME_WEB_STORE_CHECKLIST.md)).
+**CI commands (reviewers / local parity):** from the **repo root**, in order:
+
+`npm ci` → `npm run db:migrate:deploy -w @phantom/api` → `npm run db:seed -w @phantom/api` → `npm run lint` → `npm run test` → `npm run build`
+
+Same order as [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) and [`DEPLOYMENT.md`](./DEPLOYMENT.md) **§ CI** (see also [CHROME_WEB_STORE_CHECKLIST.md](./CHROME_WEB_STORE_CHECKLIST.md)). **Node 20** matches CI.
 
 ## Environment & startup (operator)
 
@@ -20,7 +24,7 @@
 | **Integration (requires Postgres)** | Free tier: **`POST /api/broker-scan/start`** second call → **429** `scan_rate_limited` when cap exceeded (needs seeded broker catalog) | `src/api/src/brokerScanQuota.integration.test.ts` |
 | **Integration (requires Postgres)** | Register + aliases; vault sync conflict | `src/api/src/auth.integration.test.ts` |
 
-Integration suites are **skipped** when `DATABASE_URL` is unset or equals the vitest placeholder (`phantom_placeholder`). They run in **GitHub Actions** (Postgres service + `DATABASE_URL`). Locally, use a real `DATABASE_URL` in repo-root `.env` to enable them.
+Integration suites are **skipped** when `DATABASE_URL` is unset or equals the vitest placeholder (`phantom_placeholder`). They run in **GitHub Actions** (job-level **`env.DATABASE_URL`** points at the workflow’s **Postgres service** on port **5432**). Locally, use a real `DATABASE_URL` in repo-root `.env` (and migrate + seed) to enable them.
 
 ## Manual (pre-launch)
 
@@ -54,7 +58,7 @@ Use **`@phantom/shared`** helpers **`normalizeClientError`** / **`clientErrorFro
 
 ### Extension
 
-- [ ] Install unpacked dev build OR store build; set **`PLASMO_PUBLIC_API_URL`** to target environment (`EXTENSION_STORE_BUILD.md`).
+- [ ] Install unpacked dev build OR store build; set **`PLASMO_PUBLIC_API_URL`** at build time to the API origin (`EXTENSION_STORE_BUILD.md`), or set **Runtime API origin** in extension **Options** (stored as **`phantom_api_base_url`** in `chrome.storage.local`).
 - [ ] Log in from extension; generate alias; autofill on a known test page.
 - [ ] **Auth:** let access token expire (or revoke server-side); trigger an authenticated action — extension should **refresh** session once; on **503** / **429** on refresh, **exponential backoff** retries (up to a few attempts) before giving up; **offline** / fetch throw → synthetic **`network_error`** JSON (**503**), distinct from **401** re-auth.
 - [ ] Optional: vault unlock / sync — confirm best-effort push after login (background `pushVaultSyncFromExtension`).
@@ -64,6 +68,14 @@ Use **`@phantom/shared`** helpers **`normalizeClientError`** / **`clientErrorFro
 - [ ] `GET /health/live` and `GET /health` return expected JSON behind TLS (`DEPLOYMENT.md`).
 - [ ] CORS: dashboard origin allowed; credentials work for API calls.
 - [ ] Stripe Dashboard: webhook URL **`POST /api/webhooks/stripe`** receives **`200`**; **`StripeWebhookEvent`** rows accumulate unique **`event.id`** values.
+
+## Run 13 status (QA & CI hardening)
+
+| Status | Notes |
+|--------|--------|
+| **Shipped** | Extra **unit** coverage (`tierQuota`, `brokerRemovalPipeline`, extension **`apiClient`**); CI workflow **concurrency**; **`README` / `QA_MANUAL` / `DEPLOYMENT` / `CHROME_WEB_STORE_CHECKLIST`** aligned with **`npm ci` → migrate → seed → lint → test → build**; billing manual steps use **`session_id`** / **`canceled`** query params. |
+| **Blocked** | **Playwright** E2E, **load** / **security** audits — external or later milestone. |
+| **Next sprint** | Optional: more **integration** branches; single Playwright **smoke** if timeboxed. |
 
 ## Deferred (Phase 1 gap)
 

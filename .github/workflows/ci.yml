@@ -5,6 +5,11 @@ on:
     branches: [main, master]
   pull_request:
 
+# One job, strict order: install → migrate → seed → lint → test → build (matches docs).
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest

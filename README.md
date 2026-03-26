@@ -86,6 +86,19 @@ High-level only — full detail lives in [`docs/roadmap/README.md`](docs/roadmap
 
 **Agent playbook (sequential runs):** [`docs/roadmap/PHASE_1_AGENT_RUNS.md`](docs/roadmap/PHASE_1_AGENT_RUNS.md).
 
+## CI (local parity with GitHub Actions)
+
+From the **repository root** on **Node 20**:
+
+1. `npm ci`
+2. `npm run db:migrate:deploy -w @phantom/api`
+3. `npm run db:seed -w @phantom/api`
+4. `npm run lint`
+5. `npm run test`
+6. `npm run build`
+
+Details, Postgres **`DATABASE_URL`** in Actions, and which tests are DB-gated: [`docs/roadmap/DEPLOYMENT.md`](docs/roadmap/DEPLOYMENT.md) **§ CI** and [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
 ## Documentation Index
 
 ### Architecture

@@ -118,9 +118,9 @@ See [EXTENSION_STORE_BUILD.md](./EXTENSION_STORE_BUILD.md) and [CHROME_WEB_STORE
 | Test | `npm run test` |
 | Build | `npm run build` |
 
-Workflow: [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml). Keep green before release.
+Workflow: [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml). **Concurrency:** new pushes to the same branch cancel an in-flight run (`cancel-in-progress`) so the latest commit is what CI finishes on. Keep green before release.
 
-**Integration tests** (`launch.integration.test.ts`, `auth.integration.test.ts`, `billingSyncSession.integration.test.ts`, `brokerScanQuota.integration.test.ts`) run when `DATABASE_URL` is set to a **real** database (not the vitest `phantom_placeholder` URL). They are skipped in the default local test run without Postgres. **GitHub Actions** sets `DATABASE_URL` to the service container and **seeds** the catalog so these tests execute in CI. For local runs, use `npm run db:seed -w @phantom/api` after migrate if you need the same coverage.
+**Integration tests** (`launch.integration.test.ts`, `auth.integration.test.ts`, `billingSyncSession.integration.test.ts`, `brokerScanQuota.integration.test.ts`) run when `DATABASE_URL` is set to a **real** database (not the vitest `phantom_placeholder` URL). They are skipped in the default local test run without Postgres. **GitHub Actions** defines a **Postgres 16** service and sets **`DATABASE_URL=postgresql://phantom:phantom_ci@localhost:5432/phantom`** (see the workflow file) for the job; **seed** supplies **`DataBroker`** rows so broker-quota integration tests run. For local parity, use a real Postgres URL in `.env` and `npm run db:seed -w @phantom/api` after migrate.
 
 ## External blockers (not in repo)
 

@@ -45,6 +45,12 @@ describe("validateApiBaseUrlInput", () => {
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.url).toBe("https://api.example.com/v1");
   });
+
+  it("rejects non-http(s) protocols", async () => {
+    const { validateApiBaseUrlInput } = await import("./apiClient.js");
+    const r = validateApiBaseUrlInput("javascript:alert(1)");
+    expect(r.ok).toBe(false);
+  });
 });
 
 describe("getApiBaseUrl", () => {
@@ -82,6 +88,21 @@ describe("getApiBaseUrl", () => {
     try {
       const { getApiBaseUrl } = await import("./apiClient.js");
       await expect(getApiBaseUrl()).resolves.toBe("https://staging.example.com");
+    } finally {
+      process.env.PLASMO_PUBLIC_API_URL = prev;
+    }
+  });
+
+  it("falls back to build default when storage override is invalid", async () => {
+    stubChromeStorage(async () => ({
+      phantom_api_base_url: "not-a-url",
+    }));
+    vi.resetModules();
+    const prev = process.env.PLASMO_PUBLIC_API_URL;
+    process.env.PLASMO_PUBLIC_API_URL = "http://localhost:8888";
+    try {
+      const { getApiBaseUrl } = await import("./apiClient.js");
+      await expect(getApiBaseUrl()).resolves.toBe("http://localhost:8888");
     } finally {
       process.env.PLASMO_PUBLIC_API_URL = prev;
     }
@@ -250,5 +271,84 @@ describe("fetchAuth", () => {
     const res = await fetchAuth("/api/aliases");
     expect(res.status).toBe(401);
     expect(fetchMock).toHaveBeenCalled();
+  });
+
+  it("returns synthetic 401 JSON when not signed in", async () => {
+    storageMock.getAccessToken.mockResolvedValue(null);
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const { fetchAuth } = await import("./apiClient.js");
+    const res = await fetchAuth("/api/aliases");
+    expect(res.status).toBe(401);
+    const json = (await res.json()) as { error: { code: string } };
+    expect(json.error.code).toBe("unauthorized");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("retries once after 429 then returns success", async () => {
+    storageMock.getAccessToken.mockResolvedValue("at");
+    vi.useFakeTimers();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: false, error: { code: "rate_limited" } }), {
+          status: 429,
+          headers: { "Content-Type": "application/json" },
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true, data: { x: 1 } }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    const { fetchAuth } = await import("./apiClient.js");
+    const p = fetchAuth("/api/aliases/generate", { method: "POST" });
+    await vi.advanceTimersByTimeAsync(1600);
+    const res = await p;
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
+  it("401 then successful refresh then retries request", async () => {
+    let access = "at1";
+    storageMock.getAccessToken.mockImplementation(() => Promise.resolve(access));
+    storageMock.setAccessToken.mockImplementation((t: string | null) => {
+      access = t ?? "";
+    });
+    storageMock.getRefreshToken.mockResolvedValue("rt");
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ok: false,
+            error: { code: "unauthorized", message: "expired" },
+          }),
+          { status: 401, headers: { "Content-Type": "application/json" } }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ok: true,
+            data: { accessToken: "at2", refreshToken: "rt2" },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true, data: { items: [] } }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    const { fetchAuth } = await import("./apiClient.js");
+    const res = await fetchAuth("/api/aliases");
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 });
