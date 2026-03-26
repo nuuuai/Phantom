@@ -155,4 +155,162 @@ const res = await fetch('/api/aliases');  // Never do this in components
 5. Phantom is part of an ecosystem with Kova and VulnIQ. Design interfaces that can eventually connect to them.
 6. User trust is everything. Fail safe, fail private, fail with a clear explanation.
 7. Read the docs in `/docs/` before implementing any feature. The specs are comprehensive.
-8. When generating UI, match the Phantom brand: clean, confident, slightly dark/techy aesthetic. Purple (#6C3AED) is the primary accent color.
+8. When generating UI, follow the Phantom Design System defined below exactly. No deviations.
+
+---
+
+## Phantom Design System — Midnight Editorial
+
+### Theme: Midnight Editorial
+Structured, data-forward, crisp hierarchy. Feels like a serious analytics command center with clear information architecture. Not playful, not flashy — confident and precise.
+
+### Fonts
+- **Primary:** `'IBM Plex Sans'` — weights: 300 (large numbers), 400 (body), 500 (labels), 600 (headings), 700 (emphasis)
+- **Mono:** `'IBM Plex Mono'` — weights: 400, 500, 600 — used for: timestamps, stat labels, system status, data values, nav group headers
+- **Google Fonts import:** `https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap`
+- **NEVER use:** Inter, Arial, Roboto, system-ui as primary. IBM Plex is the identity.
+
+### Colors
+
+**Backgrounds:**
+| Token | Hex | Usage |
+|-------|-----|-------|
+| `--bg-base` | `#101014` | Page background |
+| `--bg-surface` | `#15151a` | Cards, panels, sidebar |
+| `--bg-raised` | `#1a1a24` | Hover states, inputs, dropdowns |
+| `--bg-border` | `#222228` | Borders, dividers |
+| `--bg-border-subtle` | `#1c1c24` | Row separators, subtle dividers |
+
+**Text:**
+| Token | Hex | Usage |
+|-------|-----|-------|
+| `--text-primary` | `#e8e8ec` | Headings, primary content |
+| `--text-secondary` | `#888890` | Subheadings, descriptions |
+| `--text-tertiary` | `#55555e` | Labels, captions, timestamps |
+| `--text-muted` | `#44444e` | Disabled, hints |
+| `--text-ghost` | `#3a3a44` | Barely visible, decorative |
+
+**Accent (Purple — Phantom brand):**
+| Token | Hex | Usage |
+|-------|-----|-------|
+| `--accent` | `#6C3AED` | Primary buttons, active indicators, brand elements |
+| `--accent-light` | `#A78BFA` | Active nav text, hover states |
+| `--accent-bg` | `#6C3AED15` | Accent backgrounds (15% opacity) |
+| `--accent-border` | `#6C3AED30` | Accent borders (30% opacity) |
+
+**Layer Colors (encode the four-layer architecture):**
+| Layer | Text | Background | Border | Usage |
+|-------|------|-----------|--------|-------|
+| Shield | `#34D399` | `#0d2818` | `#134e2a` | Defensive features, removals, alias health |
+| Brain | `#A78BFA` | `#1a1040` | `#2d1b69` | AI decisions, risk scoring, intelligence |
+| Sword | `#F87171` | `#2a0f0f` | `#5c1a1a` | Scam engagement, counter-ops, complaints |
+| Autopilot | `#60A5FA` | `#1a2332` | `#1e3a5f` | Autonomous actions, auto-rotation, reports |
+
+**Semantic:**
+| Token | Hex | Usage |
+|-------|-----|-------|
+| `--success` | `#34D399` | Healthy, removed, confirmed, low risk |
+| `--warning` | `#FBBF24` | Warning state, pending, moderate risk |
+| `--danger` | `#F87171` | Compromised, critical, high risk, alerts |
+| `--info` | `#60A5FA` | Informational, screened calls, reports |
+
+### Layout
+
+**Sidebar:**
+- Width: 230px, fixed
+- Background: `--bg-surface`
+- Border-right: 1px solid `--bg-border`
+- Nav groups with uppercase mono labels (10px, weight 600, letter-spacing 2, color `--text-muted`)
+- Nav items: 13px, weight 400 (inactive `--text-tertiary`) / weight 600 (active `--text-primary`)
+- Active indicator: border-right 2px solid `--accent`, background `--bg-raised`
+- User avatar at bottom with plan badge
+
+**Top Bar:**
+- Background: `#13131a`
+- Border-bottom: 1px solid `--bg-border`
+- Page title: 18px, weight 600
+- Date/context: 12px mono, `--text-tertiary`
+- Action buttons right-aligned
+
+**Content Area:**
+- Padding: 24px 32px
+- Max scroll height: 100vh (sidebar and content scroll independently)
+
+**Stat Cards:**
+- Grouped in unified container with 1px gap grid (background: `--bg-border` shows through as dividers)
+- Each cell: background `--bg-surface`, padding 24px 20px
+- Label: 11px mono, uppercase, letter-spacing 1, `--text-tertiary`
+- Value: 40px, weight 300, letter-spacing -2
+- Sub-values: 12px, colored by status
+
+**Cards/Panels:**
+- Background: `--bg-surface`
+- Border: 1px solid `--bg-border`
+- Border-radius: 12px
+- Padding: 20px
+- Section header: 12px mono, uppercase, letter-spacing 1, `--text-tertiary`
+
+**Activity Timeline:**
+- Left-aligned colored dot (6px, layer color, with glow shadow)
+- Layer tag: 10px mono, uppercase, letter-spacing 1.5, colored text on colored bg with border
+- Label: 13px, weight 500
+- Description: 12px, `--text-tertiary`
+- Timestamp: 11px mono, `--text-ghost`, right-aligned
+- Row separator: 1px solid `--bg-border-subtle`
+
+### Component Patterns
+
+**Buttons:**
+- Primary: `--accent-bg` background, `--accent-border` border, `--accent-light` text, 12px weight 500
+- Secondary: `--bg-raised` background, `--bg-border` border, `--text-secondary` text
+- Radius: 6-8px
+- Padding: 6px 14px (small), 10px 18px (medium)
+
+**Progress Bars:**
+- Track: 4px height, `--bg-border` background, border-radius 2px
+- Fill: status color, border-radius 2px, transition width 1.5s ease
+
+**Badges/Tags:**
+- Layer tags: 10px mono, uppercase, colored text + bg + border from layer palette
+- Count badges: 10px, weight 600, status color text on 20% opacity background, border-radius 4px
+
+**Bar Charts:**
+- Background bars: `--bg-raised`
+- Active/current bar: `--accent`
+- Border-radius: 4px
+- Value label above: 10px mono, `--text-tertiary`
+- Axis label below: 10px, `--text-muted`
+
+### Animation
+
+- Entry animations: `fadeUp` (opacity 0→1, translateY 12px→0) with staggered delays (0.05s increments)
+- Timeline items: `slideIn` (opacity 0→1, translateX -8px→0) with 0.08s stagger
+- Number counters: animate from 0 to value over 1000ms
+- Progress bars: transition width 1.5s ease
+- No bouncing, no spring physics, no playful animations. Smooth, professional, intentional.
+- Duration: 0.3-0.6s for entries, 0.15-0.2s for hover transitions
+
+### Typography Scale
+
+| Element | Size | Weight | Font | Color |
+|---------|------|--------|------|-------|
+| Page title | 18px | 600 | Plex Sans | `--text-primary` |
+| Card heading | 14px | 600 | Plex Sans | `--text-secondary` |
+| Section label | 12px | 600 | Plex Mono | `--text-tertiary`, uppercase, ls: 1 |
+| Nav group | 10px | 600 | Plex Mono | `--text-muted`, uppercase, ls: 2 |
+| Body text | 13px | 400 | Plex Sans | `--text-primary` |
+| Description | 12px | 400 | Plex Sans | `--text-tertiary` |
+| Large number | 40px | 300 | Plex Sans | `--text-primary`, ls: -2 |
+| Small number | 28px | 300 | Plex Sans | `--text-primary` |
+| Timestamp | 11px | 400 | Plex Mono | `--text-ghost` |
+| Tag/badge | 10px | 600 | Plex Mono | layer color, uppercase, ls: 1.5 |
+
+### Design Rules
+
+1. **No gradients on cards or backgrounds.** Flat fills only. The one exception: the user avatar/logo can use the purple gradient.
+2. **No shadows except glow.** Layer dots and status indicators can have colored `box-shadow` glow (`0 0 6-8px color50`). No drop shadows on cards.
+3. **1px borders only.** Never 2px+. Borders are structural, not decorative.
+4. **Layer colors encode meaning.** Shield=green, Brain=purple, Sword=red, Autopilot=blue. Use consistently everywhere. Never use these colors for other purposes.
+5. **Mono font for data, Sans for content.** If it's a label, timestamp, stat, system status, or code → IBM Plex Mono. If it's a heading, description, or body text → IBM Plex Sans.
+6. **Uppercase sparingly.** Only for: section labels, layer tags, nav groups, stat labels. Never for headings, descriptions, or body text.
+7. **Stagger animations on load.** Cards and list items should animate in with 0.05-0.08s delays between siblings. Never animate everything at once.
