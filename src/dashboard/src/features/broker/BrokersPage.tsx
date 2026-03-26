@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
+import { UpgradeModal } from "@/components/upgrade/UpgradeModal.js";
 import { BrokerResultsPanel } from "./BrokerResultsPanel.js";
-import { BrokerUpgradeModal } from "./BrokerUpgradeModal.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import {
   brokerScanCatalogAll,
@@ -20,6 +20,7 @@ import {
   type ClientErrorMeta,
   FREE_TIER_BROKER_SCAN_MAX_PER_24H,
 } from "@phantom/shared";
+import type { UpgradeContext, UpgradeReason } from "@/lib/upgradeCopy.js";
 
 function freeTierScanFootnote(summary: BrokerScanSummary | undefined): string {
   if (!summary) {
@@ -53,9 +54,16 @@ export function BrokersPage() {
   const [tab, setTab] = useState<TabId>("all");
   const [searchQ, setSearchQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [upgradeUi, setUpgradeUi] = useState<{
+    open: boolean;
+    reason: UpgradeReason;
+    context?: UpgradeContext;
+  }>({ open: false, reason: "generic" });
   const [removalBusyId, setRemovalBusyId] = useState<string | null>(null);
   const [scanLimitMessage, setScanLimitMessage] = useState<string | null>(null);
+  const [scanLimitRetryAfter, setScanLimitRetryAfter] = useState<
+    number | undefined
+  >(undefined);
   const [scanErrorMessage, setScanErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -112,6 +120,7 @@ export function BrokersPage() {
     },
     onSuccess: () => {
       setScanLimitMessage(null);
+      setScanLimitRetryAfter(undefined);
       setScanErrorMessage(null);
       void (async () => {
         await queryClient.invalidateQueries({
@@ -128,6 +137,7 @@ export function BrokersPage() {
     onError: (e: Error) => {
       const ce = e as ClientErrorMeta;
       if (ce.apiErrorCode === "scan_rate_limited") {
+        setScanLimitRetryAfter(ce.retryAfterSeconds);
         setScanLimitMessage(
           formatBrokerScanRateLimit(e.message, ce.retryAfterSeconds)
         );
@@ -143,7 +153,7 @@ export function BrokersPage() {
       const res = await phantomApi.brokerScan.removeAll(accessToken);
       if (!res.ok) {
         if (res.error.code === "upgrade_required") {
-          setUpgradeOpen(true);
+          setUpgradeUi({ open: true, reason: "removal_queue" });
         }
         throw clientErrorFromApiFailure(res);
       }
@@ -175,7 +185,7 @@ export function BrokersPage() {
         );
         if (!res.ok) {
           if (res.error.code === "upgrade_required") {
-            setUpgradeOpen(true);
+            setUpgradeUi({ open: true, reason: "removal_queue" });
           }
           throw clientErrorFromApiFailure(res);
         }
@@ -242,10 +252,12 @@ export function BrokersPage() {
 
   return (
     <div className="px-8 py-6">
-      <BrokerUpgradeModal
-        open={upgradeOpen}
-        exposureCount={exposureForModal}
-        onClose={() => setUpgradeOpen(false)}
+      <UpgradeModal
+        open={upgradeUi.open}
+        reason={upgradeUi.reason}
+        context={upgradeUi.context}
+        onDismiss={() => setUpgradeUi((u) => ({ ...u, open: false }))}
+        titleId="brokers-upgrade-modal-title"
       />
 
       {scanLimitMessage ? (
@@ -259,6 +271,19 @@ export function BrokersPage() {
               Upgrade to Pro for unlimited scans (see Billing).
             </span>
           ) : null}
+          <button
+            type="button"
+            className="mt-3 rounded-md border border-ph-accent-border bg-[#6C3AED15] px-3 py-1.5 font-sans text-xs font-medium text-ph-accent-light focus:outline-none focus-visible:ring-2 focus-visible:ring-ph-accent/50"
+            onClick={() =>
+              setUpgradeUi({
+                open: true,
+                reason: "scan_rate_limited",
+                context: { retryAfterSeconds: scanLimitRetryAfter },
+              })
+            }
+          >
+            View upgrade options
+          </button>
         </div>
       ) : null}
       {scanErrorMessage ? (
@@ -370,7 +395,13 @@ export function BrokersPage() {
             onSearchQ={setSearchQ}
             onRemoveAll={() => removeAllMutation.mutate()}
             onRequestRemoval={(id) => requestRemovalMutation.mutate(id)}
-            onUpgrade={() => setUpgradeOpen(true)}
+            onUpgrade={() =>
+              setUpgradeUi({
+                open: true,
+                reason: "broker_exposure",
+                context: { exposureCount: exposureForModal },
+              })
+            }
             removeAllBusy={removeAllMutation.isPending}
             removalBusyId={removalBusyId}
           />

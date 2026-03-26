@@ -56,7 +56,8 @@ Run before Chrome Web Store submit and first production deploy.
 - [ ] **Auth:** log in with email/password; confirm **access** works on protected routes. Let the **access JWT** expire (~15m) or revoke server-side; confirm dashboard **refresh** path (or dev re-bootstrap) obtains a new session — extension **`fetchAuth`** should **401** → **refresh** → retry once. **Sign out** clears client state and calls **`POST /api/auth/logout`** with **refresh** when present.
 - [ ] Register and log in on production (or staging) dashboard URL.
 - [ ] Create email alias; confirm it appears in alias list.
-- [ ] **Tier matrix (free):** on **`GET /api/user/me`**, confirm **`aliasUsage`** shows **`used`** / **`max`** per type; generate aliases until **`403`** **`tier_limit`** with **`error.tierLimit`**; dashboard **Generate alias** disables types at cap with **Upgrade to Pro** link; extension shows API message + **Billing** hint on **`tier_limit`**.
+- [ ] **Tier matrix (free):** on **`GET /api/user/me`**, confirm **`aliasUsage`** shows **`used`** / **`max`** per type; generate aliases until **`403`** **`tier_limit`** with **`error.tierLimit`**; dashboard **Generate alias** / **Vault generate** show cap state and open **View billing & upgrade** (same path as **Brokers** / scan **429**); extension shows API message + **Billing** hint on **`tier_limit`**.
+- [ ] **Free → upgrade → billing → tier refresh (Run 23):** as a **free** user, trigger a limit: **alias** cap (**`tier_limit`**), **vault** password cap, **broker scan** **429** `scan_rate_limited`, or **removal queue** **`403`** `upgrade_required`. Confirm UI explains the limit honestly (simulated removal/scan labels unchanged), primary CTA goes to **`/billing`** (or opens modal whose CTA goes to **`/billing`**). Complete **Subscribe** (Stripe test mode) or use **`POST /api/billing/sync-checkout-session`**; confirm **`GET /api/user/me`** reflects **paid** tier and gated actions unlock without a full reload (React Query invalidation / refetch).
 - [ ] **Tier matrix (Pro):** after Checkout (test mode), **`user.tier`** **paid** and **`subscriptionStatus`** populated; **`aliasUsage.max`** null (unlimited); broker **removal queue** available; **`POST /api/aliases/generate`** no longer returns **`tier_limit`** for normal use.
 - [ ] **Billing:** start Checkout (Stripe test mode on staging), complete test card; confirm **`/billing?session_id=`** triggers tier sync and UI shows **paid** (webhook may follow slightly later).
 - [ ] **Billing:** repeat the same Checkout session webhook delivery (or Stripe CLI resend) and confirm API returns **`200`** with **`duplicate: true`** — handler side effects run **once** (claim on `event.id` happens before processing). **`POST /api/billing/sync-checkout-session`** may be called multiple times for the same `session_id` safely (idempotent user update).
@@ -106,6 +107,14 @@ Use **`@phantom/shared`** helpers **`normalizeClientError`** / **`clientErrorFro
 | **Shipped** | Extra **unit** coverage (`tierQuota`, `brokerRemovalPipeline`, extension **`apiClient`**); CI workflow **concurrency**; **`README` / `QA_MANUAL` / `DEPLOYMENT` / `CHROME_WEB_STORE_CHECKLIST`** aligned with **`npm ci` → migrate → seed → lint → test → build**; billing manual steps use **`session_id`** / **`canceled`** query params. |
 | **Blocked** | **Playwright** E2E, **load** / **security** audits — external or later milestone. |
 | **Next sprint** | Optional: more **integration** branches; single Playwright **smoke** if timeboxed. |
+
+## Run 23 status (conversion / upsell)
+
+| Status | Notes |
+|--------|--------|
+| **Shipped** | Shared **`UpgradeModal`** + **`upgradeCopy`**; **`BrokersPage`** / **`GenerateAliasModal`** / **`VaultGenerateModal`** / onboarding billing → **`/billing`**; **`BillingPage`** FAQ + checkout-return success; **`upgradeCopy.test.ts`**; manual steps above (**free → `/billing` → tier refresh**). |
+| **Blocked (external)** | **Live** Stripe keys + public webhook URL for production cutover (unchanged). |
+| **Next sprint** | Optional: RTL smoke for **`UpgradeModal`**; integration test wiring for **403** removal → upgrade CTA if CI budget allows. |
 
 ## Deferred (Phase 1 gap)
 

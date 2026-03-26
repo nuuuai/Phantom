@@ -2,7 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { UpgradeModal } from "@/components/upgrade/UpgradeModal.js";
 import { useEscapeKey } from "@/hooks/useEscapeKey.js";
+import type { UpgradeContext } from "@/lib/upgradeCopy.js";
 import {
   clientErrorFromApiFailure,
   encryptVaultValue,
@@ -10,6 +12,7 @@ import {
   importKeyHex,
   isFreeTierAliasTypeAtCap,
   type AliasCategory,
+  type ClientErrorMeta,
 } from "@phantom/shared";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import {
@@ -61,6 +64,10 @@ export function VaultGenerateModal({ open, onClose }: Props) {
   const [serviceName, setServiceName] = useState("");
   const [serviceUrl, setServiceUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [upgradeCtx, setUpgradeCtx] = useState<UpgradeContext | undefined>(
+    undefined
+  );
 
   const generateMutation = useMutation({
     mutationFn: async () => {
@@ -95,6 +102,22 @@ export function VaultGenerateModal({ open, onClose }: Props) {
     },
     onError: (err: Error) => {
       setError(err.message);
+      const ce = err as ClientErrorMeta;
+      if (ce.apiErrorCode === "tier_limit") {
+        const row = userMeQuery.data?.aliasUsage.find((u) => u.type === "password");
+        if (row && row.max !== null) {
+          setUpgradeCtx({
+            tierLimit: {
+              aliasType: row.type,
+              used: row.used,
+              max: row.max,
+            },
+          });
+        } else {
+          setUpgradeCtx(undefined);
+        }
+        setUpgradeOpen(true);
+      }
     },
   });
 
@@ -103,6 +126,8 @@ export function VaultGenerateModal({ open, onClose }: Props) {
     setServiceUrl("");
     setCategory("work");
     setError(null);
+    setUpgradeOpen(false);
+    setUpgradeCtx(undefined);
     onClose();
   }, [onClose]);
 
@@ -115,6 +140,17 @@ export function VaultGenerateModal({ open, onClose }: Props) {
   if (!open) return null;
 
   return (
+    <>
+    <UpgradeModal
+      open={upgradeOpen}
+      reason="alias_cap"
+      context={upgradeCtx}
+      onDismiss={() => {
+        setUpgradeOpen(false);
+        setUpgradeCtx(undefined);
+      }}
+      titleId="vault-generate-upgrade-title"
+    />
     <AnimatePresence>
       <motion.div
         key="vault-modal-overlay"
@@ -214,9 +250,33 @@ export function VaultGenerateModal({ open, onClose }: Props) {
           </div>
 
           {error && (
-            <p className="mt-3 font-sans text-[11px] text-ph-danger">
-              {error}
-            </p>
+            <div className="mt-3 space-y-2">
+              <p className="font-sans text-[11px] text-ph-danger">{error}</p>
+              {(error as unknown as ClientErrorMeta).apiErrorCode ===
+              "tier_limit" ? (
+                <button
+                  type="button"
+                  className="font-sans text-[11px] font-medium text-ph-accent-light underline-offset-2 hover:underline"
+                  onClick={() => {
+                    const row = userMeQuery.data?.aliasUsage.find(
+                      (u) => u.type === "password"
+                    );
+                    if (row && row.max !== null) {
+                      setUpgradeCtx({
+                        tierLimit: {
+                          aliasType: row.type,
+                          used: row.used,
+                          max: row.max,
+                        },
+                      });
+                    }
+                    setUpgradeOpen(true);
+                  }}
+                >
+                  View upgrade options
+                </button>
+              ) : null}
+            </div>
           )}
 
           <div className="mt-6 flex justify-end gap-2">
@@ -246,5 +306,6 @@ export function VaultGenerateModal({ open, onClose }: Props) {
         </motion.div>
       </motion.div>
     </AnimatePresence>
+    </>
   );
 }

@@ -5,11 +5,11 @@
 | Section | Avg (of deliverables in section) |
 |---------|-------------------------------------|
 | Month 1–2 infrastructure | **~68%** |
-| Month 2–3 extension + dashboard | **~84%** |
+| Month 2–3 extension + dashboard | **~85%** |
 | Month 3–4 phone + brokers | **~71%** |
 | Month 4–5 removal + notifications | **~62%** |
-| Month 5–6 launch + QA | **~68%** |
-| **Phase 1 (all deliverables)** | **~86%** |
+| Month 5–6 launch + QA | **~69%** |
+| **Phase 1 (all deliverables)** | **~87%** |
 
 ## Objective
 
@@ -20,7 +20,7 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 | Platform | Status | Progress |
 |----------|--------|----------|
 | Chrome Extension | **BUILD** — primary user interface | **~84%** |
-| Web Dashboard | **BUILD** — command center | **~84%** |
+| Web Dashboard | **BUILD** — command center | **~85%** |
 | Firefox/Safari Extension | Not started | **0%** |
 | Mobile Apps | Not started | **0%** |
 
@@ -67,7 +67,7 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - Service worker for API communication — **80%** (login + alias generate + **`pushVaultSyncFromExtension`** after unlock; **`fetchAuth` / `refreshSession`**: offline → synthetic **`network_error`** (**503**); API **503** passthrough; **401** when refresh fails; **refresh** exponential backoff on **503/429** + **documented caps** in `apiClient.ts` + tests; **`onInstalled`**: clear invalid API URL override; **options** page: **`validateApiBaseUrlInput`** + loading/saved states; shared **`clientError`** mapping for responses)
   - Encrypted credential cache in IndexedDB — **58%** (DEK + session-wrapped vault key material; see extension **`vaultStorage`**)
 
-- [ ] **Web dashboard v1** — **84%**
+- [ ] **Web dashboard v1** — **85%**
   - Login / account management — **54%** (dev login path; **`PATCH /api/user/me`** for `forwardToEmail` with validation; bootstrap errors use **`clientErrorFromApiFailure`**)
   - Alias list view (all generated aliases with metadata) — **68%** (loading / empty / **Retry** on **normalized** error; category + health filters)
   - Alias detail view (service, creation date, health status, forwarding rules) — **48%** (**phone:** adapter banner + edit forward)
@@ -139,15 +139,15 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - Dark web monitoring (basic) — **0%**
   - Priority support — **0%**
 
-- [ ] **Onboarding flow** — **72%**
+- [ ] **Onboarding flow** — **74%**
   - Extension install → account creation → first alias generation — **28%**
   - Guided exposure scan ("see who's selling your data") — **50%** (brokers **first scan** CTA + pre-scan legend + **429** UI with **retryAfterSeconds**)
-  - Multi-step modal — **78%** (**7 steps**: welcome → aliases → **inbox** → vault → brokers → **billing** → extension; **`DASHBOARD_PATHS`** + **`QUICK_ACTIONS`**; **Back** / **Next** / **Done**; scrollable modal; Chrome Web Store + **load unpacked** honesty; **no `chrome-extension://` from https** documented in UI)
+  - Multi-step modal — **80%** (**7 steps**: welcome → aliases → **inbox** → vault → brokers → **billing** → extension; **billing** step CTA matches app-wide **upgrade** path (**`/billing`**); **`DASHBOARD_PATHS`** + **`QUICK_ACTIONS`**; **Back** / **Next** / **Done**; scrollable modal; Chrome Web Store + **load unpacked** honesty; **no `chrome-extension://` from https** documented in UI)
   - Import existing passwords — **0%**
   - Generate aliases for top services (Gmail, Amazon, Facebook, etc.) — **0%**
 
-- [ ] **Testing and QA** — **74%**
-  - Unit tests for: vault encryption, alias generation, API auth — **72%** (+ **`aliasTierLimits`**, **`tierQuota`** edge cases **max null** / missing row / **enterprise**, **extension** `fetchAuth` **429** retry + **401** refresh success path + **no token** synthetic **401**, **`validateApiBaseUrlInput`** + invalid storage override fallback, **`refreshSession`** exponential backoff, **`inboundWebhookDedupe`**, **`brokerScanQuota`**, **`brokerScanSummaryAugment`**, **`notificationCategoryFilter`**, **`assertJwtEnvConfigured`**, **`operatorConfigLog`**, **vault sync** `executeVaultSyncPush` wrong passphrase + **409 retry**, **tampered blob**, **phone** `phoneConfig` / `validateForward` / `provisionPhone`, **paid tier** helper, webhook smoke tests, **broker** `computeBrokerScanSummary`, **`brokerRemovalPipeline`** (**email** vs **manual**, clamp), scan **delay env** parsing, **`prismaUnique`** Stripe dedupe helper)
+- [ ] **Testing and QA** — **75%**
+  - Unit tests for: vault encryption, alias generation, API auth — **73%** (+ **`upgradeCopy`** **`apiErrorCodeToUpgradeReason`** + copy helpers; **`aliasTierLimits`**, **`tierQuota`** edge cases **max null** / missing row / **enterprise**, **extension** `fetchAuth` **429** retry + **401** refresh success path + **no token** synthetic **401**, **`validateApiBaseUrlInput`** + invalid storage override fallback, **`refreshSession`** exponential backoff, **`inboundWebhookDedupe`**, **`brokerScanQuota`**, **`brokerScanSummaryAugment`**, **`notificationCategoryFilter`**, **`assertJwtEnvConfigured`**, **`operatorConfigLog`**, **vault sync** `executeVaultSyncPush` wrong passphrase + **409 retry**, **tampered blob**, **phone** `phoneConfig` / `validateForward` / `provisionPhone`, **paid tier** helper, webhook smoke tests, **broker** `computeBrokerScanSummary`, **`brokerRemovalPipeline`** (**email** vs **manual**, clamp), scan **delay env** parsing, **`prismaUnique`** Stripe dedupe helper)
   - Integration tests for: API auth + vault **409** + **Stripe webhooks (signed)** + **billing sync-checkout-session** idempotency + **broker scan free-tier 429** — **58%** (`auth.integration.test.ts`, `launch.integration.test.ts`, **`billingSyncSession.integration.test.ts`**, **`brokerScanQuota.integration.test.ts`** when Postgres + seeded catalog; **CI** `DATABASE_URL` + **duplicate `event.id`**); **`webhookEmailInbound.test.ts`** (503 / 415 / 401 / invalid JSON); **`app.test.ts`** health + route smoke + **`X-Request-Id`**
   - E2E tests with Playwright (extension + dashboard flows) — **0%** (deferred; manual list in **`docs/roadmap/QA_MANUAL.md`**; **CHROME_WEB_STORE_CHECKLIST** / **`README.md`** / **`DEPLOYMENT.md`** document **`npm ci` → migrate → seed → lint → test → build**)
   - Security audit of encryption implementation — **0%**

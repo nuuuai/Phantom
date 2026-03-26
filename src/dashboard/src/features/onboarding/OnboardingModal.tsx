@@ -157,6 +157,24 @@ export function OnboardingModal() {
               <p className="mt-2 font-sans text-[13px] leading-relaxed text-ph-text-tertiary">
                 {current.body}
               </p>
+              {step === 5 ? (
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void navigate(DASHBOARD_PATHS.billing);
+                      close();
+                    }}
+                    className="w-full rounded-md border border-ph-accent-border bg-[#6C3AED15] px-4 py-2.5 font-sans text-xs font-medium text-ph-accent-light hover:bg-[#6C3AED25] focus:outline-none focus-visible:ring-2 focus-visible:ring-ph-accent/50"
+                  >
+                    Open billing (same as upgrade elsewhere)
+                  </button>
+                  <p className="mt-2 font-sans text-[11px] text-ph-text-muted">
+                    Complete Checkout on the Billing page when Stripe keys are
+                    configured. Removal queue remains simulated in Phase 1.
+                  </p>
+                </div>
+              ) : null}
               {isLast ? (
                 <div className="mt-4 space-y-3 rounded-lg border border-ph-border bg-ph-raised/50 px-3 py-3 font-sans text-[12px] leading-relaxed text-ph-text-tertiary">
                   <p>

@@ -19,6 +19,7 @@ export function BillingPage() {
   const [syncCheckoutError, setSyncCheckoutError] = useState<string | null>(
     null
   );
+  const [checkoutSyncSuccess, setCheckoutSyncSuccess] = useState(false);
 
   const billingQuery = useQuery({
     queryKey: queryKeys.billingStatus(accessToken),
@@ -64,6 +65,7 @@ export function BillingPage() {
     let cancelled = false;
     void (async () => {
       setSyncCheckoutError(null);
+      setCheckoutSyncSuccess(false);
       const res = await phantomApi.billing.syncCheckoutSession(
         accessToken,
         checkoutSessionId
@@ -73,6 +75,7 @@ export function BillingPage() {
         setSyncCheckoutError(clientErrorFromApiFailure(res).message);
         return;
       }
+      setCheckoutSyncSuccess(true);
       const next = new URLSearchParams(searchParams);
       next.delete("session_id");
       setSearchParams(next, { replace: true });
@@ -114,7 +117,7 @@ export function BillingPage() {
   const canUpgrade = tier === "free";
 
   return (
-    <div className="px-8 py-6">
+    <div className="px-4 py-6 sm:px-8">
       <h1 className="font-sans text-lg font-semibold text-ph-text-primary">
         Billing
       </h1>
@@ -122,6 +125,23 @@ export function BillingPage() {
         Phantom Pro unlocks unlimited aliases and data broker removal. Stripe
         Checkout and Customer Portal activate when API keys are configured.
       </p>
+
+      {checkoutSyncSuccess && !syncCheckoutError ? (
+        <div
+          className="mt-6 max-w-xl rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 font-sans text-sm text-emerald-200"
+          role="status"
+        >
+          Checkout session applied. Your tier should update shortly; use{" "}
+          <span className="font-medium">Refresh account</span> if needed.
+          <button
+            type="button"
+            className="ml-2 font-sans text-xs underline"
+            onClick={() => setCheckoutSyncSuccess(false)}
+          >
+            Dismiss
+          </button>
+        </div>
+      ) : null}
 
       {syncCheckoutError && checkoutSessionId ? (
         <div
@@ -181,9 +201,14 @@ export function BillingPage() {
                 !billing.hasStripeClient || checkoutMutation.isPending || !canUpgrade
               }
               onClick={() => checkoutMutation.mutate()}
+              aria-label={
+                canUpgrade
+                  ? "Start Stripe Checkout for Phantom Pro"
+                  : "Current plan"
+              }
               className="rounded-md bg-ph-accent px-4 py-2 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {!canUpgrade ? "Current plan" : "Upgrade with Stripe"}
+              {!canUpgrade ? "Current plan" : "Subscribe with Stripe"}
             </button>
             <button
               type="button"
@@ -216,6 +241,21 @@ export function BillingPage() {
               <span className="font-mono">/api/webhooks/stripe</span>.
             </p>
           )}
+
+          <section className="rounded-xl border border-ph-border bg-ph-surface p-5">
+            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-ph-text-muted">
+              What Pro unlocks (Phase 1)
+            </div>
+            <ul className="mt-3 list-inside list-disc space-y-1.5 font-sans text-xs text-ph-text-tertiary">
+              <li>Unlimited email, phone, username, and password aliases</li>
+              <li>Unlimited broker exposure scans (rolling 24h)</li>
+              <li>
+                Removal request queue (simulated — DIY opt-out links on all
+                tiers)
+              </li>
+              <li>Stripe Customer Portal for subscription management</li>
+            </ul>
+          </section>
         </div>
       )}
 

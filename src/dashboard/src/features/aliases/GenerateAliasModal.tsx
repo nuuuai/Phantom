@@ -25,6 +25,8 @@ import {
 import { useEscapeKey } from "@/hooks/useEscapeKey.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 import { Link } from "react-router-dom";
+import { UpgradeModal } from "@/components/upgrade/UpgradeModal.js";
+import type { UpgradeContext } from "@/lib/upgradeCopy.js";
 
 const TYPES: { id: AliasType; label: string; hint: string }[] = [
   { id: "email", label: "Email", hint: "Phantom.id address" },
@@ -51,6 +53,10 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
   const [category, setCategory] = useState<AliasCategory | null>(null);
   const [phoneForward, setPhoneForward] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [upgradeCtx, setUpgradeCtx] = useState<UpgradeContext | undefined>(
+    undefined
+  );
 
   const userMeQuery = useQuery({
     queryKey: queryKeys.userMe(accessToken),
@@ -115,6 +121,22 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
     },
     onError: (e: Error) => {
       setError(e.message);
+      const ce = e as ClientErrorMeta;
+      if (ce.apiErrorCode === "tier_limit" && type) {
+        const row = userMeQuery.data?.aliasUsage.find((u) => u.type === type);
+        if (row && row.max !== null) {
+          setUpgradeCtx({
+            tierLimit: {
+              aliasType: row.type,
+              used: row.used,
+              max: row.max,
+            },
+          });
+        } else {
+          setUpgradeCtx(undefined);
+        }
+        setUpgradeOpen(true);
+      }
     },
   });
 
@@ -126,6 +148,8 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
       setCategory(null);
       setPhoneForward("");
       setError(null);
+      setUpgradeOpen(false);
+      setUpgradeCtx(undefined);
     }
   }, [generateMutation.isPending, onClose]);
 
@@ -134,6 +158,17 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
   if (!open) return null;
 
   return (
+    <>
+    <UpgradeModal
+      open={upgradeOpen}
+      reason="alias_cap"
+      context={upgradeCtx}
+      onDismiss={() => {
+        setUpgradeOpen(false);
+        setUpgradeCtx(undefined);
+      }}
+      titleId="alias-generate-upgrade-title"
+    />
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
       role="dialog"
@@ -368,9 +403,38 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
         )}
 
         {error ? (
-          <p className="mt-4 font-sans text-xs text-ph-danger">{error}</p>
+          <div className="mt-4 space-y-2">
+            <p className="font-sans text-xs text-ph-danger">{error}</p>
+            {(error as unknown as ClientErrorMeta).apiErrorCode ===
+            "tier_limit" ? (
+              <button
+                type="button"
+                className="font-sans text-xs font-medium text-ph-accent-light underline-offset-2 hover:underline"
+                onClick={() => {
+                  if (type) {
+                    const row = userMeQuery.data?.aliasUsage.find(
+                      (u) => u.type === type
+                    );
+                    if (row && row.max !== null) {
+                      setUpgradeCtx({
+                        tierLimit: {
+                          aliasType: row.type,
+                          used: row.used,
+                          max: row.max,
+                        },
+                      });
+                    }
+                  }
+                  setUpgradeOpen(true);
+                }}
+              >
+                View upgrade options
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </motion.div>
     </div>
+    </>
   );
 }
