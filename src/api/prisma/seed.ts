@@ -32,12 +32,16 @@ async function main(): Promise<void> {
         category: b.category,
         removalMethod: b.removalMethod,
         avgRemovalDays: b.avgRemovalDays,
+        removalUrl: b.removalUrl ?? null,
+        removalNotes: b.removalNotes ?? null,
       },
       update: {
         name: b.name,
         category: b.category,
         removalMethod: b.removalMethod,
         avgRemovalDays: b.avgRemovalDays,
+        removalUrl: b.removalUrl ?? null,
+        removalNotes: b.removalNotes ?? null,
       },
     });
   }

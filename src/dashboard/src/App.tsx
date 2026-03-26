@@ -10,6 +10,7 @@ import { DashboardPage } from "@/features/dashboard/DashboardPage.js";
 import { OnboardingModal } from "@/features/onboarding/OnboardingModal.js";
 import { PlaceholderPage } from "@/features/placeholder/PlaceholderPage.js";
 import { SettingsPage } from "@/features/settings/SettingsPage.js";
+import { BillingPage } from "@/features/billing/BillingPage.js";
 import { EmailInboxPage } from "@/features/inbox/EmailInboxPage.js";
 import { VaultPage } from "@/features/vault/VaultPage.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
@@ -195,6 +196,7 @@ export function App() {
               />
             }
           />
+          <Route path="/billing" element={<BillingPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

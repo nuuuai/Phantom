@@ -5,7 +5,8 @@ import type {
   BrokerScanSummary,
 } from "@phantom/shared";
 import { Router } from "express";
-import type { BrokerScanStatus, UserTier } from "@prisma/client";
+import type { BrokerScanStatus } from "@prisma/client";
+import { isPaidTier } from "../lib/userTierPaid.js";
 import { prisma } from "../lib/prisma.js";
 import { advanceRemovalSimulation } from "../lib/brokerScanAdvance.js";
 import { delayMs, mapWithConcurrency } from "../lib/brokerScanPipeline.js";
@@ -21,10 +22,6 @@ import {
 const SCAN_CONCURRENCY = 8;
 
 export const brokerScanRouter = Router();
-
-function isPaidTier(tier: UserTier): boolean {
-  return tier === "paid" || tier === "enterprise";
-}
 
 function parseStatusFilter(
   raw: string | undefined

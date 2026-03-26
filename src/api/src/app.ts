@@ -19,6 +19,7 @@ import { notificationsRouter } from "./routes/notifications.js";
 import { emailInboxRouter } from "./routes/emailInbox.js";
 import { userRouter } from "./routes/user.js";
 import { vaultRouter } from "./routes/vault.js";
+import { stripeWebhookRouter } from "./routes/stripeWebhook.js";
 import { webhookEmailInboundRouter } from "./routes/webhookEmailInbound.js";
 
 const globalRateLimiter = createGlobalRateLimiter();
@@ -37,6 +38,7 @@ export function createApp() {
   );
   app.use(requestLog);
   app.use("/api/webhooks", webhookEmailInboundRouter);
+  app.use("/api/webhooks", stripeWebhookRouter);
   app.use(jsonBody);
   app.use(globalRateLimiter);
 

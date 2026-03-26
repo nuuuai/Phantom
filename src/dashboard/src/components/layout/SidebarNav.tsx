@@ -7,6 +7,7 @@ type NavId =
   | "aliases"
   | "inbox"
   | "vault"
+  | "billing"
   | "brokers"
   | "callguard"
   | "darkweb"
@@ -57,6 +58,7 @@ const sections: readonly NavSection[] = [
     items: [
       { id: "reports", label: "Reports", path: "/reports" },
       { id: "family", label: "Family", path: "/family" },
+      { id: "billing", label: "Billing", path: "/billing" },
       { id: "settings", label: "Settings", path: "/settings" },
     ],
   },

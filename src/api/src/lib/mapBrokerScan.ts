@@ -17,6 +17,8 @@ function mapBroker(row: PrismaBroker): DataBroker {
     category: row.category as BrokerCategory,
     removalMethod: row.removalMethod as BrokerRemovalMethod,
     avgRemovalDays: row.avgRemovalDays,
+    removalUrl: row.removalUrl ?? null,
+    removalNotes: row.removalNotes ?? null,
     isActive: row.isActive,
   };
 }

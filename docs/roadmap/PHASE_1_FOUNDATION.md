@@ -4,12 +4,12 @@
 
 | Section | Avg (of deliverables in section) |
 |---------|-------------------------------------|
-| Month 1–2 infrastructure | **~52%** |
-| Month 2–3 extension + dashboard | **~62%** |
-| Month 3–4 phone + brokers | **~42%** |
-| Month 4–5 removal + notifications | **~36%** |
-| Month 5–6 launch + QA | **~22%** |
-| **Phase 1 (all deliverables)** | **~43%** |
+| Month 1–2 infrastructure | **~54%** |
+| Month 2–3 extension + dashboard | **~64%** |
+| Month 3–4 phone + brokers | **~52%** |
+| Month 4–5 removal + notifications | **~38%** |
+| Month 5–6 launch + QA | **~32%** |
+| **Phase 1 (all deliverables)** | **~51%** |
 
 ## Objective
 
@@ -19,8 +19,8 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 | Platform | Status | Progress |
 |----------|--------|----------|
-| Chrome Extension | **BUILD** — primary user interface | **~58%** |
-| Web Dashboard | **BUILD** — command center | **~58%** |
+| Chrome Extension | **BUILD** — primary user interface | **~64%** |
+| Web Dashboard | **BUILD** — command center | **~65%** |
 | Firefox/Safari Extension | Not started | **0%** |
 | Mobile Apps | Not started | **0%** |
 
@@ -28,9 +28,9 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 ### Month 1–2: Core Infrastructure
 
-- [ ] **Project scaffolding** — **72%**
+- [ ] **Project scaffolding** — **76%**
   - React + TypeScript + Vite dashboard app — **90%**
-  - Plasmo Chrome extension (Manifest V3) — **72%**
+  - Plasmo Chrome extension (Manifest V3) — **78%** (store build: `EXTENSION_STORE_BUILD.md`)
   - Node.js + Express API server — **88%**
   - PostgreSQL database with per-user schema isolation — **65%**
   - Redis for sessions and cache — **45%** (compose + `REDIS_URL`; refresh-token sessions; optional **Redis-backed global rate limit** via `rate-limit-redis`; `/health` reports redis)
@@ -44,11 +44,11 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - JWT with RS256 (15-min access, 7-day refresh) — **45%** (HS256 dev default; **RS256 when `JWT_PRIVATE_KEY`/`JWT_PUBLIC_KEY` set**; opaque refresh in Redis)
   - Session management in Redis — **40%** (refresh token store; access JWT stateless)
 
-- [ ] **Encrypted vault (client-side)** — **38%**
+- [ ] **Encrypted vault (client-side)** — **45%**
   - Web Crypto API integration (AES-256-GCM) — **85%** (`@phantom/shared` vault crypto)
   - Encrypted IndexedDB in extension — **45%** (DEK in `chrome.storage.session`; ciphertext in IndexedDB; legacy hex migration)
   - Per-user isolated database schemas — **0%**
-  - Vault sync between extension and dashboard — **35%** (opaque E2E blob: `GET`/`PUT /api/vault/sync` + `User.vaultSync*`; client merge TBD)
+  - Vault sync between extension and dashboard — **55%** (opaque E2E blob: `GET`/`PUT /api/vault/sync`; **LWW merge** + prune to active password aliases in `@phantom/shared`; **409 → refetch + merge + retry**; dashboard **Encrypted backup · vN** + error + Retry; extension **best-effort** push after login)
 
 - [ ] **Email alias engine** — **55%**
   - Custom domain setup (phantom.id, shade.email) — **0%** (DNS still external)
@@ -59,15 +59,15 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 ### Month 2–3: Extension + Dashboard MVP
 
-- [ ] **Browser extension v1** — **55%**
+- [ ] **Browser extension v1** — **57%**
   - Form detection (heuristic: input types, labels, structure) — **60%** (email/password/username heuristics + label parsing)
   - Alias generation popup (email + password) — **55%**
   - Autofill for generated aliases — **50%** (shield-click fills field value + dispatches events)
   - Shadow DOM injected UI (shield icon on form fields) — **55%** (closed Shadow DOM, positioned icon on each detected field)
-  - Service worker for API communication — **60%**
+  - Service worker for API communication — **62%** (login + alias generate + **vault sync push** after unlock)
   - Encrypted credential cache in IndexedDB — **42%** (vault key material encrypted at rest; see extension `vaultStorage`)
 
-- [ ] **Web dashboard v1** — **62%**
+- [ ] **Web dashboard v1** — **63%**
   - Login / account management — **50%** (dev login path; **`PATCH /api/user/me`** for `forwardToEmail`)
   - Alias list view (all generated aliases with metadata) — **60%**
   - Alias detail view (service, creation date, health status, forwarding rules) — **40%**
@@ -78,26 +78,26 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 ### Month 3–4: Phone Aliases + Data Broker Scanning
 
-- [ ] **Phone alias engine** — **22%**
-  - VoIP number provisioning (temporary bridge until carrier partnership Phase 2) — **0%**
-  - Phone alias generation API — **25%** (mock / placeholder numbers)
-  - Call forwarding to user's real number — **0%**
+- [ ] **Phone alias engine** — **55%**
+  - VoIP number provisioning (temporary bridge until carrier partnership Phase 2) — **35%** (`provisionPhoneAlias`: mock + Twilio **stub** SID when `PHONE_PROVIDER=twilio` + `TWILIO_ACCOUNT_SID`)
+  - Phone alias generation API — **55%** (persists `phoneProvider`, `phoneProviderSid`, optional `phoneForwardTo`; PATCH `phoneForwardTo`)
+  - Call forwarding to user's real number — **15%** (forward target stored; PSTN not dialed)
   - SMS forwarding to dashboard inbox — **0%**
   - Basic call log in dashboard — **0%**
-  - Integration boundaries / env — **40%** (`docs/roadmap/PHONE_INTEGRATION.md`)
+  - Integration boundaries / env — **75%** (`PHONE_INTEGRATION.md` updated; dashboard alias detail **Phone routing**)
 
-- [ ] **Data broker scanner** — **62%**
-  - Broker registry database (initial 150+ brokers) — **75%** (50 real + 100 synthetic `.example` rows = 150 seeded)
+- [ ] **Data broker scanner** — **64%**
+  - Broker registry database (initial 150+ brokers) — **76%** (50 real + 100 synthetic `.example` rows = 150 seeded; **opt-out URLs + DIY notes** on `DataBroker`)
   - Scanner workers (parallel, rate-limited) — **45%** (bounded concurrency + per-broker delay in `/broker-scan/start`)
   - Search: name, phone, email, address variations — **40%** (simulated)
   - Results aggregation and storage — **60%**
-  - Dashboard: exposure scan results view — **55%**
+  - Dashboard: exposure scan results view — **58%** (expanded row: **self-service removal** link + notes; free + Pro)
   - Free tier: scan only (show what's exposed) — **55%**
-  - Paid tier: removal submission — **35%** (simulated queue)
+  - Paid tier: removal submission — **40%** (simulated queue + DIY links for all tiers)
 
-- [ ] **Password manager v1** — **38%**
+- [ ] **Password manager v1** — **40%**
   - Password generation (configurable length, complexity) — **40%** (alias-type passwords)
-  - Password storage in encrypted vault — **25%** (encrypted `encryptedValue` + extension vault path; sync blob API)
+  - Password storage in encrypted vault — **30%** (encrypted `encryptedValue` + extension vault path; **merged E2E sync blob** pushed from dashboard + extension)
   - Vault dashboard page (card grid, search, filter, strength meter) — **60%**
   - Vault generate modal (service name, category, one-click generate) — **65%**
   - Import from 1Password, LastPass, Bitwarden (CSV import) — **0%**
@@ -106,12 +106,12 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 ### Month 4–5: Data Broker Removal + Notifications
 
-- [ ] **Data broker removal engine** — **35%**
+- [ ] **Data broker removal engine** — **42%**
   - Automated opt-out submission (API brokers) — **0%**
   - Browser automation for manual-submission brokers (Playwright workers) — **0%**
   - Submission tracking: { submitted, pending, confirmed, failed } — **45%** (simulated states)
   - Verification re-scan 7–30 days after submission — **25%** (simulated advancement)
-  - Dashboard: removal status per broker — **40%**
+  - Dashboard: removal status per broker — **48%** (**DIY** opt-out links + notes from catalog; Pro queue unchanged)
 
 - [ ] **Notification system** — **45%**
   - Desktop notifications (browser notification API) — **28%** (Settings → enable; delivery wiring TBD)
@@ -128,13 +128,13 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - 1 phone alias — **70%**
   - Password manager (up to 25 passwords) — **70%** (password-type alias cap)
   - Community threat feed (read-only) — **0%**
-  - No data broker removal (upsell to paid) — **40%** (tier gate stub)
+  - No data broker removal (upsell to paid) — **42%** (tier gate for **queue**; DIY links available)
 
-- [ ] **Paid tier ($9.99/mo)** — **18%**
-  - Unlimited aliases (email + phone) — **15%** (tier field; not billing)
-  - Data broker removal (150+ brokers) — **25%** (simulated removal)
+- [ ] **Paid tier ($9.99/mo)** — **45%**
+  - Unlimited aliases (email + phone) — **40%** (tier enforced in API; upgrade path)
+  - Data broker removal (150+ brokers) — **30%** (simulated queue + catalog DIY URLs)
   - Unlimited password storage — **0%**
-  - Billing / subscription surface — **20%** (`GET /api/billing/status` stub; Stripe env placeholders)
+  - Billing / subscription surface — **55%** (Stripe **`/api/billing/checkout-session`**, **`/portal-session`**, **`GET /status`**; **`POST /api/webhooks/stripe`**; `User` Stripe IDs + `subscriptionStatus`; dashboard **`/billing`**)
   - Dark web monitoring (basic) — **0%**
   - Priority support — **0%**
 
@@ -144,8 +144,8 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - Import existing passwords — **0%**
   - Generate aliases for top services (Gmail, Amazon, Facebook, etc.) — **0%**
 
-- [ ] **Testing and QA** — **30%**
-  - Unit tests for: vault encryption, alias generation, API auth — **32%** (+ inbound webhook **HMAC** tests; global rate limit wiring typed)
+- [ ] **Testing and QA** — **40%**
+  - Unit tests for: vault encryption, alias generation, API auth — **42%** (+ **vault sync merge**, **phone provision**, **paid tier** helper, webhook smoke tests)
   - Integration tests for: extension ↔ API, broker scanning — **0%**
   - E2E tests with Playwright (extension + dashboard flows) — **0%**
   - Security audit of encryption implementation — **0%**
@@ -156,11 +156,11 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 | Area | Still TODO / external |
 |------|------------------------|
 | **Auth** | SRP; Argon2id vault KDF (PBKDF2 today). |
-| **Vault** | Per-user DB isolation; full client merge for `vault/sync`. |
+| **Vault** | Per-user DB isolation; optional **two-way** alias↔blob reconciliation (today: merge blob with API alias list + LWW). |
 | **Email** | Live MX + worker calling webhook; outbound forward to `forwardToEmail`; domain purchase/DNS automation. |
 | **Phone** | Real VoIP/SMS provider (see `PHONE_INTEGRATION.md`). |
-| **Billing** | Stripe Checkout / Portal; webhooks. |
-| **Brokers** | Real removal automation / Playwright workers; API brokers beyond simulation. |
+| **Billing** | Production Stripe keys + live webhook URL; test cards in staging. |
+| **Brokers** | Real removal automation / Playwright workers; verify catalog opt-out URLs periodically. |
 | **QA** | E2E (Playwright); extension↔API integration suite; load / security audit. |
 | **Store / legal** | CWS submission (`CHROME_WEB_STORE_CHECKLIST.md`); ToS/privacy legal review. |
 
@@ -193,7 +193,7 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 | Dependency | Progress |
 |------------|----------|
 | Custom email domains registered and configured | **0%** (DNS/MX checklist + webhook contract in `docs/roadmap/EMAIL_INBOUND.md`) |
-| Chrome Web Store listing + review | **15%** (checklist: `docs/roadmap/CHROME_WEB_STORE_CHECKLIST.md`) |
+| Chrome Web Store listing + review | **28%** (checklist + `EXTENSION_STORE_BUILD.md` + `DEPLOYMENT.md`) |
 | VoIP provider partnership signed | **0%** |
 | AWS infrastructure provisioned | **0%** |
 | Chrome Web Store developer account | **0%** |

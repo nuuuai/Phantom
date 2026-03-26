@@ -25,6 +25,10 @@ export interface Alias {
   lastActivityAt: string | null;
   spamCount: number;
   isActive: boolean;
+  /** Phone adapter metadata (null for non-phone aliases). */
+  phoneProvider?: string | null;
+  phoneProviderSid?: string | null;
+  phoneForwardTo?: string | null;
 }
 
 export interface GenerateAliasRequest {
@@ -33,10 +37,13 @@ export interface GenerateAliasRequest {
   serviceName?: string;
   serviceUrl?: string;
   encryptedValue?: string;
+  /** E.164 real number for call/SMS forward (phone aliases; optional). */
+  phoneForwardTo?: string;
 }
 
 export interface PatchAliasRequest {
   category?: AliasCategory;
   serviceName?: string | null;
   isActive?: boolean;
+  phoneForwardTo?: string | null;
 }

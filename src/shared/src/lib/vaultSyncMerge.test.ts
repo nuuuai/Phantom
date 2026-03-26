@@ -1,0 +1,110 @@
+import { describe, expect, it } from "vitest";
+import type { Alias } from "../types/alias.js";
+import {
+  emptyVaultSyncPlaintext,
+  mergeVaultSyncForServer,
+  mergeVaultSyncPlaintexts,
+  parseVaultSyncPlaintext,
+  passwordAliasesToVaultSyncPlaintext,
+  pruneMergedToActivePasswordAliases,
+} from "./vaultSyncMerge.js";
+
+const baseAlias = (over: Partial<Alias>): Alias => ({
+  id: "a1",
+  userId: "u1",
+  type: "password",
+  value: "x",
+  encryptedValue: '{"ct":"x","iv":"y"}',
+  category: "shopping",
+  serviceName: "Svc",
+  serviceUrl: null,
+  healthStatus: "healthy",
+  createdAt: "2024-01-01T00:00:00.000Z",
+  lastActivityAt: "2024-01-02T00:00:00.000Z",
+  spamCount: 0,
+  isActive: true,
+  ...over,
+});
+
+describe("vaultSyncMerge", () => {
+  it("mergeVaultSyncPlaintexts picks higher updatedAt", () => {
+    const older = emptyVaultSyncPlaintext();
+    older.entries["x"] = {
+      id: "x",
+      updatedAt: 1,
+      encryptedValue: "a",
+      serviceName: null,
+      serviceUrl: null,
+    };
+    const newer = emptyVaultSyncPlaintext();
+    newer.entries["x"] = {
+      id: "x",
+      updatedAt: 10,
+      encryptedValue: "b",
+      serviceName: null,
+      serviceUrl: null,
+    };
+    const m = mergeVaultSyncPlaintexts(older, newer);
+    expect(m.entries["x"]?.encryptedValue).toBe("b");
+  });
+
+  it("mergeVaultSyncForServer drops remote orphan ids", () => {
+    const remote = emptyVaultSyncPlaintext();
+    remote.entries["ghost"] = {
+      id: "ghost",
+      updatedAt: 99,
+      encryptedValue: "z",
+      serviceName: null,
+      serviceUrl: null,
+    };
+    const aliases: Alias[] = [
+      baseAlias({ id: "a1", isActive: true, lastActivityAt: "2024-01-03T00:00:00.000Z" }),
+    ];
+    const merged = mergeVaultSyncForServer(aliases, remote);
+    expect(Object.keys(merged.entries)).toEqual(["a1"]);
+  });
+
+  it("passwordAliasesToVaultSyncPlaintext skips inactive", () => {
+    const aliases: Alias[] = [
+      baseAlias({ id: "a1", isActive: true }),
+      baseAlias({ id: "a2", isActive: false }),
+    ];
+    const p = passwordAliasesToVaultSyncPlaintext(aliases);
+    expect(Object.keys(p.entries)).toEqual(["a1"]);
+  });
+
+  it("parseVaultSyncPlaintext rejects bad shapes", () => {
+    expect(parseVaultSyncPlaintext(null)).toBeNull();
+    expect(parseVaultSyncPlaintext({ v: 2, entries: {} })).toBeNull();
+    expect(
+      parseVaultSyncPlaintext({
+        v: 1,
+        entries: { x: { id: "y", updatedAt: 1, encryptedValue: null } },
+      })
+    ).toBeNull();
+  });
+
+  it("pruneMergedToActivePasswordAliases removes inactive ids", () => {
+    const merged = emptyVaultSyncPlaintext();
+    merged.entries["a1"] = {
+      id: "a1",
+      updatedAt: 1,
+      encryptedValue: "e",
+      serviceName: null,
+      serviceUrl: null,
+    };
+    merged.entries["a2"] = {
+      id: "a2",
+      updatedAt: 2,
+      encryptedValue: "e",
+      serviceName: null,
+      serviceUrl: null,
+    };
+    const aliases: Alias[] = [
+      baseAlias({ id: "a1", isActive: true }),
+      baseAlias({ id: "a2", isActive: false }),
+    ];
+    const p = pruneMergedToActivePasswordAliases(merged, aliases);
+    expect(Object.keys(p.entries)).toEqual(["a1"]);
+  });
+});

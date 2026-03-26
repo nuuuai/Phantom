@@ -23,6 +23,10 @@ export interface DataBroker {
   category: BrokerCategory;
   removalMethod: BrokerRemovalMethod;
   avgRemovalDays: number;
+  /** Known opt-out URL from catalog; null = UI uses search fallback. */
+  removalUrl: string | null;
+  /** Short DIY guidance when links drift or are unknown. */
+  removalNotes: string | null;
   isActive: boolean;
 }
 

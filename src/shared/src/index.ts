@@ -24,6 +24,11 @@ export type {
   DataBroker,
   ScanStatus,
 } from "./types/brokerScan.js";
+export {
+  brokerRemovalLinkLabel,
+  brokerRemovalSearchUrl,
+  resolveBrokerRemovalHref,
+} from "./lib/brokerRemovalHelp.js";
 export type { BrokerDataType } from "./constants/brokerDataTypes.js";
 export { BROKER_DATA_TYPES } from "./constants/brokerDataTypes.js";
 export type { RiskScore } from "./types/riskScore.js";
@@ -56,3 +61,21 @@ export {
   importKeyHex,
 } from "./lib/vaultCrypto.js";
 export type { VaultPayload } from "./lib/vaultCrypto.js";
+export {
+  VAULT_SYNC_SCHEMA_VERSION,
+  emptyVaultSyncPlaintext,
+  parseVaultSyncPlaintext,
+  mergeVaultSyncPlaintexts,
+  mergeVaultSyncForServer,
+  passwordAliasesToVaultSyncPlaintext,
+  pruneMergedToActivePasswordAliases,
+  isSameVaultSyncPlaintext,
+  encryptVaultSyncBlob,
+  decryptVaultSyncBlob,
+  executeVaultSyncPush,
+} from "./lib/vaultSyncMerge.js";
+export type {
+  VaultSyncPlaintext,
+  VaultSyncEntryV1,
+  VaultSyncPutResult,
+} from "./lib/vaultSyncMerge.js";

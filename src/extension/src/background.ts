@@ -23,6 +23,7 @@ import {
   getVaultKeyHex,
   persistVaultKeyHex,
 } from "./lib/vaultStorage";
+import { pushVaultSyncFromExtension } from "./lib/vaultSync.js";
 
 async function loginRequest(
   email: string,
@@ -149,6 +150,12 @@ chrome.runtime.onMessage.addListener(
             await setAccessToken(result.data.accessToken);
             await setRefreshToken(result.data.refreshToken ?? null);
             await initVaultKey(result.data.accessToken, message.password);
+            const hex = await getVaultKeyHex();
+            if (hex) {
+              void pushVaultSyncFromExtension(hex).catch(() => {
+                /* sync is best-effort; dashboard can merge */
+              });
+            }
             sendResponse({ ok: true });
           } else {
             sendResponse({ ok: false, error: result.error.message });

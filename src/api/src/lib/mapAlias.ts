@@ -16,5 +16,8 @@ export function mapAliasToDto(row: PrismaAliasRow): Alias {
     lastActivityAt: row.lastActivityAt?.toISOString() ?? null,
     spamCount: row.spamCount,
     isActive: row.isActive,
+    phoneProvider: row.phoneProvider,
+    phoneProviderSid: row.phoneProviderSid,
+    phoneForwardTo: row.phoneForwardTo,
   };
 }

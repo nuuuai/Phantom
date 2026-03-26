@@ -5,6 +5,7 @@ import type { Alias } from "@phantom/shared";
 import { encryptVaultValue, generatePassword, importKeyHex } from "@phantom/shared";
 import { useCopiedFeedback } from "@/hooks/useCopiedFeedback.js";
 import { useDecryptedPasswords } from "@/hooks/useDecryptedPasswords.js";
+import { useVaultSync } from "@/hooks/useVaultSync.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { formatRelativeTime } from "@/lib/formatRelative.js";
 import {
@@ -13,6 +14,7 @@ import {
   dashboardOverviewAll,
   queryKeys,
   vaultAll,
+  vaultSyncAll,
 } from "@/lib/queryKeys.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
@@ -71,16 +73,20 @@ function VaultPageInner() {
   const { copiedId, setCopiedId } = useCopiedFeedback();
 
   const listQuery = useQuery({
-    queryKey: queryKeys.vaultList(accessToken, category),
+    queryKey: queryKeys.vaultList(accessToken, "all"),
     queryFn: async () => {
-      const params: { category?: string; health?: string } = {};
-      if (category !== "all") params.category = category;
-      const res = await phantomApi.aliases.list(accessToken, params);
+      const res = await phantomApi.aliases.list(accessToken, {});
       if (!res.ok) throw new Error(res.error.message);
-      return res.data.items.filter((a) => a.type === "password" && a.isActive);
+      return res.data.items.filter((a) => a.type === "password");
     },
     enabled: accessToken !== null,
   });
+
+  const vaultSyncQuery = useVaultSync(
+    listQuery.data,
+    listQuery.isSuccess,
+    listQuery.dataUpdatedAt
+  );
 
   const resolveValue = useDecryptedPasswords(listQuery.data, vaultKeyHex);
 
@@ -109,6 +115,7 @@ function VaultPageInner() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: vaultAll });
+      void qc.invalidateQueries({ queryKey: vaultSyncAll });
       void qc.invalidateQueries({ queryKey: aliasesAll });
       void qc.invalidateQueries({ queryKey: aliasDetailAll });
       void qc.invalidateQueries({
@@ -128,6 +135,7 @@ function VaultPageInner() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: vaultAll });
+      void qc.invalidateQueries({ queryKey: vaultSyncAll });
       void qc.invalidateQueries({ queryKey: aliasesAll });
       void qc.invalidateQueries({ queryKey: aliasDetailAll });
       void qc.invalidateQueries({
@@ -140,16 +148,20 @@ function VaultPageInner() {
   });
 
   const items = useMemo(() => {
-    const all = listQuery.data ?? [];
-    if (!search) return all;
+    const active = (listQuery.data ?? []).filter((a) => a.isActive);
+    const byCat =
+      category === "all"
+        ? active
+        : active.filter((a) => a.category === category);
+    if (!search) return byCat;
     const lc = search.toLowerCase();
-    return all.filter(
+    return byCat.filter(
       (a) =>
         (a.serviceName?.toLowerCase().includes(lc) ?? false) ||
         (a.serviceUrl?.toLowerCase().includes(lc) ?? false) ||
         resolveValue(a).toLowerCase().includes(lc)
     );
-  }, [listQuery.data, search, resolveValue]);
+  }, [listQuery.data, category, search, resolveValue]);
 
   const passwordUsage = userMeQuery.data?.aliasUsage.find(
     (u) => u.type === "password"
@@ -171,6 +183,30 @@ function VaultPageInner() {
             Zero-knowledge password manager — generate, store, and rotate
             credentials.
           </p>
+          {vaultSyncQuery.isFetching && (
+            <p className="mt-1 font-mono text-[10px] text-ph-text-muted">
+              Syncing encrypted backup…
+            </p>
+          )}
+          {vaultSyncQuery.isSuccess && (
+            <p className="mt-1 font-mono text-[10px] text-ph-text-muted">
+              Encrypted backup · v{vaultSyncQuery.data}
+            </p>
+          )}
+          {vaultSyncQuery.isError && (
+            <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-ph-danger/40 bg-ph-danger/5 px-3 py-2">
+              <p className="font-sans text-[11px] text-ph-danger">
+                {(vaultSyncQuery.error as Error).message}
+              </p>
+              <button
+                type="button"
+                onClick={() => void vaultSyncQuery.refetch()}
+                className="cursor-pointer rounded border border-ph-border bg-ph-surface px-2 py-0.5 font-sans text-[10px] text-ph-text-secondary hover:bg-ph-raised"
+              >
+                Retry sync
+              </button>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {passwordUsage && passwordUsage.max !== null && (

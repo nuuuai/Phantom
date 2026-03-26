@@ -15,6 +15,7 @@ import {
   dashboardOverviewAll,
   queryKeys,
   vaultAll,
+  vaultSyncAll,
 } from "@/lib/queryKeys.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 
@@ -62,6 +63,7 @@ export function VaultGenerateModal({ open, onClose }: Props) {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: vaultAll });
+      void qc.invalidateQueries({ queryKey: vaultSyncAll });
       void qc.invalidateQueries({ queryKey: aliasesAll });
       void qc.invalidateQueries({ queryKey: aliasDetailAll });
       void qc.invalidateQueries({

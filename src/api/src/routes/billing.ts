@@ -1,13 +1,16 @@
 import type { ApiResponse } from "@phantom/shared";
 import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
+import { getStripe, stripeConfigured } from "../lib/stripeClient.js";
 
 export const billingRouter = Router();
 
-/**
- * Subscription / billing surface — Stripe (or similar) integration is TODO.
- * Dashboard and extension can call this to show upgrade CTAs and gate paid features.
- */
+function dashboardPublicUrl(): string {
+  return (
+    process.env.DASHBOARD_PUBLIC_URL?.trim() || "http://localhost:5173"
+  ).replace(/\/$/, "");
+}
+
 billingRouter.get("/status", async (req, res) => {
   const userId = req.user?.id;
   if (!userId) {
@@ -20,7 +23,13 @@ billingRouter.get("/status", async (req, res) => {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { tier: true, email: true },
+    select: {
+      tier: true,
+      email: true,
+      stripeCustomerId: true,
+      stripeSubscriptionId: true,
+      subscriptionStatus: true,
+    },
   });
   if (!user) {
     res.status(404).json({
@@ -30,20 +39,121 @@ billingRouter.get("/status", async (req, res) => {
     return;
   }
 
-  const hasStripe =
-    Boolean(process.env.STRIPE_SECRET_KEY?.trim()) &&
-    Boolean(process.env.STRIPE_PRICE_PAID_MONTHLY?.trim());
+  const stripe = getStripe();
+  const priceId = process.env.STRIPE_PRICE_PAID_MONTHLY?.trim();
 
   const data = {
     tier: user.tier,
-    subscriptionStatus: "none" as const,
-    /** When Stripe is wired: checkout URL from Checkout Session or Billing Portal. */
+    subscriptionStatus: user.subscriptionStatus ?? "none",
+    stripeCustomerId: user.stripeCustomerId,
+    stripeSubscriptionId: user.stripeSubscriptionId,
+    billingProviderReady: stripeConfigured(),
+    hasStripeClient: Boolean(stripe && priceId),
     manageUrl: null as string | null,
-    /** TODO: Stripe Customer Portal or embedded checkout. */
     checkoutUrl: null as string | null,
-    billingProviderReady: hasStripe,
   };
 
   const response: ApiResponse<typeof data> = { ok: true, data };
   res.json(response);
+});
+
+billingRouter.post("/checkout-session", async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({
+      ok: false,
+      error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
+
+  const stripe = getStripe();
+  const priceId = process.env.STRIPE_PRICE_PAID_MONTHLY?.trim();
+  if (!stripe || !priceId) {
+    res.status(503).json({
+      ok: false,
+      error: {
+        code: "billing_unconfigured",
+        message:
+          "Stripe is not configured (STRIPE_SECRET_KEY, STRIPE_PRICE_PAID_MONTHLY)",
+      },
+    });
+    return;
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    res.status(404).json({
+      ok: false,
+      error: { code: "not_found", message: "User not found" },
+    });
+    return;
+  }
+
+  const base = dashboardPublicUrl();
+  const session = await stripe.checkout.sessions.create({
+    mode: "subscription",
+    line_items: [{ price: priceId, quantity: 1 }],
+    success_url: `${base}/billing?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${base}/billing?canceled=1`,
+    client_reference_id: userId,
+    metadata: { userId },
+    customer_email: user.email,
+    ...(user.stripeCustomerId
+      ? { customer: user.stripeCustomerId }
+      : {}),
+  });
+
+  const response: ApiResponse<{ url: string | null }> = {
+    ok: true,
+    data: { url: session.url },
+  };
+  res.status(201).json(response);
+});
+
+billingRouter.post("/portal-session", async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({
+      ok: false,
+      error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
+
+  const stripe = getStripe();
+  if (!stripe) {
+    res.status(503).json({
+      ok: false,
+      error: { code: "billing_unconfigured", message: "Stripe not configured" },
+    });
+    return;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { stripeCustomerId: true },
+  });
+  if (!user?.stripeCustomerId) {
+    res.status(400).json({
+      ok: false,
+      error: {
+        code: "no_stripe_customer",
+        message: "Subscribe via Checkout first to manage billing",
+      },
+    });
+    return;
+  }
+
+  const base = dashboardPublicUrl();
+  const session = await stripe.billingPortal.sessions.create({
+    customer: user.stripeCustomerId,
+    return_url: `${base}/billing`,
+  });
+
+  const response: ApiResponse<{ url: string | null }> = {
+    ok: true,
+    data: { url: session.url },
+  };
+  res.status(201).json(response);
 });

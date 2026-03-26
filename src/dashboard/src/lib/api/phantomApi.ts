@@ -409,13 +409,44 @@ export const phantomApi = {
     ): Promise<
       ApiResponse<{
         tier: string;
-        subscriptionStatus: "none";
+        subscriptionStatus: string;
+        stripeCustomerId: string | null;
+        stripeSubscriptionId: string | null;
+        billingProviderReady: boolean;
+        hasStripeClient: boolean;
         manageUrl: string | null;
         checkoutUrl: string | null;
-        billingProviderReady: boolean;
       }>
     > => {
       const res = await fetchWithRefresh("/api/billing/status", accessToken, {});
+      return parseApiResponseJson(res);
+    },
+
+    checkoutSession: async (
+      accessToken: Token
+    ): Promise<ApiResponse<{ url: string | null }>> => {
+      const res = await fetchWithRefresh(
+        "/api/billing/checkout-session",
+        accessToken,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+      return parseApiResponseJson(res);
+    },
+
+    portalSession: async (
+      accessToken: Token
+    ): Promise<ApiResponse<{ url: string | null }>> => {
+      const res = await fetchWithRefresh(
+        "/api/billing/portal-session",
+        accessToken,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
       return parseApiResponseJson(res);
     },
   },

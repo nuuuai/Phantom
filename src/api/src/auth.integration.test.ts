@@ -41,4 +41,29 @@ describe.skipIf(!hasDb)("auth + aliases (integration)", () => {
     expect(list.body.ok).toBe(true);
     expect(list.body.data).toMatchObject({ userId: expect.any(String), items: [] });
   });
+
+  it("PUT /api/vault/sync returns 409 when clientVersion is behind server", async () => {
+    const vaultEmail = `it-vault-${Date.now()}@phantom.test`;
+    const reg = await request(app)
+      .post("/api/auth/register")
+      .send({ email: vaultEmail, password })
+      .expect(201);
+    const token = reg.body.data.accessToken as string;
+
+    await request(app)
+      .put("/api/vault/sync")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ ciphertext: '{"ct":"a","iv":"b"}', clientVersion: 0 })
+      .expect(200);
+
+    const conflict = await request(app)
+      .put("/api/vault/sync")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ ciphertext: '{"ct":"c","iv":"d"}', clientVersion: 0 })
+      .expect(409);
+    expect(conflict.body.ok).toBe(false);
+    expect(conflict.body.error?.code).toBe("sync_conflict");
+
+    await prisma.user.deleteMany({ where: { email: vaultEmail } });
+  });
 });

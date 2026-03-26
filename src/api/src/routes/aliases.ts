@@ -14,6 +14,7 @@ import type {
 import { prisma } from "../lib/prisma.js";
 import { generateValueForType } from "../lib/aliasGenerators.js";
 import { assertCanCreateAlias } from "../lib/aliasTierLimits.js";
+import { provisionPhoneAlias } from "../lib/phone/provisionPhone.js";
 import { mapAliasToDto } from "../lib/mapAlias.js";
 
 export const aliasesRouter = Router();
@@ -147,8 +148,21 @@ aliasesRouter.post("/generate", async (req, res) => {
       : null;
 
   let value: string;
+  let phoneProvider: string | null = null;
+  let phoneProviderSid: string | null = null;
+  let phoneForwardTo: string | null = null;
+
   if (clientEncrypted && type === "password") {
     value = "[encrypted]";
+  } else if (type === "phone") {
+    const raw =
+      typeof body.phoneForwardTo === "string" ? body.phoneForwardTo.trim() : "";
+    const forward = raw.length > 0 ? raw : null;
+    const p = provisionPhoneAlias(forward);
+    value = p.value;
+    phoneProvider = p.provider;
+    phoneProviderSid = p.providerSid;
+    phoneForwardTo = p.forwardTo;
   } else {
     const existsEmail = async (v: string): Promise<boolean> => {
       const found = await prisma.alias.findFirst({
@@ -174,6 +188,9 @@ aliasesRouter.post("/generate", async (req, res) => {
       serviceUrl,
       healthStatus: "healthy",
       lastActivityAt: new Date(),
+      phoneProvider,
+      phoneProviderSid,
+      phoneForwardTo,
     },
   });
 
@@ -223,10 +240,22 @@ aliasesRouter.patch("/:id", async (req, res) => {
   }
 
   const body = req.body as PatchAliasRequest;
+  const existingPatch = await prisma.alias.findFirst({
+    where: { id: req.params.id, userId },
+  });
+  if (!existingPatch) {
+    res.status(404).json({
+      ok: false,
+      error: { code: "not_found", message: "Alias not found" },
+    });
+    return;
+  }
+
   const data: {
     category?: PrismaAliasCategory;
     serviceName?: string | null;
     isActive?: boolean;
+    phoneForwardTo?: string | null;
   } = {};
 
   if (body.category !== undefined) {
@@ -245,16 +274,22 @@ aliasesRouter.patch("/:id", async (req, res) => {
   if (body.isActive !== undefined) {
     data.isActive = body.isActive;
   }
-
-  const existingPatch = await prisma.alias.findFirst({
-    where: { id: req.params.id, userId },
-  });
-  if (!existingPatch) {
-    res.status(404).json({
-      ok: false,
-      error: { code: "not_found", message: "Alias not found" },
-    });
-    return;
+  if (body.phoneForwardTo !== undefined) {
+    if (existingPatch.type !== "phone") {
+      res.status(400).json({
+        ok: false,
+        error: {
+          code: "validation_error",
+          message: "phoneForwardTo only applies to phone aliases",
+        },
+      });
+      return;
+    }
+    const t =
+      typeof body.phoneForwardTo === "string"
+        ? body.phoneForwardTo.trim()
+        : "";
+    data.phoneForwardTo = t.length > 0 ? t : null;
   }
 
   const row = await prisma.alias.update({
@@ -334,8 +369,18 @@ aliasesRouter.post("/:id/rotate", async (req, res) => {
       : null;
 
   let value: string;
+  let phoneProvider: string | null = null;
+  let phoneProviderSid: string | null = null;
+  let phoneForwardTo: string | null = null;
+
   if (clientEncrypted && existing.type === "password") {
     value = "[encrypted]";
+  } else if (existing.type === "phone") {
+    const p = provisionPhoneAlias(existing.phoneForwardTo);
+    value = p.value;
+    phoneProvider = p.provider;
+    phoneProviderSid = p.providerSid;
+    phoneForwardTo = p.forwardTo;
   } else {
     const existsEmail = async (v: string): Promise<boolean> => {
       const found = await prisma.alias.findFirst({
@@ -361,6 +406,9 @@ aliasesRouter.post("/:id/rotate", async (req, res) => {
       serviceUrl: existing.serviceUrl,
       healthStatus: "healthy",
       lastActivityAt: new Date(),
+      phoneProvider,
+      phoneProviderSid,
+      phoneForwardTo,
     },
   });
 

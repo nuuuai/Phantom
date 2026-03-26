@@ -238,6 +238,33 @@ export function AliasDetailPage() {
           <InfoBlock label="Alias ID" value={alias.id} mono />
         </div>
 
+        {alias.type === "phone" && (
+          <div className="mt-6 rounded-lg border border-ph-border/60 bg-ph-raised/20 p-4">
+            <div className="mb-2 font-mono text-[10px] uppercase tracking-wider text-ph-text-muted">
+              Phone routing
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <InfoBlock
+                label="Provider"
+                value={alias.phoneProvider ?? "—"}
+              />
+              <InfoBlock
+                label="Forward to"
+                value={alias.phoneForwardTo ?? "—"}
+              />
+              <InfoBlock
+                label="Provider SID"
+                value={alias.phoneProviderSid ?? "—"}
+                mono
+              />
+            </div>
+            <p className="mt-3 font-sans text-[11px] text-ph-text-tertiary">
+              Live PSTN/SMS requires a configured provider (see
+              docs/roadmap/PHONE_INTEGRATION.md). Mock mode is for development.
+            </p>
+          </div>
+        )}
+
         <div className="mt-6 rounded-lg border border-ph-borderSubtle bg-ph-bg p-4">
           <div className="mb-2 font-mono text-[10px] uppercase tracking-wider text-ph-text-muted">
             Value

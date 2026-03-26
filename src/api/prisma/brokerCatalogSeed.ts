@@ -2,6 +2,7 @@ import type {
   BrokerCategory,
   RemovalMethod,
 } from "@prisma/client";
+import { REMOVAL_URL_BY_DOMAIN } from "./brokerRemovalUrlsSeed.js";
 
 export interface BrokerSeedRow {
   name: string;
@@ -9,7 +10,12 @@ export interface BrokerSeedRow {
   category: BrokerCategory;
   removalMethod: RemovalMethod;
   avgRemovalDays: number;
+  removalUrl?: string | null;
+  removalNotes?: string | null;
 }
+
+const DIY_FALLBACK_NOTE =
+  "No verified link in Phantom yet — open the broker site and use Privacy, CCPA, or “Do not sell my data.”";
 
 const SCALE_CATEGORIES: BrokerCategory[] = [
   "people_search",
@@ -22,7 +28,7 @@ const SCALE_CATEGORIES: BrokerCategory[] = [
 const SCALE_REMOVAL: RemovalMethod[] = ["form", "email", "manual", "api"];
 
 /** 50 real data broker sites — registry for Phase 1 simulation */
-export const BROKER_CATALOG_CORE: readonly BrokerSeedRow[] = [
+const BROKER_CATALOG_CORE_RAW = [
   { name: "Spokeo", domain: "spokeo.com", category: "people_search", removalMethod: "form", avgRemovalDays: 14 },
   { name: "WhitePages", domain: "whitepages.com", category: "people_search", removalMethod: "form", avgRemovalDays: 10 },
   { name: "BeenVerified", domain: "beenverified.com", category: "background_check", removalMethod: "form", avgRemovalDays: 21 },
@@ -73,7 +79,21 @@ export const BROKER_CATALOG_CORE: readonly BrokerSeedRow[] = [
   { name: "SmartBackgroundChecks", domain: "smartbackgroundchecks.com", category: "background_check", removalMethod: "form", avgRemovalDays: 22 },
   { name: "PeopleWhiz", domain: "peoplewhiz.com", category: "people_search", removalMethod: "form", avgRemovalDays: 15 },
   { name: "IDcrawl", domain: "idcrawl.com", category: "data_aggregator", removalMethod: "form", avgRemovalDays: 11 },
-];
+] as const;
+
+export const BROKER_CATALOG_CORE: readonly BrokerSeedRow[] =
+  BROKER_CATALOG_CORE_RAW.map((r) => {
+    const url = REMOVAL_URL_BY_DOMAIN[r.domain] ?? null;
+    return {
+      name: r.name,
+      domain: r.domain,
+      category: r.category,
+      removalMethod: r.removalMethod,
+      avgRemovalDays: r.avgRemovalDays,
+      removalUrl: url,
+      removalNotes: url ? null : DIY_FALLBACK_NOTE,
+    };
+  });
 
 /**
  * Synthetic registry rows (unique `.example` domains) so the catalog reaches 150+ brokers
@@ -89,6 +109,9 @@ export const BROKER_CATALOG_SCALE: readonly BrokerSeedRow[] = Array.from(
       category: SCALE_CATEGORIES[i % SCALE_CATEGORIES.length]!,
       removalMethod: SCALE_REMOVAL[i % SCALE_REMOVAL.length]!,
       avgRemovalDays: 7 + (i % 25),
+      removalUrl: null,
+      removalNotes:
+        "Registry placeholder — search the site for privacy, CCPA, or opt-out.",
     };
   }
 );

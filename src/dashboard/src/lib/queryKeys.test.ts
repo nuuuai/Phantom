@@ -31,4 +31,8 @@ describe("queryKeys", () => {
   it("emailInbox is scoped", () => {
     expect(queryKeys.emailInbox("tok")[0]).toBe("email-inbox");
   });
+
+  it("billingStatus is scoped", () => {
+    expect(queryKeys.billingStatus("tok")[0]).toBe("billing-status");
+  });
 });

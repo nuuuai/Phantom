@@ -11,6 +11,7 @@ export const ROUTE_TITLES: Record<string, string> = {
   "/threat-intel": "Threat intel",
   "/reports": "Reports",
   "/family": "Family",
+  "/billing": "Billing",
   "/settings": "Settings",
 };
 

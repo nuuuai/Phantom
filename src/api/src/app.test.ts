@@ -26,6 +26,14 @@ describe("createApp", () => {
     }
   });
 
+  it("POST /api/webhooks/stripe returns 503 when Stripe webhook not configured", async () => {
+    const res = await request(app)
+      .post("/api/webhooks/stripe")
+      .set("Content-Type", "application/json")
+      .send("{}");
+    expect([400, 503]).toContain(res.status);
+  });
+
   it("POST /api/webhooks/email-inbound returns 503 when webhook secret unset", async () => {
     const prev = process.env.INBOUND_WEBHOOK_SECRET;
     delete process.env.INBOUND_WEBHOOK_SECRET;

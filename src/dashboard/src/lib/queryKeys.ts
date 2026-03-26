@@ -7,6 +7,9 @@ export const aliasesAll = ["aliases"] as const;
 /** Prefix for vault password list queries. */
 export const vaultAll = ["vault"] as const;
 
+/** Vault E2E blob sync (extension ↔ dashboard). */
+export const vaultSyncAll = ["vault-sync"] as const;
+
 /** Prefix for `dashboardOverview` metrics. */
 export const dashboardOverviewAll = ["dashboard-overview"] as const;
 
@@ -18,6 +21,7 @@ export const queryKeys = {
   aliasDetailAll,
   aliasesAll,
   vaultAll,
+  vaultSyncAll,
   dashboardOverviewAll,
   brokerScanResultsAll,
   brokerScanCatalogAll,
@@ -41,6 +45,8 @@ export const queryKeys = {
   userMe: (accessToken: string | null) => ["user-me", accessToken] as const,
   emailInbox: (accessToken: string | null) =>
     ["email-inbox", accessToken] as const,
+  billingStatus: (accessToken: string | null) =>
+    ["billing-status", accessToken] as const,
   aliasDetail: (accessToken: string | null, id: string | undefined) =>
     ["alias-detail", accessToken, id] as const,
   notifications: (accessToken: string | null) =>
@@ -51,4 +57,6 @@ export const queryKeys = {
     ["notification-prefs", accessToken] as const,
   vaultList: (accessToken: string | null, category: string) =>
     ["vault", accessToken, category] as const,
+  vaultSync: (accessToken: string | null, dataUpdatedAt: number) =>
+    ["vault-sync", accessToken, dataUpdatedAt] as const,
 };

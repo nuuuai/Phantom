@@ -216,6 +216,12 @@ export function BrokersPage() {
           <p className="mt-1 font-sans text-sm text-ph-text-tertiary">
             Exposure scan and removal queue — Shield layer
           </p>
+          <p className="mt-2 max-w-2xl font-sans text-xs text-ph-text-muted">
+            Expand any exposed broker for{" "}
+            <span className="text-ph-text-tertiary">self-service removal</span>{" "}
+            links (all tiers). Phantom Pro queues removal requests in addition
+            to DIY opt-out.
+          </p>
         </div>
         {hasScan && !scanning ? (
           <button

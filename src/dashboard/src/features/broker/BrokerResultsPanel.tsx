@@ -2,6 +2,8 @@ import { motion } from "framer-motion";
 import { Fragment, useMemo, useState } from "react";
 import {
   BROKER_DATA_TYPES,
+  brokerRemovalLinkLabel,
+  resolveBrokerRemovalHref,
   type BrokerDataType,
   type BrokerScanResult,
   type BrokerScanSummary,
@@ -305,7 +307,7 @@ export function BrokerResultsPanel({
                     <tr className="border-b border-ph-borderSubtle bg-ph-bg">
                       <td colSpan={5} className="px-4 pb-4 pt-0">
                         <div className="border-t border-ph-borderSubtle pt-4">
-                          <div className="grid gap-4 md:grid-cols-2">
+                          <div className="grid gap-4 md:grid-cols-3">
                             <div>
                               <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-ph-text-muted">
                                 Removal method
@@ -344,6 +346,24 @@ export function BrokerResultsPanel({
                                   </li>
                                 ) : null}
                               </ul>
+                            </div>
+                            <div>
+                              <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-ph-text-muted">
+                                Self-service (all tiers)
+                              </div>
+                              <a
+                                href={resolveBrokerRemovalHref(row.broker)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-2 inline-flex font-sans text-sm font-medium text-ph-accent-light underline-offset-2 hover:underline"
+                              >
+                                {brokerRemovalLinkLabel(row.broker)}
+                              </a>
+                              {row.broker.removalNotes ? (
+                                <p className="mt-2 font-sans text-[11px] leading-snug text-ph-text-tertiary">
+                                  {row.broker.removalNotes}
+                                </p>
+                              ) : null}
                             </div>
                           </div>
                         </div>
