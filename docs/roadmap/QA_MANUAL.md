@@ -23,6 +23,9 @@ Same order as [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) and [
 | **Integration (requires Postgres)** | **`POST /api/billing/sync-checkout-session`** with mocked Stripe retrieve → tier **paid** | `src/api/src/billingSyncSession.integration.test.ts` |
 | **Integration (requires Postgres)** | Free tier: **`POST /api/broker-scan/start`** second call → **429** `scan_rate_limited` when cap exceeded (needs seeded broker catalog) | `src/api/src/brokerScanQuota.integration.test.ts` |
 | **Integration (requires Postgres)** | Register + aliases; vault sync conflict | `src/api/src/auth.integration.test.ts` |
+| **Integration (requires Postgres)** | Email webhook → inbox list → mark read (`unread=1`) | `src/api/src/emailInbox.integration.test.ts` |
+| **Integration (requires Postgres)** | Notifications: prefs hide disabled category from list/count; **`POST /seed-demo`** **403** in **`NODE_ENV=production`**; invalid **`enabled`** → **400** | `src/api/src/notifications.integration.test.ts` |
+| **Integration (requires Postgres + Redis)** | Register → **`POST /api/auth/refresh`** rotates opaque refresh → old token **401** → **`logout`** revokes | `src/api/src/authSession.integration.test.ts` |
 
 Integration suites are **skipped** when `DATABASE_URL` is unset or equals the vitest placeholder (`phantom_placeholder`). They run in **GitHub Actions** (job-level **`env.DATABASE_URL`** points at the workflow’s **Postgres service** on port **5432**). Locally, use a real `DATABASE_URL` in repo-root `.env` (and migrate + seed) to enable them.
 
@@ -30,8 +33,27 @@ Integration suites are **skipped** when `DATABASE_URL` is unset or equals the vi
 
 Run before Chrome Web Store submit and first production deploy.
 
+### First-run (dashboard shell)
+
+- [ ] Clear site data or use a fresh profile; open the dashboard (local dev: **`http://localhost:5173`** after `npm run dev -w @phantom/dashboard` or full `npm run dev` from repo root — see **`run.ps1`**).
+- [ ] **Onboarding:** 7-step modal appears until completed or **Skip**; steps follow **welcome → aliases → inbox → vault → brokers → billing → extension**; **Back** / **Next** / **Done**; **Next** navigates to the matching in-app route where applicable.
+- [ ] **Extension step:** Chrome Web Store link opens (placeholder listing URL unless **`VITE_CWS_LISTING_URL`** is set); copy explains **load unpacked** dev build and that **`chrome-extension://`** cannot be opened from the https dashboard.
+- [ ] **Overview** (with zero aliases): **Get started** links go to **`/aliases`**, **`/inbox`**, **`/vault`**, **`/brokers`**, **`/billing`**, **`/settings`**.
+- [ ] **Quick actions** on overview: same routes plus **Settings**; keyboard **Tab** shows visible focus rings.
+- [ ] **Narrow viewport (`<md`):** horizontal **MobileNavBar** shows core sections; desktop **sidebar** returns at **`md+`**.
+- [ ] **Skip to main content** (keyboard): focus moves to **`#main-content`**.
+- [ ] **Unknown URL** (e.g. `/does-not-exist`) redirects to **`/`** (Phase 1 policy).
+
+### Aliases (dashboard + extension)
+
+- [ ] **Dashboard:** **`/aliases`** — list loads with category + health filters; **Retry** on load failure; **Generate alias** opens modal; per-type **quota** (free tier) on type tiles; success **invalidates** list and **`GET /api/user/me`** usage.
+- [ ] **Dashboard:** Create **email**, **username**, **phone** (valid E.164 forward optional), **password** (vault key when available); confirm new row appears; open **detail** (`/aliases/:id`), copy value, **deactivate** returns to list.
+- [ ] **Extension:** Sign in from **popup**; choose **Email** vs **Password** generate type, then **Generate alias** — success shows masked preview; at **tier cap** (**`403`** **`tier_limit`**) message is visible (includes Billing hint).
+- [ ] **Extension:** On a page with email/password inputs, **shield** click fills the field; **SPA** frameworks receive **`input`** / **`change`** (and **`InputEvent`** where supported). When generate fails (**503**, offline, etc.), **error text** appears under the shield (not silent).
+
 ### Dashboard + API
 
+- [ ] **Auth:** log in with email/password; confirm **access** works on protected routes. Let the **access JWT** expire (~15m) or revoke server-side; confirm dashboard **refresh** path (or dev re-bootstrap) obtains a new session — extension **`fetchAuth`** should **401** → **refresh** → retry once. **Sign out** clears client state and calls **`POST /api/auth/logout`** with **refresh** when present.
 - [ ] Register and log in on production (or staging) dashboard URL.
 - [ ] Create email alias; confirm it appears in alias list.
 - [ ] **Tier matrix (free):** on **`GET /api/user/me`**, confirm **`aliasUsage`** shows **`used`** / **`max`** per type; generate aliases until **`403`** **`tier_limit`** with **`error.tierLimit`**; dashboard **Generate alias** disables types at cap with **Upgrade to Pro** link; extension shows API message + **Billing** hint on **`tier_limit`**.
@@ -44,7 +66,7 @@ Run before Chrome Web Store submit and first production deploy.
 - [ ] Broker scan: run scan, open results, confirm free vs Pro removal CTAs match account tier; confirm **429** `scan_rate_limited` when free-tier cap exceeded — response JSON includes **`retryAfterSeconds`** (and **Retry-After** header); dashboard shows **~N min** retry hint.
 - [ ] **Broker summary parity:** **`GET /api/broker-scan/summary`** includes **`freeTierBrokerScanMaxPer24h`** (free tier) matching env **`FREE_TIER_BROKER_SCAN_MAX_PER_24H`**; pre-scan footnote on **`/brokers`** reflects the same cap (or “unlimited” when cap is off).
 - [ ] **Removal:** expand a **found** broker — **Self-service** link works; free tier shows **Upgrade · Pro queue** (no `403` until Checkout); paid tier can **Queue auto opt-out (sim)** / **Request removal** per **`removalMethod`**.
-- [ ] **Notifications:** **`GET/PUT /api/notifications/preferences`** — toggle **Alias health** off; confirm **`GET /api/notifications`** + **`/count`** omit that category; bell unread matches; **read-all** only touches enabled categories.
+- [ ] **Notifications:** TopBar **bell** opens dropdown — loading, empty, error, and **Mark all read**; unread badge matches **`GET /api/notifications/count`** (poll **30s**). **`GET/PUT /api/notifications/preferences`** — toggle a category off; confirm **`GET /api/notifications`** + **`/count`** omit that category (rows may still exist in DB); **read-all** only marks unread in **enabled** categories. **Settings → Desktop notifications:** request permission; when **granted**, a **desktop** notification appears only when **unread count increases** (not every poll). **`POST /api/notifications/seed-demo`** is **403** in **`NODE_ENV=production`** (demo seed is dev/staging only).
 
 ### Expected UX (HTTP status → copy)
 
@@ -68,6 +90,14 @@ Use **`@phantom/shared`** helpers **`normalizeClientError`** / **`clientErrorFro
 - [ ] `GET /health/live` and `GET /health` return expected JSON behind TLS (`DEPLOYMENT.md`).
 - [ ] CORS: dashboard origin allowed; credentials work for API calls.
 - [ ] Stripe Dashboard: webhook URL **`POST /api/webhooks/stripe`** receives **`200`**; **`StripeWebhookEvent`** rows accumulate unique **`event.id`** values.
+
+## Run 15 status (email & inbox)
+
+| Status | Notes |
+|--------|--------|
+| **Shipped** | Webhook tests + **`emailInbox.integration.test.ts`** (CI Postgres); **`EMAIL_INBOUND.md`** / **`DEPLOYMENT.md`** / **`.env.example`**; inbox **Retry**; Settings **forwardToEmail** validation; query invalidation **`emailInboxAll`**. |
+| **Blocked (external)** | Live **MX** + MIME worker posting to webhook; **SMTP** outbound to **`forwardToEmail`**. |
+| **Next sprint** | Optional: payload-size integration assertion; inbound worker reference implementation. |
 
 ## Run 13 status (QA & CI hardening)
 

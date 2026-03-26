@@ -17,6 +17,9 @@ export const brokerScanResultsAll = ["broker-scan-results"] as const;
 export const brokerScanCatalogAll = ["broker-scan-catalog"] as const;
 export const brokerScanSummaryAll = ["broker-scan-summary"] as const;
 
+/** Prefix for all inbox list queries (`emailInbox`). */
+export const emailInboxAll = ["email-inbox"] as const;
+
 export const queryKeys = {
   aliasDetailAll,
   aliasesAll,

@@ -60,6 +60,7 @@ export interface JwtPayload {
 }
 
 export function signAccessToken(userId: string, email: string): string {
+  /** Claims: `sub` (user id), `email`, `iss` **phantom-api**, `iat` / `exp` (library). No secrets in payload. No `aud` in Phase 1. */
   const payload = { sub: userId, email };
   const opts = { expiresIn: "15m" as const, issuer: "phantom-api" };
 
@@ -74,7 +75,11 @@ export function signAccessToken(userId: string, email: string): string {
 export function verifyAccessToken(token: string): JwtPayload {
   const opts = { issuer: "phantom-api" };
 
-  /** Tolerate small client/server clock skew (seconds). */
+  /**
+   * Tolerate small client/server clock skew (±**60 seconds**; see `DEPLOYMENT.md`).
+   * `jsonwebtoken` applies this to **`exp`/`nbf`**; a token *just* past **`exp`** may still verify
+   * within this window (by design).
+   */
   const verifyOpts = { ...opts, clockTolerance: 60 };
 
   if (hasRs256Keys()) {
@@ -86,7 +91,10 @@ export function verifyAccessToken(token: string): JwtPayload {
     return assertPayload(decoded);
   }
 
-  const decoded = jwt.verify(token, getJwtSecret(), verifyOpts);
+  const decoded = jwt.verify(token, getJwtSecret(), {
+    ...verifyOpts,
+    algorithms: ["HS256"],
+  });
   return assertPayload(decoded);
 }
 

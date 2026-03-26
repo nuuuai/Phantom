@@ -1,4 +1,6 @@
+import { Link } from "react-router-dom";
 import { useEscapeKey } from "@/hooks/useEscapeKey.js";
+import { DASHBOARD_PATHS } from "@/lib/dashboardRoutes.js";
 
 interface BrokerUpgradeModalProps {
   open: boolean;
@@ -57,12 +59,13 @@ export function BrokerUpgradeModal({
           </p>
         </div>
         <div className="mt-6 flex flex-wrap gap-3">
-          <button
-            type="button"
-            className="rounded-[7px] border border-ph-accent-border bg-[#6C3AED15] px-5 py-2.5 font-sans text-sm font-medium text-ph-accent-light transition-colors duration-150 hover:bg-[#6C3AED25]"
+          <Link
+            to={DASHBOARD_PATHS.billing}
+            onClick={onClose}
+            className="rounded-[7px] border border-ph-accent-border bg-[#6C3AED15] px-5 py-2.5 font-sans text-sm font-medium text-ph-accent-light transition-colors duration-150 hover:bg-[#6C3AED25] focus:outline-none focus-visible:ring-2 focus-visible:ring-ph-accent/50"
           >
-            Start free trial
-          </button>
+            Open billing
+          </Link>
           <button
             type="button"
             onClick={onClose}

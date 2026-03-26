@@ -14,6 +14,8 @@ export type ClientErrorMeta = Error & {
   /** Original API `error.code` when available. */
   apiErrorCode: string;
   retryAfterSeconds?: number;
+  /** Present when API includes `error.lastError` (e.g. phone provider misconfiguration). */
+  lastError?: string | null;
 };
 
 /**
@@ -81,7 +83,8 @@ export function normalizeClientError(err: ApiErrorBody): {
   if (
     http === 503 ||
     code === "service_unavailable" ||
-    code === "overloaded"
+    code === "overloaded" ||
+    code === "phone_provider_unavailable"
   ) {
     return {
       code: "service_unavailable",
@@ -103,6 +106,9 @@ export function clientErrorFromApiFailure(failure: ApiFailure): ClientErrorMeta 
   e.apiErrorCode = failure.error.code;
   if (typeof failure.error.retryAfterSeconds === "number") {
     e.retryAfterSeconds = failure.error.retryAfterSeconds;
+  }
+  if (failure.error.lastError != null && failure.error.lastError !== "") {
+    e.lastError = failure.error.lastError;
   }
   return e;
 }

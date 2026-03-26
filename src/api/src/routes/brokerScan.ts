@@ -21,6 +21,7 @@ import {
   getBrokerScanWorkerDelayMs,
   mapWithConcurrency,
   randomDelayInRange,
+  validateBrokerScanRuntimeConfig,
 } from "../lib/brokerScanPipeline.js";
 import { augmentBrokerScanSummary } from "../lib/brokerScanSummaryAugment.js";
 import { computeBrokerScanSummaryFromRows } from "../lib/computeBrokerScanSummary.js";
@@ -65,6 +66,18 @@ brokerScanRouter.post("/start", async (req, res) => {
     res.status(401).json({
       ok: false,
       error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
+
+  const cfgOk = validateBrokerScanRuntimeConfig();
+  if (!cfgOk.ok) {
+    res.status(503).json({
+      ok: false,
+      error: {
+        code: "broker_scan_config_invalid",
+        message: cfgOk.message,
+      },
     });
     return;
   }

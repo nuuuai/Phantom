@@ -16,5 +16,13 @@ export const ROUTE_TITLES: Record<string, string> = {
 };
 
 export function titleForPath(pathname: string): string {
-  return ROUTE_TITLES[pathname] ?? "Phantom";
+  const pathOnly = pathname.split("?")[0] ?? pathname;
+  if (pathOnly === "/aliases" || pathOnly === "/aliases/") {
+    return ROUTE_TITLES["/aliases"] ?? "Aliases";
+  }
+  if (pathOnly.startsWith("/aliases/")) {
+    const id = pathOnly.slice("/aliases/".length);
+    if (id.length > 0) return "Alias details";
+  }
+  return ROUTE_TITLES[pathOnly] ?? "Phantom";
 }

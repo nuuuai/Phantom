@@ -45,6 +45,16 @@ describe("normalizeClientError", () => {
     expect(n.code).toBe("network_error");
     expect(n.userMessage).toBe("Could not reach API");
   });
+
+  it("maps phone_provider_unavailable to service_unavailable", () => {
+    const n = normalizeClientError({
+      code: "phone_provider_unavailable",
+      message: "Set TWILIO_ACCOUNT_SID or use mock",
+      httpStatus: 503,
+    });
+    expect(n.code).toBe("service_unavailable");
+    expect(n.userMessage).toContain("TWILIO");
+  });
 });
 
 describe("clientErrorFromApiFailure", () => {
@@ -61,6 +71,19 @@ describe("clientErrorFromApiFailure", () => {
     expect(err.apiErrorCode).toBe("scan_rate_limited");
     expect(err.retryAfterSeconds).toBe(120);
     expect(err.clientCode).toBe("rate_limited");
+  });
+
+  it("attaches lastError from API error body", () => {
+    const err = clientErrorFromApiFailure({
+      ok: false,
+      error: {
+        code: "phone_provider_unavailable",
+        message: "Twilio not configured",
+        httpStatus: 503,
+        lastError: "TWILIO_ACCOUNT_SID missing",
+      },
+    });
+    expect(err.lastError).toBe("TWILIO_ACCOUNT_SID missing");
   });
 });
 

@@ -10,6 +10,13 @@ describe("augmentBrokerScanSummary", () => {
     expect(s.freeTierBrokerScanMaxPer24h).toBeNull();
   });
 
+  it("enterprise tier: can queue removal", () => {
+    const base = computeBrokerScanSummaryFromRows([]);
+    const s = augmentBrokerScanSummary({ tier: "enterprise" }, base);
+    expect(s.canRequestRemoval).toBe(true);
+    expect(s.freeTierBrokerScanMaxPer24h).toBeNull();
+  });
+
   it("free tier: exposes effective cap from env", () => {
     vi.stubEnv("FREE_TIER_BROKER_SCAN_MAX_PER_24H", "7");
     const base = computeBrokerScanSummaryFromRows([]);

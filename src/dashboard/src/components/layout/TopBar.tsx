@@ -61,14 +61,16 @@ export function TopBar() {
   );
 
   return (
-    <div className="flex shrink-0 items-center justify-between border-b border-ph-border bg-ph-topbar px-8 py-4">
-      <div className="flex items-center gap-4">
-        <span className="text-lg font-semibold text-ph-text-primary">
+    <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-ph-border bg-ph-topbar px-4 py-4 sm:px-8">
+      <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-4">
+        <span className="truncate text-lg font-semibold text-ph-text-primary">
           {title}
         </span>
-        <span className="font-mono text-xs text-ph-text-tertiary">{dateLabel}</span>
+        <span className="hidden font-mono text-xs text-ph-text-tertiary sm:inline">
+          {dateLabel}
+        </span>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
         <NotificationCenter />
         {accessToken ? (
           <button

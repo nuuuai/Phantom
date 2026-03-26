@@ -30,4 +30,12 @@ describe("assertCanCreateAlias", () => {
     expect(r.tierLimit).toEqual({ aliasType: "email", used: 3, max: 3 });
     expect(r.message).toMatch(/Upgrade to Phantom Pro/);
   });
+
+  it("enforces username cap on free tier", async () => {
+    mockCount.mockResolvedValue(5);
+    const r = await assertCanCreateAlias("u1", "free", "username");
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("expected failure");
+    expect(r.tierLimit).toEqual({ aliasType: "username", used: 5, max: 5 });
+  });
 });

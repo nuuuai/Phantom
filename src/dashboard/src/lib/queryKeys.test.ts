@@ -4,6 +4,7 @@ import {
   aliasDetailAll,
   brokerScanResultsAll,
   dashboardOverviewAll,
+  emailInboxAll,
   queryKeys,
   vaultAll,
 } from "./queryKeys.js";
@@ -20,6 +21,7 @@ describe("queryKeys", () => {
     expect(vaultAll[0]).toBe("vault");
     expect(dashboardOverviewAll[0]).toBe("dashboard-overview");
     expect(brokerScanResultsAll[0]).toBe("broker-scan-results");
+    expect(emailInboxAll[0]).toBe("email-inbox");
     expect(queryKeys.aliasesList("t", "a", "h")[0]).toBe("aliases");
   });
 

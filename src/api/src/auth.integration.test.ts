@@ -25,6 +25,30 @@ describe.skipIf(!hasDb)("auth + aliases (integration)", () => {
     await prisma.$disconnect();
   });
 
+  it("GET /api/phone/provider returns 503 phone_provider_unavailable when twilio without SID", async () => {
+    const origEnv = { ...process.env };
+    process.env.PHONE_PROVIDER = "twilio";
+    delete process.env.TWILIO_ACCOUNT_SID;
+    const phoneEmail = `phone-prov-${Date.now()}@phantom.test`;
+    try {
+      const reg = await request(app)
+        .post("/api/auth/register")
+        .send({ email: phoneEmail, password })
+        .expect(201);
+      const token = reg.body.data.accessToken as string;
+      const res = await request(app)
+        .get("/api/phone/provider")
+        .set("Authorization", `Bearer ${token}`)
+        .expect(503);
+      expect(res.body.ok).toBe(false);
+      expect(res.body.error?.code).toBe("phone_provider_unavailable");
+      expect(res.body.error?.lastError).toContain("TWILIO_ACCOUNT_SID");
+    } finally {
+      process.env = origEnv;
+      await prisma.user.deleteMany({ where: { email: phoneEmail } });
+    }
+  });
+
   it("register, then list aliases with Bearer token", async () => {
     const reg = await request(app)
       .post("/api/auth/register")

@@ -4,6 +4,7 @@ import {
   MESSAGE_LOGIN,
   MESSAGE_LOGOUT,
 } from "./lib/messages";
+import type { FieldKind } from "./lib/messages";
 import "./popup.css";
 
 type GenerateResponse =
@@ -35,6 +36,8 @@ export function Popup() {
   const [authStatus, setAuthStatus] = useState<string>("");
   const [status, setStatus] = useState<string>("");
   const [preview, setPreview] = useState<string | null>(null);
+  /** Popup generate: email vs password (matches page field kinds; uses vault for encrypted password when signed in). */
+  const [generateKind, setGenerateKind] = useState<FieldKind>("email");
 
   const onLogout = useCallback(() => {
     setAuthStatus("Signing out…");
@@ -80,7 +83,10 @@ export function Popup() {
     setStatus("Generating…");
     setPreview(null);
     void chrome.runtime
-      .sendMessage({ type: MESSAGE_GENERATE_ALIAS })
+      .sendMessage({
+        type: MESSAGE_GENERATE_ALIAS,
+        fieldKind: generateKind,
+      })
       .then((res: GenerateResponse | undefined) => {
         if (!res) {
           setStatus("No response");
@@ -147,6 +153,27 @@ export function Popup() {
         </button>
       </p>
       <hr className="popup__hr" />
+      <p className="popup__mini">Generate type</p>
+      <div className="popup__row">
+        <button
+          type="button"
+          className={
+            generateKind === "email" ? "popup__action" : "popup__secondary"
+          }
+          onClick={() => setGenerateKind("email")}
+        >
+          Email
+        </button>
+        <button
+          type="button"
+          className={
+            generateKind === "password" ? "popup__action" : "popup__secondary"
+          }
+          onClick={() => setGenerateKind("password")}
+        >
+          Password
+        </button>
+      </div>
       <button type="button" className="popup__action" onClick={onGenerate}>
         Generate alias
       </button>

@@ -242,11 +242,17 @@ chrome.runtime.onMessage.addListener(
 
             sendResponse({ ok: true, alias, plainValue });
           } else {
-            const base = clientErrorFromApiFailure(result).message;
-            const errMsg =
-              result.error.code === "tier_limit"
-                ? `${base} Open the Phantom dashboard → Billing to upgrade.`
-                : base;
+            const meta = clientErrorFromApiFailure(result);
+            let errMsg = meta.message;
+            if (result.error.code === "tier_limit") {
+              errMsg = `${errMsg} Open the Phantom dashboard → Billing to upgrade.`;
+            } else if (
+              result.error.code === "rate_limited" &&
+              typeof result.error.retryAfterSeconds === "number" &&
+              result.error.retryAfterSeconds > 0
+            ) {
+              errMsg = `${errMsg} Retry in ~${String(Math.ceil(result.error.retryAfterSeconds))}s.`;
+            }
             sendResponse({ ok: false, error: errMsg });
           }
         } catch (err: unknown) {

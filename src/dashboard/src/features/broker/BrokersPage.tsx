@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { BrokerResultsPanel } from "./BrokerResultsPanel.js";
-import { BrokerScanningState } from "./BrokerScanningState.js";
 import { BrokerUpgradeModal } from "./BrokerUpgradeModal.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import {
@@ -54,14 +53,10 @@ export function BrokersPage() {
   const [tab, setTab] = useState<TabId>("all");
   const [searchQ, setSearchQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
-  const [scanning, setScanning] = useState(false);
-  const [scanMeta, setScanMeta] = useState<{
-    totalBrokers: number;
-    estimatedTime: number;
-  } | null>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [removalBusyId, setRemovalBusyId] = useState<string | null>(null);
   const [scanLimitMessage, setScanLimitMessage] = useState<string | null>(null);
+  const [scanErrorMessage, setScanErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedQ(searchQ), 320);
@@ -115,28 +110,20 @@ export function BrokersPage() {
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       setScanLimitMessage(null);
-      setScanMeta({
-        totalBrokers: data.totalBrokers,
-        estimatedTime: data.estimatedTime,
-      });
-      setScanning(true);
-      const duration = Math.min(14_000, 5800 + Math.floor(Math.random() * 4200));
-      window.setTimeout(() => {
-        void (async () => {
-          await queryClient.invalidateQueries({
-            queryKey: brokerScanSummaryAll,
-          });
-          await queryClient.invalidateQueries({
-            queryKey: brokerScanResultsAll,
-          });
-          await queryClient.invalidateQueries({
-            queryKey: dashboardOverviewAll,
-          });
-          setScanning(false);
-        })();
-      }, duration);
+      setScanErrorMessage(null);
+      void (async () => {
+        await queryClient.invalidateQueries({
+          queryKey: brokerScanSummaryAll,
+        });
+        await queryClient.invalidateQueries({
+          queryKey: brokerScanResultsAll,
+        });
+        await queryClient.invalidateQueries({
+          queryKey: dashboardOverviewAll,
+        });
+      })();
     },
     onError: (e: Error) => {
       const ce = e as ClientErrorMeta;
@@ -144,7 +131,10 @@ export function BrokersPage() {
         setScanLimitMessage(
           formatBrokerScanRateLimit(e.message, ce.retryAfterSeconds)
         );
+        setScanErrorMessage(null);
+        return;
       }
+      setScanErrorMessage(getQueryErrorMessage(e));
     },
   });
 
@@ -247,9 +237,8 @@ export function BrokersPage() {
     );
   }
 
-  const showPreScan = !hasScan && !scanning;
-  const showScanning = scanning;
-  const showResults = hasScan && !scanning && summary;
+  const showPreScan = !hasScan;
+  const showResults = hasScan && summary;
 
   return (
     <div className="px-8 py-6">
@@ -265,6 +254,26 @@ export function BrokersPage() {
           role="alert"
         >
           {scanLimitMessage}
+          {summary?.canRequestRemoval === false ? (
+            <span className="mt-2 block font-sans text-xs text-ph-text-tertiary">
+              Upgrade to Pro for unlimited scans (see Billing).
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+      {scanErrorMessage ? (
+        <div
+          className="mb-4 rounded-lg border border-ph-danger/40 bg-ph-danger/10 px-4 py-3 font-sans text-sm text-ph-danger"
+          role="alert"
+        >
+          {scanErrorMessage}
+          <button
+            type="button"
+            className="mt-2 block font-sans text-xs text-ph-accent-light underline-offset-2 hover:underline"
+            onClick={() => void startMutation.mutate()}
+          >
+            Retry scan
+          </button>
         </div>
       ) : null}
 
@@ -283,14 +292,17 @@ export function BrokersPage() {
             to DIY opt-out.
           </p>
         </div>
-        {hasScan && !scanning ? (
+        {hasScan ? (
           <button
             type="button"
-            disabled={startMutation.isPending || scanning}
-            onClick={() => startMutation.mutate()}
+            disabled={startMutation.isPending}
+            onClick={() => {
+              setScanErrorMessage(null);
+              startMutation.mutate();
+            }}
             className="rounded-[7px] border border-ph-border bg-ph-raised px-4 py-2 font-sans text-xs font-medium text-ph-text-secondary transition-colors duration-150 hover:border-ph-text-muted hover:text-ph-text-primary disabled:opacity-50"
           >
-            Scan again
+            {startMutation.isPending ? "Scanning…" : "Scan again"}
           </button>
         ) : null}
       </div>
@@ -323,12 +335,15 @@ export function BrokersPage() {
           </p>
           <button
             type="button"
-            disabled={startMutation.isPending || scanning}
-            onClick={() => startMutation.mutate()}
+            disabled={startMutation.isPending}
+            onClick={() => {
+              setScanErrorMessage(null);
+              startMutation.mutate();
+            }}
             className="mt-8 rounded-[8px] border border-ph-accent-border bg-[#6C3AED15] px-6 py-3 font-sans text-sm font-semibold text-ph-accent-light shadow-[0_0_20px_rgba(108,58,237,0.12)] transition-[transform,background-color] duration-200 hover:bg-[#6C3AED22] disabled:opacity-50"
           >
             {startMutation.isPending
-              ? "Starting…"
+              ? "Scanning…"
               : summary?.canRequestRemoval
                 ? "Start exposure scan"
                 : "Start free scan"}
@@ -338,14 +353,6 @@ export function BrokersPage() {
             {freeTierScanFootnote(summary)}
           </p>
         </div>
-      ) : null}
-
-      {showScanning && scanMeta ? (
-        <BrokerScanningState
-          brokerNames={catalogNames.length > 0 ? catalogNames : ["Loading…"]}
-          totalBrokers={scanMeta.totalBrokers}
-          estimatedTime={scanMeta.estimatedTime}
-        />
       ) : null}
 
       {showResults && summary ? (

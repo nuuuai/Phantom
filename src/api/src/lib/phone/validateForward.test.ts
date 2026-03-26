@@ -18,4 +18,14 @@ describe("parsePhoneForwardTo", () => {
     const r = parsePhoneForwardTo("555-123-4567");
     expect(r.ok).toBe(false);
   });
+
+  it("null and undefined yield null forward", () => {
+    expect(parsePhoneForwardTo(null)).toEqual({ ok: true, value: null });
+    expect(parsePhoneForwardTo(undefined)).toEqual({ ok: true, value: null });
+  });
+
+  it("too-short E.164 rejected", () => {
+    const r = parsePhoneForwardTo("+1");
+    expect(r.ok).toBe(false);
+  });
 });

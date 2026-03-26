@@ -28,11 +28,11 @@ export function DashboardPage() {
   if (!accessToken) {
     if (shouldSkipDevBootstrap()) {
       return (
-        <div className="px-8 py-6">
-          <h1 className="font-sans text-xl font-semibold text-ph-text-primary">
-            Overview
-          </h1>
-          <p className="mt-3 max-w-md font-sans text-sm leading-relaxed text-ph-text-tertiary">
+      <div className="px-4 py-6 sm:px-8">
+        <h1 className="font-sans text-xl font-semibold text-ph-text-primary">
+          Overview
+        </h1>
+        <p className="mt-3 max-w-md font-sans text-sm leading-relaxed text-ph-text-tertiary">
             You are signed out. Use{" "}
             <span className="font-medium text-ph-text-secondary">
               Resume dev session
@@ -43,7 +43,7 @@ export function DashboardPage() {
       );
     }
     return (
-      <div className="px-8 py-6">
+      <div className="px-4 py-6 sm:px-8">
         <h1 className="font-sans text-xl font-semibold text-ph-text-primary">
           Overview
         </h1>
@@ -62,7 +62,7 @@ export function DashboardPage() {
 
   if (overviewQuery.isPending) {
     return (
-      <div className="px-8 py-6 font-sans text-sm text-ph-text-tertiary">
+      <div className="px-4 py-6 font-sans text-sm text-ph-text-tertiary sm:px-8">
         Loading overview…
       </div>
     );
@@ -70,7 +70,7 @@ export function DashboardPage() {
 
   if (overviewQuery.isError || !overviewQuery.data) {
     return (
-      <div className="px-8 py-6">
+      <div className="px-4 py-6 sm:px-8">
         <h1 className="font-sans text-xl font-semibold text-ph-text-primary">
           Overview
         </h1>
@@ -98,7 +98,7 @@ export function DashboardPage() {
   const data = overviewQuery.data;
 
   return (
-    <div className="px-8 py-6">
+    <div className="px-4 py-6 sm:px-8">
       {data.activeAliases === 0 ? <DashboardGettingStarted /> : null}
       <StatGrid data={data} />
 

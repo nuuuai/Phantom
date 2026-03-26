@@ -169,7 +169,7 @@ export function AliasesPage() {
   const items = listQuery.data ?? [];
 
   return (
-    <div className="px-8 py-6">
+    <div className="px-4 py-6 sm:px-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-sans text-xl font-semibold text-ph-text-primary">
@@ -246,9 +246,18 @@ export function AliasesPage() {
         </p>
       ) : null}
       {listQuery.isError ? (
-        <p className="mt-8 font-sans text-sm text-ph-danger">
-          {getQueryErrorMessage(listQuery.error)}
-        </p>
+        <div className="mt-8 rounded-lg border border-ph-danger/40 bg-ph-danger/5 px-4 py-3">
+          <p className="font-sans text-sm text-ph-danger">
+            {getQueryErrorMessage(listQuery.error)}
+          </p>
+          <button
+            type="button"
+            onClick={() => void listQuery.refetch()}
+            className="mt-3 rounded-md border border-ph-border bg-ph-raised px-3 py-1.5 font-sans text-xs text-ph-text-secondary hover:text-ph-text-primary"
+          >
+            Retry
+          </button>
+        </div>
       ) : null}
 
       {!listQuery.isPending && !listQuery.isError && items.length === 0 ? (

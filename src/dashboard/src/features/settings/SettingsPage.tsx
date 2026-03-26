@@ -178,6 +178,9 @@ function DesktopNotificationsSection() {
   );
 }
 
+const FORWARD_EMAIL_RE =
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function ForwardingSection({
   accessToken,
   forwardToEmail,
@@ -187,6 +190,7 @@ function ForwardingSection({
 }) {
   const qc = useQueryClient();
   const [draft, setDraft] = useState(forwardToEmail ?? "");
+  const [fieldError, setFieldError] = useState<string | null>(null);
 
   useEffect(() => {
     setDraft(forwardToEmail ?? "");
@@ -201,6 +205,7 @@ function ForwardingSection({
       return res.data;
     },
     onSuccess: () => {
+      setFieldError(null);
       void qc.invalidateQueries({ queryKey: queryKeys.userMe(accessToken) });
     },
   });
@@ -212,7 +217,10 @@ function ForwardingSection({
       </div>
       <p className="mt-2 font-sans text-xs text-ph-text-tertiary">
         Real address for forward / digest notifications when SMTP is wired.
-        Stored on your account; not verified in Phase 1.
+        Stored on your account; not verified in Phase 1 — outbound relay is still
+        external (see{" "}
+        <span className="font-mono text-[10px]">docs/roadmap/EMAIL_INBOUND.md</span>
+        ).
       </p>
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
         <label className="flex min-w-0 flex-1 flex-col gap-1.5">
@@ -223,9 +231,13 @@ function ForwardingSection({
             type="email"
             autoComplete="email"
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              setFieldError(null);
+            }}
             placeholder="you@example.com"
-            className="rounded-md border border-ph-border bg-ph-raised px-3 py-2 font-sans text-sm text-ph-text-primary outline-none ring-ph-accent/30 placeholder:text-ph-text-muted focus:ring-2"
+            aria-invalid={fieldError != null}
+            className="rounded-md border border-ph-border bg-ph-raised px-3 py-2 font-sans text-sm text-ph-text-primary outline-none ring-ph-accent/30 placeholder:text-ph-text-muted focus:ring-2 aria-invalid:border-ph-danger"
           />
         </label>
         <div className="flex shrink-0 gap-2">
@@ -234,6 +246,13 @@ function ForwardingSection({
             disabled={saveMutation.isPending}
             onClick={() => {
               const t = draft.trim();
+              if (t.length > 0 && !FORWARD_EMAIL_RE.test(t)) {
+                setFieldError(
+                  "Enter a valid email (same rule as the API), or clear and save."
+                );
+                return;
+              }
+              setFieldError(null);
               saveMutation.mutate(t.length === 0 ? null : t);
             }}
             className="rounded-md bg-ph-accent px-4 py-2 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
@@ -245,6 +264,7 @@ function ForwardingSection({
             disabled={saveMutation.isPending}
             onClick={() => {
               setDraft("");
+              setFieldError(null);
               saveMutation.mutate(null);
             }}
             className="rounded-md border border-ph-border px-4 py-2 font-sans text-xs text-ph-text-secondary transition-colors hover:bg-ph-raised/80"
@@ -253,6 +273,11 @@ function ForwardingSection({
           </button>
         </div>
       </div>
+      {fieldError ? (
+        <p className="mt-2 font-sans text-xs text-ph-danger" role="alert">
+          {fieldError}
+        </p>
+      ) : null}
       {saveMutation.isError && (
         <p className="mt-2 font-sans text-xs text-ph-danger">
           {saveMutation.error instanceof Error

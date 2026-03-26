@@ -17,6 +17,18 @@ export function getTwilioAccountSid(): string | null {
 }
 
 /**
+ * When `PHONE_PROVIDER` is set to a value other than `mock` / `twilio`, we still use the mock
+ * adapter but surface a non-fatal warning (ready stays true).
+ */
+export function getPhoneProviderEnvWarning(): string | null {
+  const raw = process.env.PHONE_PROVIDER?.trim();
+  if (!raw) return null;
+  const m = raw.toLowerCase();
+  if (m === "mock" || m === "twilio") return null;
+  return `Unknown PHONE_PROVIDER="${raw}"; using mock adapter.`;
+}
+
+/**
  * Twilio adapter is "configured" when account SID is present (auth token needed for real API later).
  */
 export function isTwilioConfigured(): boolean {
@@ -33,13 +45,15 @@ export function getPhoneProviderPublicStatus(): PhoneProviderStatus {
   const twilioOk = isTwilioConfigured();
 
   if (id === "mock") {
+    const envWarn = getPhoneProviderEnvWarning();
+    const baseMsg =
+      "Mock mode: +1-555 numbers only. No carrier. Safe for local development.";
     return {
       provider: "mock",
       ready: true,
       provisioningMode: "mock",
-      message:
-        "Mock mode: +1-555 numbers only. No carrier. Safe for local development.",
-      lastError: null,
+      message: envWarn ? `${envWarn} ${baseMsg}` : baseMsg,
+      lastError: envWarn,
       capabilities: {
         forwardTargetStored: true,
         pstnInbound: false,

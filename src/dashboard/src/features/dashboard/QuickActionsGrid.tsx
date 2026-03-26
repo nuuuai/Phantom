@@ -1,34 +1,28 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-
-const actions = [
-  { label: "New alias", to: "/aliases", color: "#6C3AED" },
-  { label: "Vault", to: "/vault", color: "#A78BFA" },
-  { label: "Run broker scan", to: "/brokers", color: "#34D399" },
-  { label: "Alias inbox", to: "/inbox", color: "#FBBF24" },
-  { label: "Billing & Pro", to: "/billing", color: "#60A5FA" },
-] as const;
+import { QUICK_ACTIONS } from "@/lib/dashboardRoutes.js";
 
 export function QuickActionsGrid() {
   const navigate = useNavigate();
 
   return (
-    <motion.div
+    <motion.section
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.5 }}
       className="rounded-xl border border-ph-border bg-ph-surface p-5"
+      aria-label="Quick actions"
     >
       <div className="mb-3.5 font-mono text-xs font-semibold uppercase tracking-wide text-ph-text-tertiary">
         Quick actions
       </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {actions.map((a) => (
+        {QUICK_ACTIONS.map((a) => (
           <button
             key={a.label}
             type="button"
             onClick={() => void navigate(a.to)}
-            className="cursor-pointer rounded-lg border px-3 py-2.5 text-center font-sans text-xs font-medium transition-colors duration-200"
+            className="cursor-pointer rounded-lg border px-3 py-2.5 text-center font-sans text-xs font-medium transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ph-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-ph-surface"
             style={{
               backgroundColor: `${a.color}08`,
               borderColor: `${a.color}20`,
@@ -39,6 +33,6 @@ export function QuickActionsGrid() {
           </button>
         ))}
       </div>
-    </motion.div>
+    </motion.section>
   );
 }

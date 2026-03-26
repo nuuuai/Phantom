@@ -72,6 +72,11 @@ describe("createApp", () => {
     expect(res.status).toBe(401);
   });
 
+  it("GET /api/phone/provider without auth returns 401", async () => {
+    const res = await request(app).get("/api/phone/provider").expect(401);
+    expect(res.body.ok).toBe(false);
+  });
+
   it("POST /api/auth/login without body returns 400", async () => {
     const res = await request(app).post("/api/auth/login").send({}).expect(400);
     expect(res.body.ok).toBe(false);

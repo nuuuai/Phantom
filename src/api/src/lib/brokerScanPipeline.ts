@@ -2,6 +2,80 @@
  * Simulated parallel broker scan workers with a small per-item delay (rate / backpressure).
  */
 
+/**
+ * Validates env before `POST /broker-scan/start`. Invalid values fail fast (503) so operators
+ * fix config instead of silently falling back to defaults.
+ */
+export function validateBrokerScanRuntimeConfig():
+  | { ok: true }
+  | { ok: false; message: string } {
+  const rawC = process.env.BROKER_SCAN_CONCURRENCY?.trim();
+  if (rawC) {
+    if (!/^\d+$/.test(rawC)) {
+      return {
+        ok: false,
+        message: `BROKER_SCAN_CONCURRENCY must be an integer 1–32 (invalid: ${rawC})`,
+      };
+    }
+    const n = Number.parseInt(rawC, 10);
+    if (n < 1 || n > 32) {
+      return {
+        ok: false,
+        message: `BROKER_SCAN_CONCURRENCY must be between 1 and 32 (got ${String(n)})`,
+      };
+    }
+  }
+
+  const rawD = process.env.BROKER_SCAN_WORKER_DELAY_MS?.trim();
+  if (rawD) {
+    if (!rawD.includes("-")) {
+      return {
+        ok: false,
+        message:
+          "BROKER_SCAN_WORKER_DELAY_MS must be a range min-max in milliseconds (e.g. 5-25)",
+      };
+    }
+    const segments = rawD.split("-");
+    if (segments.length !== 2) {
+      return {
+        ok: false,
+        message:
+          "BROKER_SCAN_WORKER_DELAY_MS must contain exactly one hyphen: min-max",
+      };
+    }
+    const min = Number(segments[0]!.trim());
+    const max = Number(segments[1]!.trim());
+    if (!Number.isFinite(min) || !Number.isFinite(max)) {
+      return {
+        ok: false,
+        message:
+          "BROKER_SCAN_WORKER_DELAY_MS min and max must be finite numbers",
+      };
+    }
+    if (min < 0 || max < 0) {
+      return {
+        ok: false,
+        message:
+          "BROKER_SCAN_WORKER_DELAY_MS min and max must be non-negative",
+      };
+    }
+    if (min > max) {
+      return {
+        ok: false,
+        message: "BROKER_SCAN_WORKER_DELAY_MS min must be <= max",
+      };
+    }
+    if (max > 120_000) {
+      return {
+        ok: false,
+        message: "BROKER_SCAN_WORKER_DELAY_MS max must be <= 120000 (2 minutes)",
+      };
+    }
+  }
+
+  return { ok: true };
+}
+
 /** Default `min-max` milliseconds between per-broker worker steps. Override with `BROKER_SCAN_WORKER_DELAY_MS`. */
 export function getBrokerScanWorkerDelayMs(): { min: number; max: number } {
   const raw = process.env.BROKER_SCAN_WORKER_DELAY_MS?.trim();

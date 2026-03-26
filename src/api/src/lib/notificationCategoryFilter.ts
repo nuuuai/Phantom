@@ -18,6 +18,8 @@ export function isKnownNotificationCategory(
 
 /**
  * Prisma `where` fragment: exclude rows whose `category` is in `disabled`.
+ * Used on **read** paths (`GET` list, `/count`, `read-all`); notification **rows are not deleted**
+ * when a user disables a category.
  */
 export function categoryWhereForDisabled(
   disabled: PrismaNotifCategory[]

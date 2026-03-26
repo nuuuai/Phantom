@@ -199,4 +199,70 @@ describe("executeVaultSyncPush", () => {
     expect(getCalls).toBe(2);
     expect(putCalls).toBe(2);
   });
+
+  it("returns server version without PUT when merged plaintext matches remote", async () => {
+    const salt = generateVaultSalt();
+    const key = await deriveVaultKey("noop-sync", salt);
+    const hex = await exportKeyHex(key);
+    const cryptoKey = await importKeyHex(hex);
+    const emptyPlain = emptyVaultSyncPlaintext();
+    const ct = await encryptVaultSyncBlob(cryptoKey, emptyPlain);
+    let putCalls = 0;
+    const result = await executeVaultSyncPush(
+      hex,
+      [],
+      async () => ({ ciphertext: ct, version: 7 }),
+      async () => {
+        putCalls++;
+        return { ok: true, version: 999 };
+      }
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.version).toBe(7);
+    expect(putCalls).toBe(0);
+  });
+
+  it("fails after max retries when PUT always conflicts", async () => {
+    const salt = generateVaultSalt();
+    const key = await deriveVaultKey("conflict-storm", salt);
+    const hex = await exportKeyHex(key);
+    const result = await executeVaultSyncPush(
+      hex,
+      [baseAlias({ id: "a1", isActive: true })],
+      async () => ({ ciphertext: null, version: 0 }),
+      async () => ({ ok: false, conflict: true })
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toMatch(/could not complete after resolving/i);
+    }
+  });
+
+  it("returns non-conflict PUT errors without retrying", async () => {
+    const salt = generateVaultSalt();
+    const key = await deriveVaultKey("put-hard-fail", salt);
+    const hex = await exportKeyHex(key);
+    let getCalls = 0;
+    let putCalls = 0;
+    const result = await executeVaultSyncPush(
+      hex,
+      [baseAlias({ id: "a1", isActive: true })],
+      async () => {
+        getCalls++;
+        return { ciphertext: null, version: 0 };
+      },
+      async () => {
+        putCalls++;
+        return {
+          ok: false,
+          conflict: false,
+          message: "validation failed",
+        };
+      }
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toContain("validation");
+    expect(getCalls).toBe(1);
+    expect(putCalls).toBe(1);
+  });
 });

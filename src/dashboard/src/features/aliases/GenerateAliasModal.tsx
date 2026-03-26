@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useCallback, useState } from "react";
 import {
   ALIAS_CATEGORIES,
+  type ClientErrorMeta,
   clientErrorFromApiFailure,
   encryptVaultValue,
   generatePassword,
@@ -192,6 +193,15 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
                       userMeQuery.data.aliasUsage
                     )
                   : false;
+                const usageRow = userMeQuery.data?.aliasUsage.find(
+                  (u) => u.type === t.id
+                );
+                const quotaLabel =
+                  userMeQuery.data?.user.tier === "free" && usageRow
+                    ? `${usageRow.used}/${usageRow.max ?? "∞"} used`
+                    : userMeQuery.data?.user.tier !== "free"
+                      ? "Unlimited"
+                      : null;
                 return (
                   <button
                     key={t.id}
@@ -200,7 +210,7 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
                     title={
                       atCap
                         ? "Free tier limit reached for this type — upgrade or remove an alias"
-                        : undefined
+                        : quotaLabel ?? undefined
                     }
                     onClick={() => {
                       if (atCap) return;
@@ -222,6 +232,11 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
                     <div className="mt-1 font-mono text-[10px] text-ph-text-tertiary">
                       {t.hint}
                     </div>
+                    {quotaLabel ? (
+                      <div className="mt-1.5 font-mono text-[10px] text-ph-text-muted">
+                        {quotaLabel}
+                      </div>
+                    ) : null}
                   </button>
                 );
               })}
@@ -256,9 +271,17 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
                     Checking phone provider…
                   </p>
                 ) : phoneProviderQuery.isError ? (
-                  <p className="font-sans text-[11px] text-ph-danger">
-                    Could not load phone provider status.
-                  </p>
+                  <div className="space-y-2">
+                    <p className="font-sans text-[11px] text-ph-danger">
+                      {(phoneProviderQuery.error as ClientErrorMeta)?.message ??
+                        "Could not load phone provider status."}
+                    </p>
+                    {(phoneProviderQuery.error as ClientErrorMeta)?.lastError ? (
+                      <p className="rounded-md border border-ph-danger/40 bg-ph-danger/5 px-3 py-2 font-mono text-[10px] text-ph-danger">
+                        {(phoneProviderQuery.error as ClientErrorMeta).lastError}
+                      </p>
+                    ) : null}
+                  </div>
                 ) : phoneProviderQuery.data ? (
                   <div className="space-y-2">
                     <div

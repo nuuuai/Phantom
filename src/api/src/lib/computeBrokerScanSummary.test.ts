@@ -43,4 +43,15 @@ describe("computeBrokerScanSummaryFromRows", () => {
     expect(s.dataTypesBreakdown.email).toBe(1);
     expect(s.dataTypesBreakdown.phone).toBe(0);
   });
+
+  it("sums data types across multiple exposed rows", () => {
+    const s = computeBrokerScanSummaryFromRows([
+      row({ status: "found", dataTypesFound: ["email", "phone"] }),
+      row({ status: "found", dataTypesFound: ["email"] }),
+    ]);
+    expect(s.found).toBe(2);
+    expect(s.exposureCount).toBe(2);
+    expect(s.dataTypesBreakdown.email).toBe(2);
+    expect(s.dataTypesBreakdown.phone).toBe(1);
+  });
 });

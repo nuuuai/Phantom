@@ -15,8 +15,9 @@ Phantom’s API **generates** `@phantom.id` aliases. **Receiving** mail requires
 
 - **URL:** `POST /api/webhooks/email-inbound`
 - **Auth:** Set `INBOUND_WEBHOOK_SECRET` (≥16 chars). Request body must be **raw JSON** (`Content-Type: application/json` or `application/json; charset=utf-8`). Other media types return **415**.
-- **Signature:** `X-Phantom-Signature: sha256=<hex>` where `<hex>` is HMAC-SHA256 of the **raw** body bytes using the same secret.
-- **Limits:** Body max **256kb**; rate limit **120 requests / minute / IP** (express-rate-limit). Response includes `X-Phantom-Request-Id` for log correlation.
+- **Signature:** `X-Phantom-Signature: sha256=<hex>` where `<hex>` is HMAC-SHA256 of the **raw** body bytes using the same secret. Verification uses **timing-safe** comparison. There is **no** separate timestamp / clock-skew step (this is not a JWT).
+- **Failure codes:** **401** `invalid_signature` — missing header, wrong prefix, malformed hex, or HMAC mismatch. **503** `webhook_unconfigured` — secret missing or too short.
+- **Limits:** Body max **256kb** (`express.raw`); rate limit **120 requests / minute / IP** (express-rate-limit). **`aliasAddress`** max **254** characters. Response includes **`X-Phantom-Request-Id`** (UUID) on every response for log correlation — **do not** log raw bodies or secrets.
 - **JSON body:**
 
 ```json
@@ -36,8 +37,8 @@ Phantom’s API **generates** `@phantom.id` aliases. **Receiving** mail requires
 
 ## Outbound / digest email (not wired)
 
-- **In-app + desktop notifications** use the API + dashboard (`/api/notifications`, preferences). **Outbound email** (breach digests, removal confirmations) is **not** implemented in the API sender path.
-- Reserved: **`NOTIFICATIONS_EMAIL_ENABLED`** in **`.env.example`** / **`DEPLOYMENT.md`** — keep **`0`** or unset until an SES/SMTP worker exists; no emails are sent from this repo in Phase 1.
+- **In-app + desktop notifications** use the API + dashboard (`GET/PUT /api/notifications`, `NotificationPref`). There is **no** Phase 1 worker that sends email from those events.
+- **Outbound email** (breach digests, removal confirmations, notification digests) is **not** implemented in the API sender path. **`NOTIFICATIONS_EMAIL_ENABLED`** (see **`DEPLOYMENT.md`** / **`.env.example`**) is reserved for a future SES/SMTP sender — keep **`0`** or unset; do not claim delivery without a real mailer.
 
 ## Dashboard
 
@@ -54,6 +55,3 @@ Phantom’s API **generates** `@phantom.id` aliases. **Receiving** mail requires
 
 See repo root `.env.example`: `INBOUND_WEBHOOK_SECRET`.
 
-## Outbound email (notifications channel — stub)
-
-Phase 1 does **not** send email from the API. Reserved env: **`NOTIFICATIONS_EMAIL_ENABLED`** (`0` / unset = off). When a worker or SES integration is added, set to **`1`** and supply provider credentials via your secret store (see [`DEPLOYMENT.md`](./DEPLOYMENT.md)). No SMTP or SES calls ship in this repo today.

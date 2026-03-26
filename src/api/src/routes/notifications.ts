@@ -12,6 +12,13 @@ import {
 import { prisma } from "../lib/prisma.js";
 import { mapNotification } from "../lib/mapNotification.js";
 
+/**
+ * Notification preferences: **read-path filter**.
+ * Rows for disabled categories remain in `Notification` (writers do not check prefs);
+ * `GET /api/notifications`, `/count`, and `read-all` exclude disabled categories via
+ * `categoryWhereForDisabled`. Subsystems that insert notifications (e.g. email
+ * webhook) always persist the row; users who disable that category no longer see it.
+ */
 async function getDisabledNotificationCategories(
   userId: string
 ): Promise<PrismaNotifCategory[]> {
@@ -154,13 +161,24 @@ notificationsRouter.post("/read-all", async (req, res) => {
   res.json(response);
 });
 
-/** Seed demo notifications if user has none */
+/** Seed demo notifications if user has none (disabled in **production**). */
 notificationsRouter.post("/seed-demo", async (req, res) => {
   const userId = req.user?.id;
   if (!userId) {
     res.status(401).json({
       ok: false,
       error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    res.status(403).json({
+      ok: false,
+      error: {
+        code: "forbidden",
+        message: "Demo notification seed is disabled in production",
+      },
     });
     return;
   }
@@ -287,6 +305,16 @@ notificationsRouter.put("/preferences", async (req, res) => {
   const catSet = new Set<string>(NOTIFICATION_CATEGORIES);
   for (const item of body.items) {
     if (!catSet.has(item.category)) continue;
+    if (typeof item.enabled !== "boolean") {
+      res.status(400).json({
+        ok: false,
+        error: {
+          code: "validation_error",
+          message: `Each item must include boolean enabled for known category (got ${String(item.category)})`,
+        },
+      });
+      return;
+    }
     await prisma.notificationPref.upsert({
       where: {
         userId_category: { userId, category: item.category as PrismaNotifCategory },

@@ -1,7 +1,11 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useEscapeKey } from "@/hooks/useEscapeKey.js";
+import {
+  DASHBOARD_PATHS,
+  chromeWebStoreHref,
+} from "@/lib/dashboardRoutes.js";
 
 const STORAGE_KEY = "phantom_onboarding_complete";
 
@@ -15,31 +19,31 @@ const STEPS = [
     title: "Generate your first alias",
     body: "Head to the Aliases page and create a disposable email, username, or phone alias. Use it for any signup instead of your real info.",
     cta: "Next",
-    link: "/aliases",
+    link: DASHBOARD_PATHS.aliases,
   },
   {
-    title: "Check your inbox",
+    title: "Check your alias inbox",
     body: "Forwarded mail to your aliases appears in the Phantom inbox. Open it from the sidebar or when a notification links there.",
     cta: "Next",
-    link: "/inbox",
+    link: DASHBOARD_PATHS.inbox,
   },
   {
     title: "Secure your passwords",
     body: "The Vault generates strong passwords and encrypts them on your device before storing. The server never sees your plaintext credentials.",
     cta: "Next",
-    link: "/vault",
+    link: DASHBOARD_PATHS.vault,
   },
   {
     title: "Scan for data brokers",
     body: "Run an exposure scan to discover which data brokers are selling your personal information — then remove yourself.",
     cta: "Next",
-    link: "/brokers",
+    link: DASHBOARD_PATHS.brokers,
   },
   {
     title: "Phantom Pro (optional)",
     body: "Free tier includes exposure scans and DIY opt-out links. Upgrade for automated removal queue, unlimited aliases, and billing in one place.",
     cta: "Next",
-    link: "/billing",
+    link: DASHBOARD_PATHS.billing,
   },
   {
     title: "Install the extension",
@@ -68,6 +72,7 @@ export function OnboardingModal() {
   const [open, setOpen] = useState(() => !isOnboardingComplete());
   const [step, setStep] = useState(0);
   const navigate = useNavigate();
+  const primaryRef = useRef<HTMLButtonElement>(null);
 
   const close = useCallback(() => {
     markOnboardingComplete();
@@ -84,12 +89,27 @@ export function OnboardingModal() {
     }
   }, [step, close, navigate]);
 
+  const goBack = useCallback(() => {
+    setStep((prev) => Math.max(0, prev - 1));
+  }, []);
+
   useEscapeKey(open, close);
+
+  useEffect(() => {
+    if (!open) return;
+    const id = window.requestAnimationFrame(() => {
+      primaryRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [open, step]);
 
   if (!open) return null;
 
   const current = STEPS[step];
   if (!current) return null;
+
+  const isLast = step === STEPS.length - 1;
+  const cwsUrl = chromeWebStoreHref();
 
   return (
     <AnimatePresence>
@@ -98,7 +118,7 @@ export function OnboardingModal() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
         onClick={(e) => {
           if (e.target === e.currentTarget) close();
         }}
@@ -112,53 +132,114 @@ export function OnboardingModal() {
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
           transition={{ type: "spring", damping: 24, stiffness: 300 }}
-          className="w-full max-w-md rounded-xl border border-ph-border bg-ph-surface p-6 shadow-2xl"
+          className="flex w-full max-w-md flex-col rounded-xl border border-ph-border bg-ph-surface shadow-2xl"
         >
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-ph-accent-light">
-              Step {step + 1} of {STEPS.length}
-            </span>
-            <button
-              type="button"
-              onClick={close}
-              className="cursor-pointer font-sans text-xs text-ph-text-ghost hover:text-ph-text-tertiary"
-            >
-              Skip
-            </button>
-          </div>
-          <h2
-            id="phantom-onboarding-title"
-            className="mt-4 font-sans text-base font-semibold text-ph-text-primary"
-          >
-            {current.title}
-          </h2>
-          <p className="mt-2 font-sans text-[13px] leading-relaxed text-ph-text-tertiary">
-            {current.body}
-          </p>
-
-          <div className="mt-6 flex items-center justify-between">
-            <div className="flex gap-1.5">
-              {STEPS.map((_, i) => (
-                <span
-                  key={i}
-                  className={[
-                    "h-1.5 rounded-full transition-all",
-                    i === step
-                      ? "w-6 bg-ph-accent"
-                      : i < step
-                        ? "w-1.5 bg-ph-accent/50"
-                        : "w-1.5 bg-ph-border",
-                  ].join(" ")}
-                />
-              ))}
+          <div className="flex max-h-[min(90vh,620px)] min-h-0 flex-col p-6">
+            <div className="flex shrink-0 items-center justify-between">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-ph-accent-light">
+                Step {step + 1} of {STEPS.length}
+              </span>
+              <button
+                type="button"
+                onClick={close}
+                className="cursor-pointer font-sans text-xs text-ph-text-ghost hover:text-ph-text-tertiary"
+              >
+                Skip
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={advance}
-              className="cursor-pointer rounded-md border border-ph-accent-border bg-ph-accent px-5 py-2 font-sans text-xs font-medium text-white"
-            >
-              {current.cta}
-            </button>
+            <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+              <h2
+                id="phantom-onboarding-title"
+                className="font-sans text-base font-semibold text-ph-text-primary"
+              >
+                {current.title}
+              </h2>
+              <p className="mt-2 font-sans text-[13px] leading-relaxed text-ph-text-tertiary">
+                {current.body}
+              </p>
+              {isLast ? (
+                <div className="mt-4 space-y-3 rounded-lg border border-ph-border bg-ph-raised/50 px-3 py-3 font-sans text-[12px] leading-relaxed text-ph-text-tertiary">
+                  <p>
+                    <span className="font-medium text-ph-text-secondary">
+                      Store:
+                    </span>{" "}
+                    When the listing is live, install from the{" "}
+                    <a
+                      href={cwsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-ph-accent-light underline hover:text-ph-accent"
+                    >
+                      Chrome Web Store
+                    </a>
+                    . Until then, use your team&apos;s published link or search
+                    the store for Phantom.
+                  </p>
+                  <p>
+                    <span className="font-medium text-ph-text-secondary">
+                      Dev:
+                    </span>{" "}
+                    Run{" "}
+                    <code className="rounded bg-ph-bg px-1 font-mono text-[11px]">
+                      npm run build:extension:store
+                    </code>{" "}
+                    and load the unpacked output from{" "}
+                    <code className="rounded bg-ph-bg px-1 font-mono text-[11px]">
+                      chrome://extensions
+                    </code>{" "}
+                    (see{" "}
+                    <span className="font-mono text-[11px]">
+                      docs/roadmap/EXTENSION_STORE_BUILD.md
+                    </span>
+                    ).
+                  </p>
+                  <p className="text-[11px] text-ph-text-muted">
+                    This dashboard runs on <span className="font-mono">https</span>
+                    — it cannot open{" "}
+                    <span className="font-mono">chrome-extension://</span> URLs.
+                    Use the extension toolbar, Options, or Manage extensions in
+                    Chrome.
+                  </p>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="mt-6 shrink-0 border-t border-ph-border pt-4">
+              <div className="mb-4 flex justify-center gap-1.5">
+                {STEPS.map((_, i) => (
+                  <span
+                    key={i}
+                    className={[
+                      "h-1.5 rounded-full transition-all",
+                      i === step
+                        ? "w-6 bg-ph-accent"
+                        : i < step
+                          ? "w-1.5 bg-ph-accent/50"
+                          : "w-1.5 bg-ph-border",
+                    ].join(" ")}
+                  />
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={goBack}
+                  disabled={step === 0}
+                  className="cursor-pointer rounded-md border border-ph-border bg-ph-bg px-4 py-2 font-sans text-xs text-ph-text-secondary hover:bg-ph-raised disabled:cursor-not-allowed disabled:opacity-40"
+                  aria-label="Previous step"
+                >
+                  Back
+                </button>
+                <button
+                  ref={primaryRef}
+                  type="button"
+                  onClick={advance}
+                  className="cursor-pointer rounded-md border border-ph-accent-border bg-ph-accent px-5 py-2 font-sans text-xs font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-ph-accent/70"
+                >
+                  {current.cta}
+                </button>
+              </div>
+            </div>
           </div>
         </motion.div>
       </motion.div>

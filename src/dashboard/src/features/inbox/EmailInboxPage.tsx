@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { formatRelativeTime } from "@/lib/formatRelative.js";
-import { queryKeys } from "@/lib/queryKeys.js";
+import { emailInboxAll, queryKeys } from "@/lib/queryKeys.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 
 export function EmailInboxPage() {
@@ -46,7 +46,7 @@ export function EmailInboxPage() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: ["email-inbox", accessToken],
+        queryKey: emailInboxAll,
       });
     },
   });
@@ -100,9 +100,18 @@ export function EmailInboxPage() {
         <p className="mt-8 font-sans text-sm text-ph-text-tertiary">Loading…</p>
       )}
       {inboxQuery.isError && (
-        <p className="mt-8 font-sans text-sm text-ph-danger">
-          {getQueryErrorMessage(inboxQuery.error)}
-        </p>
+        <div className="mt-8 rounded-lg border border-ph-danger/40 bg-ph-danger/5 px-4 py-3">
+          <p className="font-sans text-sm text-ph-danger">
+            {getQueryErrorMessage(inboxQuery.error)}
+          </p>
+          <button
+            type="button"
+            className="mt-3 rounded-md border border-ph-border bg-ph-raised px-3 py-1.5 font-sans text-xs text-ph-text-primary hover:bg-ph-border/40"
+            onClick={() => void inboxQuery.refetch()}
+          >
+            Retry
+          </button>
+        </div>
       )}
       {markReadMutation.isError && (
         <p

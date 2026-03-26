@@ -29,6 +29,11 @@ describe("brokerScanQuota", () => {
     expect(resolveFreeTierBrokerScanCap()).toBe(5);
   });
 
+  it("caps absurdly large values at 500", () => {
+    process.env.FREE_TIER_BROKER_SCAN_MAX_PER_24H = "99999";
+    expect(resolveFreeTierBrokerScanCap()).toBe(500);
+  });
+
   it("window is 24h", () => {
     expect(FREE_TIER_BROKER_SCAN_WINDOW_MS).toBe(86_400_000);
   });

@@ -77,7 +77,7 @@ High-level only — full detail lives in [`docs/roadmap/README.md`](docs/roadmap
 - **Notifications** — Category **prefs** (API + Settings); **desktop** OS notifications when unread increases (if browser permission granted).
 - **Launch / AWS** — **`docs/roadmap/INFRA_AWS_PHASE1.md`** (recommended AWS layout, health probes, prod parity); **`DEPLOYMENT.md`** links it; extension store docs include **manifest path** + prod parity table.
 - **Email inbound** — **`phantom:v1:`** content hash dedupe when **`providerMessageId`** is omitted (worker retries); see **`docs/roadmap/EMAIL_INBOUND.md`**.
-- **Dashboard / extension UX** — Overview **Get started** (0 aliases), **Quick actions** wired to routes, overview **Retry** on load failure; onboarding **billing** step; broker **status legend**. Extension **`network_error`** JSON when API unreachable (**tests**).
+- **Dashboard / extension UX** — Overview **Get started** (0 aliases), **Quick actions** + **Settings**, **`MobileNavBar`** on small screens, **onboarding** 7-step flow with CWS/dev copy; overview **Retry** on load failure; broker **status legend**. Extension **`network_error`** JSON when API unreachable (**tests**).
 - **API ops** — **`X-Request-Id`** on every response; structured JSON **error** logs; JWT verify **`clockTolerance`** 60s; Redis: global rate limit **fail-open** on store errors, refresh tokens **fail closed** on Redis write/read errors; **`DEPLOYMENT.md`** documents compose + policies.
 - **Alias inbox** — **`isRead`** on messages; **`GET`** `unread=1`; **`PATCH /api/email-inbox/:id/read`**; dashboard **Unread only** + mark read/unread.
 - **Vault UX + tests** — Dashboard **Last synced** (relative time) + conflict copy; **`decryptVaultSyncBlob`** tamper test in **`@phantom/shared`**.
@@ -85,6 +85,10 @@ High-level only — full detail lives in [`docs/roadmap/README.md`](docs/roadmap
 - **QA / notifications stub** — **`QA_MANUAL.md`** expanded (billing duplicate webhook, vault, scan cap, ops); **`NOTIFICATIONS_EMAIL_ENABLED`** in **`DEPLOYMENT.md`** + **`.env.example`** (outbound email not in API yet).
 
 **Agent playbook (sequential runs):** [`docs/roadmap/PHASE_1_AGENT_RUNS.md`](docs/roadmap/PHASE_1_AGENT_RUNS.md).
+
+## Local dashboard (dev)
+
+With the API on **`127.0.0.1:8787`** (default), the Vite dashboard serves at **`http://localhost:5173`** and proxies **`/api`** to the API. Use `npm run dev` (full stack) or `npm run dev -w @phantom/dashboard` (UI only); on Windows, **`run.ps1 -DashboardOnly`** starts the dashboard the same way.
 
 ## CI (local parity with GitHub Actions)
 

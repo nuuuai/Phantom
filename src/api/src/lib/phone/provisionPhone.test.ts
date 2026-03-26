@@ -8,6 +8,13 @@ describe("provisionPhoneAlias", () => {
     process.env = { ...orig };
   });
 
+  it("defaults to mock when PHONE_PROVIDER unset", () => {
+    delete process.env.PHONE_PROVIDER;
+    const p = provisionPhoneAlias(null);
+    expect(p.ok).toBe(true);
+    if (p.ok) expect(p.provider).toBe("mock");
+  });
+
   it("allocates mock number when PHONE_PROVIDER=mock", () => {
     process.env.PHONE_PROVIDER = "mock";
     const p = provisionPhoneAlias("+15551234567");

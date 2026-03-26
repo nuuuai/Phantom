@@ -33,4 +33,13 @@ describe("getPhoneProviderPublicStatus", () => {
     expect(s.provisioningMode).toBe("twilio_stub");
     expect(s.lastError).toBeNull();
   });
+
+  it("unknown PHONE_PROVIDER falls back to mock with warning", () => {
+    process.env.PHONE_PROVIDER = "telnyx";
+    const s = getPhoneProviderPublicStatus();
+    expect(s.ready).toBe(true);
+    expect(s.provisioningMode).toBe("mock");
+    expect(s.lastError).toContain("Unknown PHONE_PROVIDER");
+    expect(s.message).toContain("telnyx");
+  });
 });

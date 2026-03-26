@@ -74,7 +74,7 @@ export function SidebarNav() {
   const initial = displayName.trim().slice(0, 1).toUpperCase() || "?";
 
   return (
-    <div className="flex w-[230px] shrink-0 flex-col border-r border-ph-border bg-ph-surface">
+    <div className="hidden w-[230px] shrink-0 flex-col border-r border-ph-border bg-ph-surface md:flex">
       <div className="border-b border-ph-border px-6 pb-5 pt-6">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-ph-accent to-[#8B5CF6]">

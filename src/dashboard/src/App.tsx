@@ -198,6 +198,7 @@ export function App() {
           />
           <Route path="/billing" element={<BillingPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          {/* Unknown paths → home (no separate 404 in Phase 1 shell). */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

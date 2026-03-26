@@ -1,5 +1,6 @@
 import {
   type Alias,
+  type ClientErrorMeta,
   clientErrorFromApiFailure,
   decryptVaultValue,
   encryptVaultValue,
@@ -288,9 +289,18 @@ export function AliasDetailPage() {
                 Loading provider status…
               </p>
             ) : phoneProviderQuery.isError ? (
-              <p className="mb-3 font-sans text-[11px] text-ph-danger">
-                Could not load phone provider status.
-              </p>
+              <div className="mb-3 space-y-2">
+                <p className="font-sans text-[11px] text-ph-danger">
+                  {(phoneProviderQuery.error as ClientErrorMeta)?.message ??
+                    "Could not load phone provider status."}
+                </p>
+                {(phoneProviderQuery.error as ClientErrorMeta)?.lastError ? (
+                  <p className="rounded-md border border-ph-danger/40 bg-ph-danger/5 px-3 py-2 font-mono text-[10px] text-ph-danger">
+                    Last error:{" "}
+                    {(phoneProviderQuery.error as ClientErrorMeta).lastError}
+                  </p>
+                ) : null}
+              </div>
             ) : phoneProviderQuery.data ? (
               <div className="mb-4 space-y-2">
                 <div

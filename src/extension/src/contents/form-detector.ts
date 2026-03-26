@@ -101,6 +101,7 @@ function createShieldIcon(field: DetectedField): HTMLDivElement {
   const style = document.createElement("style");
   style.textContent = `
     :host { display:block; }
+    .ph-shield-wrap { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
     .ph-shield {
       width:22px; height:22px; cursor:pointer;
       display:flex; align-items:center; justify-content:center;
@@ -112,36 +113,74 @@ function createShieldIcon(field: DetectedField): HTMLDivElement {
       background:rgba(108,58,237,0.3);
       border-color:rgba(108,58,237,0.5);
     }
+    .ph-shield[aria-busy="true"] { opacity:0.5; pointer-events:none; }
     .ph-shield svg { width:12px; height:12px; }
+    .ph-shield-error {
+      max-width:160px; font:11px/1.35 system-ui,sans-serif;
+      color:#f87171; text-align:right;
+    }
   `;
   shadow.appendChild(style);
+
+  const errEl = document.createElement("div");
+  errEl.className = "ph-shield-error";
+  errEl.setAttribute("role", "status");
+  errEl.setAttribute("aria-live", "polite");
 
   const btn = document.createElement("div");
   btn.className = "ph-shield";
   btn.title = `Phantom: generate ${field.kind} alias`;
   btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
 
+  function showError(message: string): void {
+    errEl.textContent = message;
+    window.setTimeout(() => {
+      errEl.textContent = "";
+    }, 6000);
+  }
+
   btn.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
+    errEl.textContent = "";
+    btn.setAttribute("aria-busy", "true");
     const payload: BackgroundMessage = {
       type: MESSAGE_GENERATE_ALIAS,
       fieldKind: field.kind,
     };
     void chrome.runtime.sendMessage(payload).then((res: unknown) => {
+      btn.removeAttribute("aria-busy");
       const result = res as
         | { ok: true; alias: { type: string; value: string }; plainValue?: string }
         | { ok: false; error: string }
         | undefined;
-      if (!result?.ok) return;
+      if (!result) {
+        showError("No response from Phantom");
+        return;
+      }
+      if (!result.ok) {
+        showError(result.error);
+        return;
+      }
       const fillValue = result.plainValue ?? result.alias.value;
       field.element.value = fillValue;
-      field.element.dispatchEvent(new Event("input", { bubbles: true }));
+      try {
+        field.element.dispatchEvent(
+          new InputEvent("input", { bubbles: true, inputType: "insertReplacementText" })
+        );
+      } catch {
+        field.element.dispatchEvent(new Event("input", { bubbles: true }));
+      }
       field.element.dispatchEvent(new Event("change", { bubbles: true }));
+      field.element.dispatchEvent(new Event("blur", { bubbles: true }));
     });
   });
 
-  shadow.appendChild(btn);
+  const wrap = document.createElement("div");
+  wrap.className = "ph-shield-wrap";
+  wrap.appendChild(btn);
+  wrap.appendChild(errEl);
+  shadow.appendChild(wrap);
   return host;
 }
 

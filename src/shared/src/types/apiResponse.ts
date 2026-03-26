@@ -23,6 +23,11 @@ export interface ApiErrorBody {
    * (not part of server JSON). Used for consistent client-side error mapping.
    */
   httpStatus?: number;
+  /**
+   * On **503** `phone_provider_unavailable` — same detail as `PhoneProviderStatus.lastError`
+   * (non-secret misconfiguration hint).
+   */
+  lastError?: string | null;
 }
 
 export interface ApiFailure {

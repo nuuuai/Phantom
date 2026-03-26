@@ -11,7 +11,7 @@
 - **`POST /api/aliases/generate`** (phone): validates forward target; returns **503** with `phone_provider_unavailable` if `PHONE_PROVIDER=twilio` but `TWILIO_ACCOUNT_SID` is unset.
 - **`POST /api/aliases/:id/rotate`** (phone): same provision + validation rules.
 - **`PATCH /api/aliases/:id`**: `phoneForwardTo` validated when present.
-- **`GET /api/phone/provider`** (authenticated): public **dashboard** status — no secrets. Response includes **`lastError`** (e.g. missing `TWILIO_ACCOUNT_SID`) for troubleshooting copy on alias detail + generate modal.
+- **`GET /api/phone/provider`** (authenticated): public **dashboard** status — no secrets. Returns **`200`** with **`lastError: null`** when the adapter is ready (**mock** or **twilio** stub with SID). When **`PHONE_PROVIDER=twilio`** but **`TWILIO_ACCOUNT_SID`** is missing, returns **`503`** with **`ok: false`**, **`error.code: "phone_provider_unavailable"`**, **`error.message`**, and **`error.lastError`** (same non-secret hint as `PhoneProviderStatus.lastError`). Never silent success.
 
 ### Shared + dashboard
 

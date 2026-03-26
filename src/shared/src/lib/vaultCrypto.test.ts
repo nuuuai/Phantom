@@ -24,6 +24,14 @@ describe("vaultCrypto", () => {
     expect(key).toBeDefined();
   });
 
+  it("deriveVaultKey is deterministic for the same password and salt (PBKDF2)", async () => {
+    const salt = generateVaultSalt();
+    const a = await exportKeyHex(await deriveVaultKey("same-passphrase", salt));
+    const b = await exportKeyHex(await deriveVaultKey("same-passphrase", salt));
+    expect(a).toBe(b);
+    expect(a).toMatch(/^[0-9a-f]{64}$/);
+  });
+
   it("encrypt then decrypt roundtrips correctly", async () => {
     const salt = generateVaultSalt();
     const key = await deriveVaultKey("roundtrip-password", salt);
