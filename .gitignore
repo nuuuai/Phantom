@@ -106,5 +106,9 @@ docs/_generated/
 # Extension build artifacts
 extension/dist/
 extension/build/
+src/extension/.plasmo/
+src/extension/build/
+.plasmo/
 *.crx
 *.xpi
+*.tsbuildinfo

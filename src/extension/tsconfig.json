@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "types": [
+      "chrome",
+      "node"
+    ],
+    "skipLibCheck": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@phantom/shared": [
+        "../shared/src/index.ts"
+      ]
+    }
+  },
+  "include": [
+    ".plasmo/index.d.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ]
+}

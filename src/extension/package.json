@@ -1,0 +1,39 @@
+{
+  "name": "@phantom/extension",
+  "displayName": "Phantom",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Phantom browser extension — Shield layer",
+  "type": "module",
+  "scripts": {
+    "dev": "plasmo dev",
+    "build": "plasmo build",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@phantom/shared": "*",
+    "plasmo": "^0.90.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "eslint": "^9.18.0",
+    "@types/chrome": "^0.0.304",
+    "@types/node": "^22.10.10",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  },
+  "alias": {
+    "@phantom/shared": "../shared/src/index.ts"
+  },
+  "manifest": {
+    "host_permissions": ["https://*/*", "http://localhost:8787/*"],
+    "permissions": ["storage", "scripting", "tabs"],
+    "action": {
+      "default_title": "Phantom"
+    }
+  }
+}
