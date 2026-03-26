@@ -47,6 +47,8 @@ export const queryKeys = {
     ["email-inbox", accessToken] as const,
   billingStatus: (accessToken: string | null) =>
     ["billing-status", accessToken] as const,
+  phoneProvider: (accessToken: string | null) =>
+    ["phone-provider", accessToken] as const,
   aliasDetail: (accessToken: string | null, id: string | undefined) =>
     ["alias-detail", accessToken, id] as const,
   notifications: (accessToken: string | null) =>

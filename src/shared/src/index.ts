@@ -7,6 +7,8 @@ export type {
   PatchAliasRequest,
 } from "./types/alias.js";
 export type { User } from "./types/user.js";
+export type { PhoneProviderStatus } from "./types/phoneProvider.js";
+export { isValidE164Phone } from "./lib/phoneE164.js";
 export type { AliasInboxItem } from "./types/aliasInbox.js";
 export type {
   AliasTypeUsage,

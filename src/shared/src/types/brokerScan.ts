@@ -52,6 +52,8 @@ export interface BrokerScanSummary {
   pending: number;
   relisted: number;
   dataTypesBreakdown: Record<BrokerDataType, number>;
+  /** Server truth: paid/enterprise can enqueue removal; free tier is scan + DIY links only. */
+  canRequestRemoval: boolean;
 }
 
 export interface BrokerScanStartResponse {

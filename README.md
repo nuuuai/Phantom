@@ -58,6 +58,19 @@ Phantom/
 └── src/                         # Source code (see src/README.md)
 ```
 
+## Recently shipped (Phase 1)
+
+High-level only — full detail lives in [`docs/roadmap/README.md`](docs/roadmap/README.md) and [`docs/roadmap/PHASE_1_FOUNDATION.md`](docs/roadmap/PHASE_1_FOUNDATION.md).
+
+- **CI** — Lint, test, build on push/PR (`.github/workflows/ci.yml`); Postgres-backed **integration tests** for auth, vault conflicts, and **signed Stripe webhooks** when `DATABASE_URL` is real.
+- **Auth** — Optional **RS256** JWT; refresh tokens via **Redis** when `REDIS_URL` is set.
+- **Vault** — E2E encrypted blob sync (`/api/vault/sync`), LWW merge in `@phantom/shared`, extension DEK + IndexedDB.
+- **Brokers** — 150+ catalog seed; scan/removal simulation; **`canRequestRemoval`** on scan summary; tier-gated removal queue.
+- **Billing** — Stripe Checkout + Portal + webhook → **`User.tier`**; dashboard **`/billing`**.
+- **Launch ops** — **`DEPLOYMENT.md`** (env, health probes), **`EXTENSION_STORE_BUILD.md`** (prod zip), **`CHROME_WEB_STORE_CHECKLIST.md`**, **`QA_MANUAL.md`**.
+
+**Agent playbook (sequential runs):** [`docs/roadmap/PHASE_1_AGENT_RUNS.md`](docs/roadmap/PHASE_1_AGENT_RUNS.md).
+
 ## Documentation Index
 
 ### Architecture
@@ -75,6 +88,7 @@ Phantom/
 - [`BROWSER_EXTENSION.md`](docs/features/BROWSER_EXTENSION.md) — Extension architecture and UX
 
 ### Roadmap
+- [`PHASE_1_AGENT_RUNS.md`](docs/roadmap/PHASE_1_AGENT_RUNS.md) — Sequential agent prompts (Runs 1–5) + remaining Phase 1 checklist
 - [`PHASE_1_FOUNDATION.md`](docs/roadmap/PHASE_1_FOUNDATION.md) — Months 1–6: Dashboard + Extension
 - [`PHASE_2_INTELLIGENCE.md`](docs/roadmap/PHASE_2_INTELLIGENCE.md) — Months 6–12: AI + Threat Intel
 - [`PHASE_3_AUTONOMY.md`](docs/roadmap/PHASE_3_AUTONOMY.md) — Months 12–18: Autopilot + Advanced AI

@@ -9,7 +9,12 @@ import type { BrokerScanStatus } from "@prisma/client";
 import { isPaidTier } from "../lib/userTierPaid.js";
 import { prisma } from "../lib/prisma.js";
 import { advanceRemovalSimulation } from "../lib/brokerScanAdvance.js";
-import { delayMs, mapWithConcurrency } from "../lib/brokerScanPipeline.js";
+import {
+  delayMs,
+  getBrokerScanWorkerDelayMs,
+  mapWithConcurrency,
+  randomDelayInRange,
+} from "../lib/brokerScanPipeline.js";
 import { computeBrokerScanSummaryFromRows } from "../lib/computeBrokerScanSummary.js";
 import { mapBroker, mapBrokerScanResult } from "../lib/mapBrokerScan.js";
 import {
@@ -87,11 +92,12 @@ brokerScanRouter.post("/start", async (req, res) => {
     },
   });
 
+  const delayRange = getBrokerScanWorkerDelayMs();
   const createRows = await mapWithConcurrency(
     brokers,
     SCAN_CONCURRENCY,
     async (b, i) => {
-      await delayMs(5 + Math.floor(Math.random() * 20));
+      await delayMs(randomDelayInRange(delayRange.min, delayRange.max));
       const isFound = foundIndices.has(i);
       const sim = simulateOneBroker(b, userId, isFound);
       return {
@@ -141,12 +147,18 @@ brokerScanRouter.get("/summary", async (req, res) => {
 
   await advanceRemovalSimulation(userId);
 
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const canRequestRemoval = user ? isPaidTier(user.tier) : false;
+
   const latest = await prisma.brokerScanRun.findFirst({
     where: { userId },
     orderBy: { startedAt: "desc" },
   });
   if (!latest) {
-    const empty = computeBrokerScanSummaryFromRows([]);
+    const empty: BrokerScanSummary = {
+      ...computeBrokerScanSummaryFromRows([]),
+      canRequestRemoval,
+    };
     const response: ApiResponse<BrokerScanSummary> = { ok: true, data: empty };
     res.json(response);
     return;
@@ -155,7 +167,10 @@ brokerScanRouter.get("/summary", async (req, res) => {
   const rows = await prisma.brokerScanResult.findMany({
     where: { userId, brokerScanRunId: latest.id },
   });
-  const summary = computeBrokerScanSummaryFromRows(rows);
+  const summary: BrokerScanSummary = {
+    ...computeBrokerScanSummaryFromRows(rows),
+    canRequestRemoval,
+  };
   const response: ApiResponse<BrokerScanSummary> = { ok: true, data: summary };
   res.json(response);
 });

@@ -27,7 +27,6 @@ function tabToStatus(tab: TabId): string | undefined {
 
 export function BrokersPage() {
   const accessToken = useSessionStore((s) => s.accessToken);
-  const tier = useSessionStore((s) => s.tier);
   const queryClient = useQueryClient();
 
   const [tab, setTab] = useState<TabId>("all");
@@ -289,7 +288,6 @@ export function BrokersPage() {
             onTab={setTab}
             searchQ={searchQ}
             onSearchQ={setSearchQ}
-            tier={tier}
             onRemoveAll={() => removeAllMutation.mutate()}
             onRequestRemoval={(id) => requestRemovalMutation.mutate(id)}
             onUpgrade={() => setUpgradeOpen(true)}

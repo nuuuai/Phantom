@@ -15,6 +15,7 @@ import { prisma } from "../lib/prisma.js";
 import { generateValueForType } from "../lib/aliasGenerators.js";
 import { assertCanCreateAlias } from "../lib/aliasTierLimits.js";
 import { provisionPhoneAlias } from "../lib/phone/provisionPhone.js";
+import { parsePhoneForwardTo } from "../lib/phone/validateForward.js";
 import { mapAliasToDto } from "../lib/mapAlias.js";
 
 export const aliasesRouter = Router();
@@ -156,9 +157,23 @@ aliasesRouter.post("/generate", async (req, res) => {
     value = "[encrypted]";
   } else if (type === "phone") {
     const raw =
-      typeof body.phoneForwardTo === "string" ? body.phoneForwardTo.trim() : "";
-    const forward = raw.length > 0 ? raw : null;
-    const p = provisionPhoneAlias(forward);
+      typeof body.phoneForwardTo === "string" ? body.phoneForwardTo : undefined;
+    const parsed = parsePhoneForwardTo(raw);
+    if (!parsed.ok) {
+      res.status(400).json({
+        ok: false,
+        error: { code: "validation_error", message: parsed.message },
+      });
+      return;
+    }
+    const p = provisionPhoneAlias(parsed.value);
+    if (!p.ok) {
+      res.status(503).json({
+        ok: false,
+        error: { code: p.code, message: p.message },
+      });
+      return;
+    }
     value = p.value;
     phoneProvider = p.provider;
     phoneProviderSid = p.providerSid;
@@ -285,11 +300,17 @@ aliasesRouter.patch("/:id", async (req, res) => {
       });
       return;
     }
-    const t =
-      typeof body.phoneForwardTo === "string"
-        ? body.phoneForwardTo.trim()
-        : "";
-    data.phoneForwardTo = t.length > 0 ? t : null;
+    const raw =
+      typeof body.phoneForwardTo === "string" ? body.phoneForwardTo : "";
+    const parsed = parsePhoneForwardTo(raw);
+    if (!parsed.ok) {
+      res.status(400).json({
+        ok: false,
+        error: { code: "validation_error", message: parsed.message },
+      });
+      return;
+    }
+    data.phoneForwardTo = parsed.value;
   }
 
   const row = await prisma.alias.update({
@@ -376,7 +397,22 @@ aliasesRouter.post("/:id/rotate", async (req, res) => {
   if (clientEncrypted && existing.type === "password") {
     value = "[encrypted]";
   } else if (existing.type === "phone") {
-    const p = provisionPhoneAlias(existing.phoneForwardTo);
+    const parsed = parsePhoneForwardTo(existing.phoneForwardTo);
+    if (!parsed.ok) {
+      res.status(400).json({
+        ok: false,
+        error: { code: "validation_error", message: parsed.message },
+      });
+      return;
+    }
+    const p = provisionPhoneAlias(parsed.value);
+    if (!p.ok) {
+      res.status(503).json({
+        ok: false,
+        error: { code: p.code, message: p.message },
+      });
+      return;
+    }
     value = p.value;
     phoneProvider = p.provider;
     phoneProviderSid = p.providerSid;

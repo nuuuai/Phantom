@@ -1,4 +1,8 @@
 import { prisma } from "./prisma.js";
+import {
+  confirmationProbabilityForBroker,
+  relistProbabilityForBroker,
+} from "./brokerRemovalPipeline.js";
 
 function chance(p: number): boolean {
   const buf = new Uint32Array(1);
@@ -7,15 +11,21 @@ function chance(p: number): boolean {
 }
 
 /**
- * Phase 1 demo: occasionally confirm removals or flag re-listing on read paths.
+ * Phase 1: occasionally confirm removals or flag re-listing on read paths.
+ * Probabilities derive from broker removalMethod and avgRemovalDays (see brokerRemovalPipeline).
  * Never logs PII.
  */
 export async function advanceRemovalSimulation(userId: string): Promise<void> {
   const submitted = await prisma.brokerScanResult.findMany({
     where: { userId, status: "removal_submitted" },
+    include: { broker: true },
   });
   for (const row of submitted) {
-    if (chance(0.14)) {
+    const p = confirmationProbabilityForBroker(
+      row.broker.removalMethod,
+      row.broker.avgRemovalDays
+    );
+    if (chance(p)) {
       await prisma.brokerScanResult.update({
         where: { id: row.id },
         data: {
@@ -28,10 +38,12 @@ export async function advanceRemovalSimulation(userId: string): Promise<void> {
 
   const confirmed = await prisma.brokerScanResult.findMany({
     where: { userId, status: "removal_confirmed" },
+    include: { broker: true },
     take: 80,
   });
   for (const row of confirmed) {
-    if (chance(0.018)) {
+    const p = relistProbabilityForBroker(row.broker.avgRemovalDays);
+    if (chance(p)) {
       await prisma.brokerScanResult.update({
         where: { id: row.id },
         data: {

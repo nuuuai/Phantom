@@ -10,6 +10,7 @@ import {
   type GenerateAliasRequest,
   type NotificationPrefItem,
   type PatchAliasRequest,
+  type PhoneProviderStatus,
   type PhantomNotification,
   type User,
   type UserAccountSnapshot,
@@ -206,6 +207,15 @@ export const phantomApi = {
         accessToken,
         {}
       );
+      return parseApiResponseJson(res);
+    },
+  },
+
+  phone: {
+    provider: async (
+      accessToken: Token
+    ): Promise<ApiResponse<PhoneProviderStatus>> => {
+      const res = await fetchWithRefresh("/api/phone/provider", accessToken, {});
       return parseApiResponseJson(res);
     },
   },

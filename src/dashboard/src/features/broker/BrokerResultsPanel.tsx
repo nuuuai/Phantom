@@ -7,7 +7,6 @@ import {
   type BrokerDataType,
   type BrokerScanResult,
   type BrokerScanSummary,
-  type User,
 } from "@phantom/shared";
 import { brokerCategoryBadgeClass, brokerCategoryLabel } from "./brokerCategoryStyle.js";
 import { dataTypeLabel, dataTypePillClass } from "./dataTypePillClass.js";
@@ -37,7 +36,6 @@ interface BrokerResultsPanelProps {
   onTab: (t: TabId) => void;
   searchQ: string;
   onSearchQ: (q: string) => void;
-  tier: User["tier"];
   onRemoveAll: () => void;
   onRequestRemoval: (id: string) => void;
   onUpgrade: () => void;
@@ -52,7 +50,6 @@ export function BrokerResultsPanel({
   onTab,
   searchQ,
   onSearchQ,
-  tier,
   onRemoveAll,
   onRequestRemoval,
   onUpgrade,
@@ -63,7 +60,7 @@ export function BrokerResultsPanel({
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  const isPaid = tier === "paid" || tier === "enterprise";
+  const canRequestRemoval = summary.canRequestRemoval;
 
   const sorted = useMemo(() => {
     const copy = [...items];
@@ -127,7 +124,7 @@ export function BrokerResultsPanel({
         </div>
 
         <div className="flex w-full max-w-sm flex-col gap-3">
-          {isPaid ? (
+          {canRequestRemoval ? (
             <button
               type="button"
               disabled={removeAllBusy || summary.found === 0}
@@ -296,7 +293,7 @@ export function BrokerResultsPanel({
                     <td className="px-4 py-3 align-top text-right">
                       <RemovalAction
                         row={row}
-                        isPaid={isPaid}
+                        canRequestRemoval={canRequestRemoval}
                         busy={removalBusyId === row.id}
                         onPaid={() => onRequestRemoval(row.id)}
                         onUpgrade={onUpgrade}
@@ -382,13 +379,13 @@ export function BrokerResultsPanel({
 
 function RemovalAction({
   row,
-  isPaid,
+  canRequestRemoval,
   busy,
   onPaid,
   onUpgrade,
 }: {
   row: BrokerScanResult;
-  isPaid: boolean;
+  canRequestRemoval: boolean;
   busy: boolean;
   onPaid: () => void;
   onUpgrade: () => void;
@@ -409,7 +406,7 @@ function RemovalAction({
     );
   }
   if (row.status === "re_listed") {
-    return isPaid ? (
+    return canRequestRemoval ? (
       <button
         type="button"
         disabled={busy}
@@ -429,7 +426,7 @@ function RemovalAction({
     );
   }
   if (row.status === "found") {
-    return isPaid ? (
+    return canRequestRemoval ? (
       <button
         type="button"
         disabled={busy}

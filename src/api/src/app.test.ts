@@ -5,6 +5,14 @@ import { createApp } from "./app.js";
 describe("createApp", () => {
   const app = createApp();
 
+  it("GET /health/live returns 200 JSON", async () => {
+    const res = await request(app).get("/health/live").expect(200);
+    expect(res.body).toMatchObject({
+      status: "ok",
+      service: "phantom-api",
+    });
+  });
+
   it("GET /health reports database status (200 connected or 503 disconnected)", async () => {
     const res = await request(app).get("/health");
     expect([200, 503]).toContain(res.status);

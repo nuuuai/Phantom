@@ -6,10 +6,10 @@
 |---------|-------------------------------------|
 | Month 1–2 infrastructure | **~54%** |
 | Month 2–3 extension + dashboard | **~64%** |
-| Month 3–4 phone + brokers | **~52%** |
+| Month 3–4 phone + brokers | **~58%** |
 | Month 4–5 removal + notifications | **~38%** |
-| Month 5–6 launch + QA | **~32%** |
-| **Phase 1 (all deliverables)** | **~51%** |
+| Month 5–6 launch + QA | **~48%** |
+| **Phase 1 (all deliverables)** | **~55%** |
 
 ## Objective
 
@@ -19,8 +19,8 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 | Platform | Status | Progress |
 |----------|--------|----------|
-| Chrome Extension | **BUILD** — primary user interface | **~64%** |
-| Web Dashboard | **BUILD** — command center | **~65%** |
+| Chrome Extension | **BUILD** — primary user interface | **~68%** |
+| Web Dashboard | **BUILD** — command center | **~66%** |
 | Firefox/Safari Extension | Not started | **0%** |
 | Mobile Apps | Not started | **0%** |
 
@@ -70,7 +70,7 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 - [ ] **Web dashboard v1** — **63%**
   - Login / account management — **50%** (dev login path; **`PATCH /api/user/me`** for `forwardToEmail`)
   - Alias list view (all generated aliases with metadata) — **60%**
-  - Alias detail view (service, creation date, health status, forwarding rules) — **40%**
+  - Alias detail view (service, creation date, health status, forwarding rules) — **45%** (**phone:** adapter banner + edit forward)
   - Create alias manually (not just from extension) — **55%**
   - Delete / disable alias — **50%**
   - Basic settings (forwarding preferences, notification preferences) — **62%** (account + quotas + **forward-to email**; notification prefs)
@@ -78,13 +78,13 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 ### Month 3–4: Phone Aliases + Data Broker Scanning
 
-- [ ] **Phone alias engine** — **55%**
-  - VoIP number provisioning (temporary bridge until carrier partnership Phase 2) — **35%** (`provisionPhoneAlias`: mock + Twilio **stub** SID when `PHONE_PROVIDER=twilio` + `TWILIO_ACCOUNT_SID`)
-  - Phone alias generation API — **55%** (persists `phoneProvider`, `phoneProviderSid`, optional `phoneForwardTo`; PATCH `phoneForwardTo`)
-  - Call forwarding to user's real number — **15%** (forward target stored; PSTN not dialed)
+- [ ] **Phone alias engine** — **62%**
+  - VoIP number provisioning (temporary bridge until carrier partnership Phase 2) — **48%** (`phoneAdapter` + `phoneConfig`; mock vs **Twilio stub**; **503** if `PHONE_PROVIDER=twilio` without `TWILIO_ACCOUNT_SID`)
+  - Phone alias generation API — **62%** (E.164 validation on `phoneForwardTo`; generate / rotate / PATCH; persists `phoneProvider`, `phoneProviderSid`, `phoneForwardTo`)
+  - Call forwarding to user's real number — **22%** (forward target stored + **dashboard Save**; PSTN not dialed)
   - SMS forwarding to dashboard inbox — **0%**
   - Basic call log in dashboard — **0%**
-  - Integration boundaries / env — **75%** (`PHONE_INTEGRATION.md` updated; dashboard alias detail **Phone routing**)
+  - Integration boundaries / env — **88%** (`GET /api/phone/provider`, `PHONE_INTEGRATION.md`, `.env.example`; generate modal + alias detail **status / forward** UX)
 
 - [ ] **Data broker scanner** — **64%**
   - Broker registry database (initial 150+ brokers) — **76%** (50 real + 100 synthetic `.example` rows = 150 seeded; **opt-out URLs + DIY notes** on `DataBroker`)
@@ -106,12 +106,12 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 ### Month 4–5: Data Broker Removal + Notifications
 
-- [ ] **Data broker removal engine** — **42%**
+- [ ] **Data broker removal engine** — **48%**
   - Automated opt-out submission (API brokers) — **0%**
   - Browser automation for manual-submission brokers (Playwright workers) — **0%**
-  - Submission tracking: { submitted, pending, confirmed, failed } — **45%** (simulated states)
-  - Verification re-scan 7–30 days after submission — **25%** (simulated advancement)
-  - Dashboard: removal status per broker — **48%** (**DIY** opt-out links + notes from catalog; Pro queue unchanged)
+  - Submission tracking: { submitted, pending, confirmed, failed } — **50%** (simulated states; **`advanceRemovalSimulation`** uses broker `removalMethod` + `avgRemovalDays`)
+  - Verification re-scan 7–30 days after submission — **32%** (read-path simulation ticks)
+  - Dashboard: removal status per broker — **52%** (**DIY** opt-out links + notes; Pro queue gated via API summary)
 
 - [ ] **Notification system** — **45%**
   - Desktop notifications (browser notification API) — **28%** (Settings → enable; delivery wiring TBD)
@@ -122,19 +122,19 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 ### Month 5–6: Polish + Free Tier Launch
 
-- [ ] **Free tier** — **28%**
+- [ ] **Free tier** — **35%**
   - Exposure scan (unlimited) — **50%** (scan exists; limits not enforced)
   - 3 email aliases — **70%** (API-enforced caps on generate + `/api/user/me` usage)
   - 1 phone alias — **70%**
   - Password manager (up to 25 passwords) — **70%** (password-type alias cap)
   - Community threat feed (read-only) — **0%**
-  - No data broker removal (upsell to paid) — **42%** (tier gate for **queue**; DIY links available)
+  - No data broker removal (upsell to paid) — **48%** (tier gate for **queue** + **`canRequestRemoval`** on summary; DIY links available)
 
-- [ ] **Paid tier ($9.99/mo)** — **45%**
+- [ ] **Paid tier ($9.99/mo)** — **55%**
   - Unlimited aliases (email + phone) — **40%** (tier enforced in API; upgrade path)
   - Data broker removal (150+ brokers) — **30%** (simulated queue + catalog DIY URLs)
   - Unlimited password storage — **0%**
-  - Billing / subscription surface — **55%** (Stripe **`/api/billing/checkout-session`**, **`/portal-session`**, **`GET /status`**; **`POST /api/webhooks/stripe`**; `User` Stripe IDs + `subscriptionStatus`; dashboard **`/billing`**)
+  - Billing / subscription surface — **62%** (Stripe **`/api/billing/checkout-session`**, **`/portal-session`**, **`GET /status`**; **`POST /api/webhooks/stripe`** updates **`User.tier`** + Stripe IDs + `subscriptionStatus`; dashboard **`/billing`**; **integration tests** for signed webhooks in CI)
   - Dark web monitoring (basic) — **0%**
   - Priority support — **0%**
 
@@ -144,10 +144,10 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - Import existing passwords — **0%**
   - Generate aliases for top services (Gmail, Amazon, Facebook, etc.) — **0%**
 
-- [ ] **Testing and QA** — **40%**
-  - Unit tests for: vault encryption, alias generation, API auth — **42%** (+ **vault sync merge**, **phone provision**, **paid tier** helper, webhook smoke tests)
-  - Integration tests for: extension ↔ API, broker scanning — **0%**
-  - E2E tests with Playwright (extension + dashboard flows) — **0%**
+- [ ] **Testing and QA** — **52%**
+  - Unit tests for: vault encryption, alias generation, API auth — **48%** (+ **vault sync merge**, **phone** `phoneConfig` / `validateForward` / `provisionPhone`, **paid tier** helper, webhook smoke tests, **broker** `computeBrokerScanSummary`, **`brokerRemovalPipeline`**, scan **delay env** parsing)
+  - Integration tests for: API auth + vault + **Stripe webhooks (signed)** — **38%** (`auth.integration.test.ts`, `launch.integration.test.ts` when Postgres available; **CI** runs against service DB)
+  - E2E tests with Playwright (extension + dashboard flows) — **0%** (deferred; manual list in **`docs/roadmap/QA_MANUAL.md`**)
   - Security audit of encryption implementation — **0%**
   - Load testing for alias generation and broker scanning — **0%**
 
@@ -158,11 +158,11 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 | **Auth** | SRP; Argon2id vault KDF (PBKDF2 today). |
 | **Vault** | Per-user DB isolation; optional **two-way** alias↔blob reconciliation (today: merge blob with API alias list + LWW). |
 | **Email** | Live MX + worker calling webhook; outbound forward to `forwardToEmail`; domain purchase/DNS automation. |
-| **Phone** | Real VoIP/SMS provider (see `PHONE_INTEGRATION.md`). |
-| **Billing** | Production Stripe keys + live webhook URL; test cards in staging. |
+| **Phone** | Twilio Number API + inbound webhooks; SMS inbox; real PSTN forward (see `PHONE_INTEGRATION.md`). |
+| **Billing** | **Live** Stripe keys + **live** webhook URL on public HTTPS API; Dashboard Stripe settings. |
 | **Brokers** | Real removal automation / Playwright workers; verify catalog opt-out URLs periodically. |
-| **QA** | E2E (Playwright); extension↔API integration suite; load / security audit. |
-| **Store / legal** | CWS submission (`CHROME_WEB_STORE_CHECKLIST.md`); ToS/privacy legal review. |
+| **QA** | Playwright E2E not wired; **manual** pre-launch list in `QA_MANUAL.md`; load / security audit external. |
+| **Store / legal** | CWS account + submission (`CHROME_WEB_STORE_CHECKLIST.md`); hosted privacy policy; ToS legal review. |
 
 ## Success Metrics (End of Phase 1)
 
@@ -193,7 +193,7 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 | Dependency | Progress |
 |------------|----------|
 | Custom email domains registered and configured | **0%** (DNS/MX checklist + webhook contract in `docs/roadmap/EMAIL_INBOUND.md`) |
-| Chrome Web Store listing + review | **28%** (checklist + `EXTENSION_STORE_BUILD.md` + `DEPLOYMENT.md`) |
+| Chrome Web Store listing + review | **45%** (checklists + **`QA_MANUAL.md`** + prod **`chrome-mv3-prod`** zip path) |
 | VoIP provider partnership signed | **0%** |
 | AWS infrastructure provisioned | **0%** |
 | Chrome Web Store developer account | **0%** |

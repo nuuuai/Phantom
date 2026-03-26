@@ -18,3 +18,8 @@ export function stripeConfigured(): boolean {
     Boolean(process.env.STRIPE_PRICE_PAID_MONTHLY?.trim())
   );
 }
+
+/** Clears cached Stripe client (for tests after env changes). */
+export function resetStripeClientForTests(): void {
+  client = undefined;
+}

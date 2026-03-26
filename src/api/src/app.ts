@@ -21,6 +21,7 @@ import { userRouter } from "./routes/user.js";
 import { vaultRouter } from "./routes/vault.js";
 import { stripeWebhookRouter } from "./routes/stripeWebhook.js";
 import { webhookEmailInboundRouter } from "./routes/webhookEmailInbound.js";
+import { phoneRouter } from "./routes/phone.js";
 
 const globalRateLimiter = createGlobalRateLimiter();
 
@@ -42,6 +43,12 @@ export function createApp() {
   app.use(jsonBody);
   app.use(globalRateLimiter);
 
+  /** Liveness: process up (no DB). Use for orchestrator restarts. */
+  app.get("/health/live", (_req, res) => {
+    res.status(200).json({ status: "ok", service: "phantom-api" });
+  });
+
+  /** Readiness: DB (+ Redis status when configured). Use for traffic routing. */
   app.get("/health", async (_req, res) => {
     const redisConfigured = Boolean(
       process.env.REDIS_URL && process.env.REDIS_URL.length > 0
@@ -75,6 +82,7 @@ export function createApp() {
   app.use("/api/user", authenticateJwt, userRouter);
   app.use("/api/email-inbox", authenticateJwt, emailInboxRouter);
   app.use("/api/aliases", authenticateJwt, aliasesRouter);
+  app.use("/api/phone", authenticateJwt, phoneRouter);
   app.use("/api/broker-scan", authenticateJwt, brokerScanRouter);
   app.use("/api/notifications", authenticateJwt, notificationsRouter);
   app.use("/api/dashboard", authenticateJwt, dashboardRouter);

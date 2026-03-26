@@ -13,11 +13,11 @@
 | M2: Vault Operational    | Month 2     | **48%**  | Client-side encryption working. Extension ↔ dashboard vault sync. Vault page with card grid, strength meter, generate modal, search/filter. |
 | M3: Extension MVP        | Month 2     | **58%**  | Form detection (heuristic + label parsing), alias generation, autofill via Shadow DOM shield icon, working on top 20 sites.                 |
 | M4: Dashboard MVP        | Month 3     | **62%**  | Login, alias list, alias detail, create/delete alias, notification center (bell + dropdown + mark read).                                    |
-| M5: Phone Aliases        | Month 3     | **48%**  | VoIP numbers provisioned. Call/SMS forwarding working.                                                                                      |
-| M6: Broker Scanner       | Month 4     | **60%**  | 150+ brokers searchable. Scan results display in dashboard.                                                                                 |
-| M7: Broker Removal       | Month 5     | **42%**  | Automated removal for 50+ brokers. Manual guidance for rest.                                                                                |
-| M8: Free Tier Launch     | Month 6     | **28%**  | Public launch. Extension in Chrome Web Store. Marketing begins.                                                                             |
-| M9: Paid Tier Launch     | Month 6     | **42%**  | Payment integration. Paid features gated. Subscription management.                                                                          |
+| M5: Phone Aliases        | Month 3     | **55%**  | VoIP numbers provisioned. Call/SMS forwarding working.                                                                                      |
+| M6: Broker Scanner       | Month 4     | **68%**  | 150+ brokers searchable. Scan results display in dashboard. Rate-limited parallel workers; summary exposes removal eligibility (`canRequestRemoval`). |
+| M7: Broker Removal       | Month 5     | **48%**  | Automated removal for 50+ brokers. Manual guidance for rest. Simulated advancement uses broker `removalMethod` + `avgRemovalDays`; tier-gated queue + tests. |
+| M8: Free Tier Launch     | Month 6     | **48%**  | Public launch path: **`DEPLOYMENT.md`** (env, **`/health/live`** + **`/health`**, CI), **`EXTENSION_STORE_BUILD.md`** (prod zip), **`CHROME_WEB_STORE_CHECKLIST.md`**. Extension store listing + marketing (external). |
+| M9: Paid Tier Launch     | Month 6     | **55%**  | Stripe Checkout + Portal + **`POST /api/webhooks/stripe`** → **`User.tier`**. Integration tests in CI; manual billing QA in **`QA_MANUAL.md`**. Live Stripe keys + webhook URL remain an external cutover.          |
 
 
 ### Phase 2 (Months 6–12)

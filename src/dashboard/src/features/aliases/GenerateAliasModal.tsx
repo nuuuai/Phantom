@@ -1,8 +1,14 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useCallback, useState } from "react";
 import type { Alias, AliasCategory, AliasType } from "@phantom/shared";
-import { ALIAS_CATEGORIES, encryptVaultValue, generatePassword, importKeyHex } from "@phantom/shared";
+import {
+  ALIAS_CATEGORIES,
+  encryptVaultValue,
+  generatePassword,
+  importKeyHex,
+  isValidE164Phone,
+} from "@phantom/shared";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import {
   aliasDetailAll,
@@ -16,7 +22,11 @@ import { useSessionStore } from "@/stores/useSessionStore.js";
 
 const TYPES: { id: AliasType; label: string; hint: string }[] = [
   { id: "email", label: "Email", hint: "Phantom.id address" },
-  { id: "phone", label: "Phone", hint: "+1-555 placeholder" },
+  {
+    id: "phone",
+    label: "Phone",
+    hint: "Dev number + optional E.164 forward",
+  },
   { id: "username", label: "Username", hint: "Contextual handle" },
   { id: "password", label: "Password", hint: "20-char random" },
 ];
@@ -33,7 +43,18 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [type, setType] = useState<AliasType | null>(null);
   const [category, setCategory] = useState<AliasCategory | null>(null);
+  const [phoneForward, setPhoneForward] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  const phoneProviderQuery = useQuery({
+    queryKey: queryKeys.phoneProvider(accessToken),
+    queryFn: async () => {
+      const res = await phantomApi.phone.provider(accessToken);
+      if (!res.ok) throw new Error(res.error.message);
+      return res.data;
+    },
+    enabled: Boolean(open && accessToken && step === 2 && type === "phone"),
+  });
 
   const generateMutation = useMutation({
     mutationFn: async () => {
@@ -50,6 +71,9 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
         type,
         category,
         encryptedValue,
+        ...(type === "phone" && phoneForward.trim().length > 0
+          ? { phoneForwardTo: phoneForward.trim() }
+          : {}),
       });
       if (!res.ok) {
         throw new Error(res.error.message);
@@ -72,6 +96,7 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
       setStep(1);
       setType(null);
       setCategory(null);
+      setPhoneForward("");
       setError(null);
     },
     onError: (e: Error) => {
@@ -85,6 +110,7 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
       setStep(1);
       setType(null);
       setCategory(null);
+      setPhoneForward("");
       setError(null);
     }
   }, [generateMutation.isPending, onClose]);
@@ -176,12 +202,67 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
                 </button>
               ))}
             </div>
+
+            {type === "phone" ? (
+              <div className="mt-5 space-y-3">
+                {phoneProviderQuery.isPending ? (
+                  <p className="font-sans text-[11px] text-ph-text-muted">
+                    Checking phone provider…
+                  </p>
+                ) : phoneProviderQuery.isError ? (
+                  <p className="font-sans text-[11px] text-ph-danger">
+                    Could not load phone provider status.
+                  </p>
+                ) : phoneProviderQuery.data ? (
+                  <div
+                    className={[
+                      "rounded-md border px-3 py-2 font-sans text-[11px] leading-snug",
+                      phoneProviderQuery.data.ready
+                        ? "border-ph-border bg-ph-bg text-ph-text-tertiary"
+                        : "border-ph-danger/50 bg-ph-danger/5 text-ph-danger",
+                    ].join(" ")}
+                  >
+                    {phoneProviderQuery.data.message}
+                  </div>
+                ) : null}
+
+                <div>
+                  <label
+                    htmlFor="phone-forward-gen"
+                    className="font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-ph-text-muted"
+                  >
+                    Forward to (optional)
+                  </label>
+                  <input
+                    id="phone-forward-gen"
+                    type="tel"
+                    autoComplete="tel"
+                    placeholder="+15551234567"
+                    value={phoneForward}
+                    onChange={(e) => setPhoneForward(e.target.value)}
+                    className="mt-1.5 w-full rounded-md border border-ph-border bg-ph-bg px-3 py-2 font-mono text-xs text-ph-text-primary placeholder:text-ph-text-muted focus:border-ph-accent-border focus:outline-none"
+                  />
+                  <p className="mt-1 font-sans text-[10px] text-ph-text-muted">
+                    E.164 only if set. Stored for future PSTN routing; not dialed in
+                    Phase 1.
+                  </p>
+                  {phoneForward.trim().length > 0 &&
+                  !isValidE164Phone(phoneForward.trim()) ? (
+                    <p className="mt-1 font-sans text-[11px] text-ph-danger">
+                      Use E.164 format (e.g. +15551234567).
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+
             <div className="mt-6 flex justify-between gap-3">
               <button
                 type="button"
                 onClick={() => {
                   setStep(1);
                   setType(null);
+                  setPhoneForward("");
                 }}
                 className="rounded-md border border-ph-border bg-ph-surface px-4 py-2 font-sans text-xs text-ph-text-secondary"
               >
@@ -189,7 +270,18 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
               </button>
               <button
                 type="button"
-                disabled={!category || !type || generateMutation.isPending}
+                disabled={
+                  !category ||
+                  !type ||
+                  generateMutation.isPending ||
+                  (type === "phone" &&
+                    phoneForward.trim().length > 0 &&
+                    !isValidE164Phone(phoneForward.trim())) ||
+                  (type === "phone" &&
+                    (phoneProviderQuery.isPending ||
+                      phoneProviderQuery.isError ||
+                      phoneProviderQuery.data?.ready === false))
+                }
                 onClick={() => generateMutation.mutate()}
                 className="rounded-md border border-ph-accent-border bg-[#6C3AED15] px-4 py-2 font-sans text-xs font-medium text-ph-accent-light disabled:opacity-40"
               >

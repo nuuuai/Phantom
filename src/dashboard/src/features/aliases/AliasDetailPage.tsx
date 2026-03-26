@@ -4,6 +4,7 @@ import {
   encryptVaultValue,
   generatePassword,
   importKeyHex,
+  isValidE164Phone,
 } from "@phantom/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -60,6 +61,7 @@ export function AliasDetailPage() {
   const qc = useQueryClient();
   const [revealed, setRevealed] = useState(false);
   const [decryptedPlain, setDecryptedPlain] = useState<string | null>(null);
+  const [forwardDraft, setForwardDraft] = useState("");
   const { copiedId, setCopiedId } = useCopiedFeedback();
 
   const aliasQuery = useQuery({
@@ -73,6 +75,22 @@ export function AliasDetailPage() {
   });
 
   const alias = aliasQuery.data;
+
+  const phoneProviderQuery = useQuery({
+    queryKey: queryKeys.phoneProvider(accessToken),
+    queryFn: async () => {
+      const res = await phantomApi.phone.provider(accessToken);
+      if (!res.ok) throw new Error(res.error.message);
+      return res.data;
+    },
+    enabled: Boolean(accessToken && alias?.type === "phone"),
+  });
+
+  useEffect(() => {
+    if (alias?.type === "phone") {
+      setForwardDraft(alias.phoneForwardTo ?? "");
+    }
+  }, [alias?.id, alias?.type, alias?.phoneForwardTo]);
 
   useEffect(() => {
     if (!alias?.encryptedValue || !vaultKeyHex) {
@@ -117,6 +135,26 @@ export function AliasDetailPage() {
       });
       void qc.invalidateQueries({ queryKey: queryKeys.userMe(accessToken) });
       void navigate(`/aliases/${data.alias.id}`, { replace: true });
+    },
+  });
+
+  const patchForwardMutation = useMutation({
+    mutationFn: async () => {
+      const trimmed = forwardDraft.trim();
+      if (trimmed.length > 0 && !isValidE164Phone(trimmed)) {
+        throw new Error("Forward target must be E.164 (e.g. +15551234567) or empty.");
+      }
+      const res = await phantomApi.aliases.patch(accessToken, id!, {
+        phoneForwardTo: trimmed.length > 0 ? trimmed : null,
+      });
+      if (!res.ok) throw new Error(res.error.message);
+      return res.data.alias;
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({
+        queryKey: queryKeys.aliasDetail(accessToken, id),
+      });
+      void qc.invalidateQueries({ queryKey: aliasesAll });
     },
   });
 
@@ -243,14 +281,35 @@ export function AliasDetailPage() {
             <div className="mb-2 font-mono text-[10px] uppercase tracking-wider text-ph-text-muted">
               Phone routing
             </div>
+
+            {phoneProviderQuery.isPending ? (
+              <p className="mb-3 font-sans text-[11px] text-ph-text-muted">
+                Loading provider status…
+              </p>
+            ) : phoneProviderQuery.isError ? (
+              <p className="mb-3 font-sans text-[11px] text-ph-danger">
+                Could not load phone provider status.
+              </p>
+            ) : phoneProviderQuery.data ? (
+              <div
+                className={[
+                  "mb-4 rounded-md border px-3 py-2 font-sans text-[11px] leading-snug",
+                  phoneProviderQuery.data.ready
+                    ? "border-ph-border bg-ph-bg text-ph-text-tertiary"
+                    : "border-ph-danger/50 bg-ph-danger/5 text-ph-danger",
+                ].join(" ")}
+              >
+                <span className="font-mono text-[10px] uppercase tracking-wide text-ph-text-muted">
+                  Adapter · {phoneProviderQuery.data.provisioningMode}
+                </span>
+                <p className="mt-1">{phoneProviderQuery.data.message}</p>
+              </div>
+            ) : null}
+
             <div className="grid gap-3 sm:grid-cols-2">
               <InfoBlock
                 label="Provider"
                 value={alias.phoneProvider ?? "—"}
-              />
-              <InfoBlock
-                label="Forward to"
-                value={alias.phoneForwardTo ?? "—"}
               />
               <InfoBlock
                 label="Provider SID"
@@ -258,10 +317,51 @@ export function AliasDetailPage() {
                 mono
               />
             </div>
-            <p className="mt-3 font-sans text-[11px] text-ph-text-tertiary">
-              Live PSTN/SMS requires a configured provider (see
-              docs/roadmap/PHONE_INTEGRATION.md). Mock mode is for development.
-            </p>
+
+            <div className="mt-4">
+              <div className="font-mono text-[10px] uppercase tracking-wider text-ph-text-muted">
+                Forward to (E.164)
+              </div>
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+                <input
+                  type="tel"
+                  autoComplete="tel"
+                  placeholder="+15551234567"
+                  value={forwardDraft}
+                  onChange={(e) => setForwardDraft(e.target.value)}
+                  disabled={!alias.isActive || patchForwardMutation.isPending}
+                  className="w-full max-w-sm rounded-md border border-ph-border bg-ph-bg px-3 py-2 font-mono text-xs text-ph-text-primary placeholder:text-ph-text-muted focus:border-ph-accent-border focus:outline-none disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  disabled={
+                    !alias.isActive ||
+                    patchForwardMutation.isPending ||
+                    (forwardDraft.trim().length > 0 &&
+                      !isValidE164Phone(forwardDraft.trim())) ||
+                    forwardDraft.trim() === (alias.phoneForwardTo ?? "").trim()
+                  }
+                  onClick={() => patchForwardMutation.mutate()}
+                  className="shrink-0 rounded-md border border-ph-accent-border bg-[#6C3AED15] px-3 py-2 font-sans text-[11px] font-medium text-ph-accent-light disabled:opacity-40"
+                >
+                  {patchForwardMutation.isPending ? "Saving…" : "Save forward"}
+                </button>
+              </div>
+              {forwardDraft.trim().length > 0 &&
+              !isValidE164Phone(forwardDraft.trim()) ? (
+                <p className="mt-1 font-sans text-[11px] text-ph-danger">
+                  Use E.164 format or leave empty.
+                </p>
+              ) : null}
+              <p className="mt-2 font-sans text-[11px] text-ph-text-muted">
+                Stored for future call/SMS routing. Phase 1 does not dial PSTN.
+              </p>
+              {patchForwardMutation.isError ? (
+                <p className="mt-2 font-sans text-[11px] text-ph-danger">
+                  {(patchForwardMutation.error as Error).message}
+                </p>
+              ) : null}
+            </div>
           </div>
         )}
 
