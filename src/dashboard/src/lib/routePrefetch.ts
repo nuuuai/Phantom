@@ -79,6 +79,28 @@ export function prefetchDashboardRoute(
     return;
   }
 
+  if (p === "/dark-web" || p.startsWith("/dark-web")) {
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.darkWebSummary(accessToken),
+      queryFn: async ({ signal }) => {
+        const res = await phantomApi.darkWeb.summary(accessToken, { signal });
+        if (!res.ok) throw clientErrorFromApiFailure(res);
+        return res.data;
+      },
+      staleTime: STALE.darkWeb,
+    });
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.darkWebFindings(accessToken),
+      queryFn: async ({ signal }) => {
+        const res = await phantomApi.darkWeb.findings(accessToken, { signal });
+        if (!res.ok) throw clientErrorFromApiFailure(res);
+        return res.data;
+      },
+      staleTime: STALE.darkWeb,
+    });
+    return;
+  }
+
   if (p === "/billing" || p.startsWith("/billing")) {
     void queryClient.prefetchQuery({
       queryKey: queryKeys.billingStatus(accessToken),

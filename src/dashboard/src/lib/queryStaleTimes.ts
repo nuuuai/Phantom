@@ -23,4 +23,6 @@ export const STALE = {
   notificationPrefs: 60_000,
   /** Alias list — category/health filters in key. */
   aliasesList: 30_000,
+  /** Dark web findings + summary — refresh invalidates. */
+  darkWeb: 30_000,
 } as const;

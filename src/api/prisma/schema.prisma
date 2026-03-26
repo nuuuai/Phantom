@@ -29,6 +29,41 @@ model User {
   brokerScanResults BrokerScanResult[]
   notifications    Notification[]
   notificationPrefs NotificationPref[]
+  darkWebFindings  DarkWebFinding[]
+}
+
+enum DarkWebFindingStatus {
+  open
+  dismissed
+}
+
+enum DarkWebSeverity {
+  low
+  medium
+  high
+  critical
+}
+
+/** Metadata-only breach exposure records (no plaintext credentials). */
+model DarkWebFinding {
+  id                String               @id @default(cuid())
+  userId            String
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  severity          DarkWebSeverity
+  status            DarkWebFindingStatus @default(open)
+  title             String
+  summary           String               @db.Text
+  sourceLabel       String
+  breachName        String?
+  identifierType    String
+  identifierDisplay String
+  recommendedAction String               @db.Text
+  detectedAt        DateTime
+  dismissedAt       DateTime?
+  dedupeKey         String
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, status, detectedAt(sort: Desc)])
 }
 
 model NotificationPref {

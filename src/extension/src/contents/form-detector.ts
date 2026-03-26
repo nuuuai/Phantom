@@ -93,8 +93,7 @@ function collectFields(): DetectedField[] {
 function createShieldIcon(field: DetectedField): HTMLDivElement {
   const host = document.createElement("div");
   host.setAttribute(PHANTOM_ATTR, "true");
-  host.style.cssText =
-    "position:absolute;z-index:2147483647;pointer-events:auto;";
+  host.style.cssText = "pointer-events:auto;";
 
   const shadow = host.attachShadow({ mode: "closed" });
 
@@ -186,8 +185,18 @@ function createShieldIcon(field: DetectedField): HTMLDivElement {
 
 function positionShield(host: HTMLDivElement, input: HTMLInputElement) {
   const rect = input.getBoundingClientRect();
-  host.style.top = `${window.scrollY + rect.top + (rect.height - 22) / 2}px`;
-  host.style.left = `${window.scrollX + rect.right - 28}px`;
+  host.style.position = "fixed";
+  host.style.top = `${rect.top + (rect.height - 22) / 2}px`;
+  host.style.left = `${rect.right - 28}px`;
+  host.style.zIndex = "2147483647";
+}
+
+function repositionAllShields(): void {
+  for (const [input, host] of shieldHosts) {
+    if (document.contains(input) && input.offsetParent !== null) {
+      positionShield(host, input);
+    }
+  }
 }
 
 const shieldHosts = new Map<HTMLInputElement, HTMLDivElement>();
@@ -247,9 +256,10 @@ observer.observe(document.documentElement, {
 });
 
 window.addEventListener("resize", () => {
-  for (const [input, host] of shieldHosts) {
-    positionShield(host, input);
-  }
+  repositionAllShields();
 });
+window.addEventListener("scroll", () => {
+  repositionAllShields();
+}, true);
 
 scanAndDecorate();

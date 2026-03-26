@@ -11,8 +11,8 @@ export function DashboardGettingStarted() {
         Get started
       </div>
       <p className="mt-2 max-w-2xl font-sans text-sm text-ph-text-tertiary">
-        Follow the path: alias → inbox → vault → broker scan → Pro. Install the
-        Chrome extension for autofill when you&apos;re ready (see onboarding).
+        Follow the path: install the extension → first alias → inbox → vault →
+        broker scan → Pro (see onboarding for the full tour).
       </p>
       <ul className="mt-3 flex flex-wrap gap-2">
         <li>

@@ -16,14 +16,19 @@ const STEPS = [
     cta: "Get started",
   },
   {
+    title: "Install the Chrome extension",
+    body: "Add Phantom to your browser first so shields and autofill work on real signup forms. Use the store listing when live, or load an unpacked build from this repo for development.",
+    cta: "Next",
+  },
+  {
     title: "Generate your first alias",
-    body: "Head to the Aliases page and create a disposable email, username, or phone alias. Use it for any signup instead of your real info.",
+    body: "Open the Aliases page or use the extension popup on a form. Create a disposable email, username, or phone alias — use it for signups instead of your real info.",
     cta: "Next",
     link: DASHBOARD_PATHS.aliases,
   },
   {
     title: "Check your alias inbox",
-    body: "Forwarded mail to your aliases appears in the Phantom inbox. Open it from the sidebar or when a notification links there.",
+    body: "When inbound mail is wired (DNS/MX + worker), forwarded mail appears in the Phantom inbox. Open it from the sidebar or when a notification links there.",
     cta: "Next",
     link: DASHBOARD_PATHS.inbox,
   },
@@ -41,14 +46,9 @@ const STEPS = [
   },
   {
     title: "Phantom Pro (optional)",
-    body: "Free tier includes exposure scans and DIY opt-out links. Upgrade for automated removal queue, unlimited aliases, and billing in one place.",
-    cta: "Next",
-    link: DASHBOARD_PATHS.billing,
-  },
-  {
-    title: "Install the extension",
-    body: "The Phantom Chrome extension detects signup forms and auto-fills aliases and encrypted passwords directly in the browser.",
+    body: "Free tier includes exposure scans and DIY opt-out links. Upgrade for simulated removal queue, unlimited aliases, and billing in one place.",
     cta: "Done",
+    link: DASHBOARD_PATHS.billing,
   },
 ] as const;
 
@@ -108,8 +108,9 @@ export function OnboardingModal() {
   const current = STEPS[step];
   if (!current) return null;
 
-  const isLast = step === STEPS.length - 1;
   const cwsUrl = chromeWebStoreHref();
+  const installStepIndex = 1;
+  const billingStepIndex = STEPS.length - 1;
 
   return (
     <AnimatePresence>
@@ -157,7 +158,7 @@ export function OnboardingModal() {
               <p className="mt-2 font-sans text-[13px] leading-relaxed text-ph-text-tertiary">
                 {current.body}
               </p>
-              {step === 5 ? (
+              {step === billingStepIndex ? (
                 <div className="mt-4">
                   <button
                     type="button"
@@ -175,7 +176,7 @@ export function OnboardingModal() {
                   </p>
                 </div>
               ) : null}
-              {isLast ? (
+              {step === installStepIndex ? (
                 <div className="mt-4 space-y-3 rounded-lg border border-ph-border bg-ph-raised/50 px-3 py-3 font-sans text-[12px] leading-relaxed text-ph-text-tertiary">
                   <p>
                     <span className="font-medium text-ph-text-secondary">

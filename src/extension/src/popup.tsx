@@ -140,7 +140,18 @@ export function Popup() {
           Sign out
         </button>
       </div>
-      <div className="popup__mini" aria-live="polite">
+      <div
+        className="popup__mini"
+        aria-live="polite"
+        role={
+          authStatus &&
+          authStatus !== "Signed in" &&
+          authStatus !== "Signing in…" &&
+          authStatus !== "Signing out…"
+            ? "alert"
+            : "status"
+        }
+      >
         {authStatus}
       </div>
       <p className="popup__mini">
@@ -177,7 +188,15 @@ export function Popup() {
       <button type="button" className="popup__action" onClick={onGenerate}>
         Generate alias
       </button>
-      <div className="popup__status" aria-live="polite">
+      <div
+        className="popup__status"
+        aria-live="polite"
+        role={
+          status === "Generating…" || status === "Alias ready" || status === ""
+            ? "status"
+            : "alert"
+        }
+      >
         {status}
       </div>
       {preview ? <div className="popup__preview">{preview}</div> : null}

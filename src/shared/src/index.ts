@@ -44,6 +44,13 @@ export type {
   SystemLayerStatus,
 } from "./types/dashboardOverview.js";
 export type {
+  DarkWebFindingPublic,
+  DarkWebFindingsSummary,
+  DarkWebRefreshResult,
+  DarkWebFindingStatus,
+  DarkWebSeverity,
+} from "./types/darkWebFinding.js";
+export type {
   ApiResponse,
   ApiFailure,
   ApiSuccess,

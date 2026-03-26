@@ -37,11 +37,17 @@ export function logOperatorConfigSummary(): void {
       ? "secret set (email-inbound webhook enabled)"
       : "secret unset (POST /api/webhooks/email-inbound returns 503)";
 
+  const hibp = Boolean(process.env.DARK_WEB_HIBP_API_KEY?.trim());
+  const darkWeb = hibp
+    ? "DARK_WEB_HIBP_API_KEY set (paid tier can call HIBP on refresh)"
+    : "DARK_WEB_HIBP_API_KEY unset (dark web refresh skips external lookup)";
+
   const lines = [
     `phantom-api config: NODE_ENV=${nodeEnv} API_PORT=${port}`,
     `  jwt: ${jwtMode}  redis: ${redis}  stripe: ${stripe}`,
     `  DASHBOARD_PUBLIC_URL: ${dash ? "set" : "unset (billing uses localhost default)"}`,
     `  email inbound: ${inboundState}`,
+    `  dark web: ${darkWeb}`,
   ];
 
   if (nodeEnv === "production" && redis === "disabled") {

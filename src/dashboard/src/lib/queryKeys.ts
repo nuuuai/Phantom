@@ -23,6 +23,8 @@ export const notificationPrefsAll = ["notification-prefs"] as const;
 /** Prefix for all inbox list queries (`emailInbox`). */
 export const emailInboxAll = ["email-inbox"] as const;
 
+export const darkWebAll = ["dark-web"] as const;
+
 export const queryKeys = {
   aliasDetailAll,
   aliasesAll,
@@ -71,4 +73,8 @@ export const queryKeys = {
     ["vault", accessToken, category] as const,
   vaultSync: (accessToken: string | null, dataUpdatedAt: number) =>
     ["vault-sync", accessToken, dataUpdatedAt] as const,
+  darkWebSummary: (accessToken: string | null) =>
+    ["dark-web", "summary", accessToken] as const,
+  darkWebFindings: (accessToken: string | null) =>
+    ["dark-web", "findings", accessToken] as const,
 };

@@ -9,6 +9,8 @@ This directory holds a **minimal** Terraform root module so the repo is not at *
 
 ```bash
 cd infra/terraform
-terraform init
+terraform init -backend=false
 terraform validate
 ```
+
+**CI:** GitHub Actions runs the same **`init -backend=false`** + **`validate`** after **`npm run build`** (see root `.github/workflows/ci.yml` and **`DEPLOYMENT.md`** § CI).

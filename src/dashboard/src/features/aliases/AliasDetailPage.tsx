@@ -6,12 +6,13 @@ import {
   encryptVaultValue,
   generatePassword,
   importKeyHex,
+  getQueryErrorMessage,
   isValidE164Phone,
 } from "@phantom/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { useCopiedFeedback } from "@/hooks/useCopiedFeedback.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
@@ -24,6 +25,7 @@ import {
   queryKeys,
   vaultAll,
 } from "@/lib/queryKeys.js";
+import { STALE } from "@/lib/queryStaleTimes.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 import { VaultUnlockGate } from "@/features/vault/VaultUnlockGate.js";
 
@@ -86,6 +88,17 @@ export function AliasDetailPage() {
       return res.data;
     },
     enabled: Boolean(accessToken && alias?.type === "phone"),
+  });
+
+  const userMeForEmailQuery = useQuery({
+    queryKey: queryKeys.userMe(accessToken),
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.user.me(accessToken, { signal });
+      if (!res.ok) throw clientErrorFromApiFailure(res);
+      return res.data;
+    },
+    enabled: Boolean(accessToken && alias?.type === "email"),
+    staleTime: STALE.userMe,
   });
 
   useEffect(() => {
@@ -194,15 +207,26 @@ export function AliasDetailPage() {
     return (
       <div className="px-8 py-10">
         <p className="font-sans text-sm text-ph-danger">
-          Could not load alias.
+          {aliasQuery.isError
+            ? getQueryErrorMessage(aliasQuery.error)
+            : "Could not load alias."}
         </p>
-        <button
-          type="button"
-          onClick={() => void navigate("/aliases")}
-          className="mt-4 cursor-pointer font-sans text-xs text-ph-accent-light hover:underline"
-        >
-          Back to aliases
-        </button>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => void aliasQuery.refetch()}
+            className="cursor-pointer rounded-md border border-ph-border bg-ph-surface px-3 py-1.5 font-sans text-xs text-ph-text-secondary hover:bg-ph-raised"
+          >
+            Retry
+          </button>
+          <button
+            type="button"
+            onClick={() => void navigate("/aliases")}
+            className="cursor-pointer font-sans text-xs text-ph-accent-light hover:underline"
+          >
+            Back to aliases
+          </button>
+        </div>
       </div>
     );
   }
@@ -277,6 +301,43 @@ export function AliasDetailPage() {
           <InfoBlock label="Spam count" value={String(alias.spamCount)} />
           <InfoBlock label="Alias ID" value={alias.id} mono />
         </div>
+
+        {alias.type === "email" && (
+          <div className="mt-6 rounded-lg border border-ph-border/60 bg-ph-raised/20 p-4">
+            <div className="mb-2 font-mono text-[10px] uppercase tracking-wider text-ph-text-muted">
+              Inbox & forwarding
+            </div>
+            <p className="font-sans text-[11px] leading-relaxed text-ph-text-tertiary">
+              Receiving mail at this address requires DNS/MX and an inbound
+              worker that POSTs to the API webhook. Messages then appear in the
+              dashboard inbox. Outbound forward to your personal address is not
+              automatic in Phase 1 — see{" "}
+              <span className="font-mono text-[10px]">EMAIL_INBOUND.md</span>.
+            </p>
+            {userMeForEmailQuery.isPending ? (
+              <p className="mt-2 font-sans text-[11px] text-ph-text-muted">
+                Loading account forward…
+              </p>
+            ) : (
+              <p className="mt-2 font-sans text-[11px] text-ph-text-secondary">
+                Optional account forward-to:{" "}
+                {userMeForEmailQuery.data?.user.forwardToEmail?.trim() ? (
+                  <span className="font-mono text-[10px] text-ph-text-primary">
+                    {userMeForEmailQuery.data.user.forwardToEmail}
+                  </span>
+                ) : (
+                  <span className="text-ph-text-muted">not set</span>
+                )}{" "}
+                <Link
+                  to="/settings"
+                  className="font-medium text-ph-accent-light underline-offset-2 hover:underline"
+                >
+                  Edit in Settings
+                </Link>
+              </p>
+            )}
+          </div>
+        )}
 
         {alias.type === "phone" && (
           <div className="mt-6 rounded-lg border border-ph-border/60 bg-ph-raised/20 p-4">

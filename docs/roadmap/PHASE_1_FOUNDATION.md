@@ -4,12 +4,12 @@
 
 | Section | Avg (of deliverables in section) |
 |---------|-------------------------------------|
-| Month 1–2 infrastructure | **~68%** |
-| Month 2–3 extension + dashboard | **~88%** |
+| Month 1–2 infrastructure | **~72%** |
+| Month 2–3 extension + dashboard | **~91%** |
 | Month 3–4 phone + brokers | **~71%** |
 | Month 4–5 removal + notifications | **~65%** |
-| Month 5–6 launch + QA | **~70%** |
-| **Phase 1 (all deliverables)** | **~89%** |
+| Month 5–6 launch + QA | **~74%** |
+| **Phase 1 (all deliverables)** | **~92%** |
 
 ## Objective
 
@@ -19,8 +19,8 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 | Platform | Status | Progress |
 |----------|--------|----------|
-| Chrome Extension | **BUILD** — primary user interface | **~85%** |
-| Web Dashboard | **BUILD** — command center | **~88%** |
+| Chrome Extension | **BUILD** — primary user interface | **~88%** |
+| Web Dashboard | **BUILD** — command center | **~90%** |
 | Firefox/Safari Extension | Not started | **0%** |
 | Mobile Apps | Not started | **0%** |
 
@@ -35,8 +35,8 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - PostgreSQL database with **logical** per-user isolation (`userId` on all tenant rows; not separate DBs per user — see `docs/architecture/USER_DATA_SCOPE.md`) — **68%**
   - Redis for sessions and cache — **58%** (compose + `REDIS_URL`; refresh-token hash keys; optional **Redis-backed global rate limit** via `rate-limit-redis` + **`passOnStoreError`** fail-open; `/health` reports redis; **`DEPLOYMENT.md`** table + Redis down policy; **CI** runs **Redis 7** + **`REDIS_URL`** for **`authSession.integration.test.ts`**)
   - Docker Compose for local development — **88%** (`docker-compose.yml`: Postgres + Redis + optional ES; **`DEPLOYMENT.md`** maps ports → `DATABASE_URL` / `REDIS_URL`)
-  - CI/CD pipeline (GitHub Actions) — **86%** (documented step order in **`DEPLOYMENT.md` § CI** matches `.github/workflows/ci.yml`: `npm ci` → migrate → **seed** → lint → test → build; **Postgres + Redis** services; seed enables broker integration tests)
-  - Terraform for AWS infrastructure — **24%** (minimal root in `infra/terraform/` + `variables.tf` / `outputs.tf` + **`.gitignore`**; no AWS resources yet — see `INFRA_AWS_PHASE1.md`)
+  - CI/CD pipeline (GitHub Actions) — **90%** (documented step order in **`DEPLOYMENT.md` § CI** matches `.github/workflows/ci.yml`: `npm ci` → migrate → **seed** → lint → test → build → **`terraform validate`** on `infra/terraform/`; **Postgres + Redis** services; seed enables broker integration tests)
+  - Terraform for AWS infrastructure — **38%** (minimal root in `infra/terraform/` + `variables.tf` / `outputs.tf` + **`.gitignore`** + **CI `terraform validate`**; no AWS resources yet — see `INFRA_AWS_PHASE1.md`)
 
 - [ ] **Authentication system** — **72%**
   - SRP (Secure Remote Password) protocol implementation — **0%** (Phase 1 policy: **out of scope**; see `docs/roadmap/AUTH_AND_VAULT_PHASE1.md`)
@@ -59,18 +59,18 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 
 ### Month 2–3: Extension + Dashboard MVP
 
-- [ ] **Browser extension v1** — **70%**
-  - Form detection (heuristic: input types, labels, structure) — **60%** (email/password/username heuristics + label parsing)
-  - Alias generation popup (email + password) — **58%** (popup shows **API error strings** on sign-in / generate failure; **`clientErrorFromApiFailure`** + **`normalizeClientError`** for network path)
-  - Autofill for generated aliases — **52%** (shield-click fills field value + dispatches events; password-type decrypt via vault key when present)
-  - Shadow DOM injected UI (shield icon on form fields) — **55%** (closed Shadow DOM, positioned icon on each detected field)
+- [ ] **Browser extension v1** — **78%**
+  - Form detection (heuristic: input types, labels, structure) — **65%** (email/password/username heuristics + label parsing)
+  - Alias generation popup (email + password) — **62%** (popup shows **API error strings** on sign-in / generate failure; **`aria` roles** on status/error; **`clientErrorFromApiFailure`** + **`normalizeClientError`** for network path)
+  - Autofill for generated aliases — **58%** (shield-click fills field value + dispatches **`InputEvent`** / **`change`**; password-type decrypt via vault key when present)
+  - Shadow DOM injected UI (shield icon on form fields) — **62%** (closed Shadow DOM; **fixed** viewport positioning + scroll/resize reposition)
   - Service worker for API communication — **81%** (login + alias generate + **`pushVaultSyncFromExtension`** after unlock — **dynamic import** of vault sync chunk; **`fetchAuth` / `refreshSession`**: offline → synthetic **`network_error`** (**503**); API **503** passthrough; **401** when refresh fails; **refresh** exponential backoff on **503/429** + **documented caps** in `apiClient.ts` + tests; **`onInstalled`**: clear invalid API URL override; **options** page: **`validateApiBaseUrlInput`** + loading/saved states; shared **`clientError`** mapping for responses)
   - Encrypted credential cache in IndexedDB — **58%** (DEK + session-wrapped vault key material; see extension **`vaultStorage`**)
 
-- [ ] **Web dashboard v1** — **88%**
+- [ ] **Web dashboard v1** — **90%**
   - Login / account management — **58%** (dev login path; **`PATCH /api/user/me`** for `forwardToEmail` with validation; **`/settings`** shows **email** + **displayName** + tier from **`GET /api/user/me`**; bootstrap errors use **`clientErrorFromApiFailure`**)
   - Alias list view (all generated aliases with metadata) — **68%** (loading / empty / **Retry** on **normalized** error; category + health filters)
-  - Alias detail view (service, creation date, health status, forwarding rules) — **48%** (**phone:** adapter banner + edit forward)
+  - Alias detail view (service, creation date, health status, forwarding rules) — **62%** (**phone:** adapter banner + edit forward; **email:** inbox/forwarding honesty + Settings link; **Retry** on load error)
   - Create alias manually (not just from extension) — **62%** (**`GenerateAliasModal`**: per-type **quota** copy on type tiles from **`GET /api/user/me`**)
   - Delete / disable alias — **54%** (**DELETE** soft-deactivate; list/detail invalidate)
   - Basic settings (forwarding preferences, notification preferences) — **76%** (single **Settings** hub: **`GET /api/user/me`** + parallel **`GET /api/notifications/preferences`**; **forward-to** client + API **400** parity; quotas + **Aliases** / **Vault** links; **Billing** + **Upgrade** CTA; prefs toggles + **invalidate** after **PUT**; per-section **Retry**; desktop notification copy **default**/**granted**/**denied**; **Danger zone** sign-out + query clear — no delete-account API in Phase 1)
@@ -99,7 +99,7 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - Password generation (configurable length, complexity) — **65%** (alias-type passwords; shared **`generatePassword`**)
   - Password storage in encrypted vault — **62%** (`encryptedValue` on password aliases + **E2E** **`vaultSyncCiphertext`** blob from dashboard + extension **`executeVaultSyncPush`**)
   - Vault dashboard page (card grid, search, filter, strength meter) — **78%** (**VaultPage** + **`useVaultSync`** + tier quota via **`userMe`**)
-  - Vault generate modal (service name, category, one-click generate) — **72%** (**`VaultGenerateModal`**; free tier **25** password aliases per **`FREE_TIER_ALIAS_MAX`**)
+  - Vault generate modal (service name, category, one-click generate) — **78%** (**`VaultGenerateModal`**; free tier **25** password aliases per **`FREE_TIER_ALIAS_MAX`**; paid: **`assertCanCreateAlias`** + **`aliasUsage.max`** null — no false cap)
   - Import from 1Password, LastPass, Bitwarden (CSV import) — **0%**
   - Autofill passwords via extension — **28%** (shield icon + decrypt path when vault unlocked)
   - TOTP seed storage and auto-fill — **0%**
@@ -134,13 +134,13 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 - [ ] **Paid tier ($9.99/mo)** — **60%**
   - Unlimited aliases (email + phone) — **45%** (`assertCanCreateAlias` bypass for paid/enterprise; dashboard shows no cap)
   - Data broker removal (150+ brokers) — **32%** (simulated queue + catalog DIY URLs)
-  - Unlimited password storage — **5%** (paid path: no per-type cap in `assertCanCreateAlias`; vault UX gated on free quota)
+  - Unlimited password storage — **92%** (paid/enterprise: **`assertCanCreateAlias`** bypass + **`buildAliasUsage`** `max: null`; vault header shows **unlimited (paid plan)**; **`buildAliasUsage` tests**)
   - Billing / subscription surface — **78%** (Stripe **`/api/billing/checkout-session`**, **`/portal-session`**, **`GET /status`**; **`POST /api/webhooks/stripe`** **claims** **`event.id`** in **`StripeWebhookEvent`** *before* handler work → duplicate deliveries **`duplicate: true`** without re-running side effects; handler failure **deletes** claim for Stripe retry; **`POST /api/billing/sync-checkout-session`** idempotent for same `session_id`; dashboard **`/billing`** strips `session_id`; **integration tests:** signed webhooks + duplicate **`event.id`** + **sync-checkout-session** ×2 with mocked Stripe in CI)
-  - Dark web monitoring (basic) — **0%**
+  - Dark web monitoring (basic) — **78%** (Prisma **`DarkWebFinding`**; **`GET/PATCH/POST`** `/api/dark-web/*`; HIBP refresh when **`DARK_WEB_HIBP_API_KEY`**; paid-only; notifications **`security_alert`** + **`/dark-web`**; dashboard **`/dark-web`**; overview **`darkWebAlerts`** from DB — **not** marketplace crawling; see **`DEPLOYMENT.md`**)
   - Priority support — **0%**
 
-- [ ] **Onboarding flow** — **74%**
-  - Extension install → account creation → first alias generation — **28%**
+- [ ] **Onboarding flow** — **82%**
+  - Extension install → account creation → first alias generation — **55%** (7-step modal: **install extension → first alias** → inbox → vault → brokers → billing; overview **Get started** copy aligned)
   - Guided exposure scan ("see who's selling your data") — **50%** (brokers **first scan** CTA + pre-scan legend + **429** UI with **retryAfterSeconds**)
   - Multi-step modal — **80%** (**7 steps**: welcome → aliases → **inbox** → vault → brokers → **billing** → extension; **billing** step CTA matches app-wide **upgrade** path (**`/billing`**); **`DASHBOARD_PATHS`** + **`QUICK_ACTIONS`**; **Back** / **Next** / **Done**; scrollable modal; Chrome Web Store + **load unpacked** honesty; **no `chrome-extension://` from https** documented in UI)
   - Import existing passwords — **0%**
@@ -171,6 +171,19 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 **In repo (engineering “green”):** CI order matches **`DEPLOYMENT.md` § CI** and **`.github/workflows/ci.yml`**; integration tests listed in **`QA_MANUAL.md`** run when **`DATABASE_URL`** points at a real Postgres (Actions job); store zip path **`src/extension/build/chrome-mv3-prod/`** per **`EXTENSION_STORE_BUILD.md`**; broker removal remains **simulated** per **`BROKER_REMOVAL_QUEUE.md`**; notification prefs + bell honor **`notificationCategoryFilter`**; **`NOTIFICATIONS_EMAIL_ENABLED`** is documented in **`.env.example`** / **`DEPLOYMENT.md`** but **not** read by API code (no false delivery claims).
 
 **External (not faked in %):** live **Stripe** keys + public HTTPS webhook URL; **DNS/MX** + inbound worker; **Chrome Web Store** listing + review; **hosted privacy policy** URL; **ToS** legal review — see **Dependencies** below.
+
+### Phase 1 complete (engineering)
+
+**Done in repo (baseline for handoff to Phase 2 planning):**
+
+- **CI** matches **`DEPLOYMENT.md` § CI**: `npm ci` → migrate → seed → lint → test → build, then **`terraform validate`** on `infra/terraform/` (placeholder module; no AWS resources). **Postgres 16** + **Redis 7** in Actions; integration tests listed in **`QA_MANUAL.md`** run when **`DATABASE_URL`** is real.
+- **Extension:** store output **`src/extension/build/chrome-mv3-prod/`** per **`EXTENSION_STORE_BUILD.md`**; content-script shields (Shadow DOM), heuristic form fields, autofill + events, popup/sign-in error surfacing, **`fetchAuth`** / **`refreshSession`** backoff — see **`apiClient.ts`**.
+- **Dashboard + API:** alias tiers, **`GET /api/user/me`** **`aliasUsage`**, vault page **Retry** on list error, alias detail **Retry** + email forwarding copy, onboarding **install → first alias** funnel, broker **429** UX, simulated removal per **`BROKER_REMOVAL_QUEUE.md`**, notification prefs + **`notificationCategoryFilter`**.
+- **Honesty:** **`NOTIFICATIONS_EMAIL_ENABLED`** is documented in **`.env.example`** / **`DEPLOYMENT.md`** and is **not** read by application code (no false email delivery).
+
+**External-only (not treated as missing repo work):** live **Stripe** + HTTPS webhook; **DNS/MX** + worker → email inbound; **CWS** + hosted legal URLs; production **Twilio**/carrier — see **Blocked (external)** above.
+
+**Phase 2+ / explicitly not required for this engineering close:** Brain, Call Guard, carrier-grade numbers, Firefox extension, **Playwright E2E** (deferred), CSV import, community threat feed — see **`PHASE_2_INTELLIGENCE.md`** and **Deferred** tables in this doc.
 
 ## Success Metrics (End of Phase 1)
 

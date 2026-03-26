@@ -11,6 +11,8 @@ Phantom’s API **generates** `@phantom.id` aliases. **Receiving** mail requires
 | **DKIM** | Provider-supplied TXT selectors for **outbound** signing. |
 | **DMARC** | Start with `p=none` at `rua=` for reporting; tighten after metrics. |
 
+**Operator checklist (ops, not automated in repo):** (1) Publish MX to the inbound provider you will use. (2) Add SPF that authorizes that provider’s sending IP / include. (3) Enable DKIM in the provider and add the TXT/CNAME records they give you. (4) Add a DMARC record (start `p=none`, collect `rua` reports, then tighten). Re-verify after any DNS or provider change.
+
 ## Inbound webhook (implemented)
 
 - **URL:** `POST /api/webhooks/email-inbound`

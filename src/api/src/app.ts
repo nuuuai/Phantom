@@ -23,6 +23,7 @@ import { vaultRouter } from "./routes/vault.js";
 import { stripeWebhookRouter } from "./routes/stripeWebhook.js";
 import { webhookEmailInboundRouter } from "./routes/webhookEmailInbound.js";
 import { phoneRouter } from "./routes/phone.js";
+import { darkWebRouter } from "./routes/darkWeb.js";
 
 const globalRateLimiter = createGlobalRateLimiter();
 
@@ -88,6 +89,7 @@ export function createApp() {
   app.use("/api/broker-scan", authenticateJwt, brokerScanRouter);
   app.use("/api/notifications", authenticateJwt, notificationsRouter);
   app.use("/api/dashboard", authenticateJwt, dashboardRouter);
+  app.use("/api/dark-web", authenticateJwt, darkWebRouter);
   app.use("/api/vault", authenticateJwt, vaultRouter);
   app.use("/api/billing", authenticateJwt, billingRouter);
 

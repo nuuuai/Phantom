@@ -26,6 +26,7 @@ Same order as [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) and [
 | **Integration (requires Postgres)** | Email webhook → inbox list → mark read (`unread=1`) | `src/api/src/emailInbox.integration.test.ts` |
 | **Integration (requires Postgres)** | Notifications: prefs hide disabled category from list/count; **`POST /seed-demo`** **403** in **`NODE_ENV=production`**; invalid **`enabled`** → **400** | `src/api/src/notifications.integration.test.ts` |
 | **Integration (requires Postgres + Redis)** | Register → **`POST /api/auth/refresh`** rotates opaque refresh → old token **401** → **`logout`** revokes | `src/api/src/authSession.integration.test.ts` |
+| **Integration (requires Postgres)** | Dark web: free tier gated **`GET /api/dark-web/*`**; paid tier finding + **`GET /api/dashboard/metrics`** **`darkWebAlerts`** + dismiss | `src/api/src/darkWeb.integration.test.ts` |
 
 Integration suites are **skipped** when `DATABASE_URL` is unset or equals the vitest placeholder (`phantom_placeholder`). They run in **GitHub Actions** (job-level **`env.DATABASE_URL`** points at the workflow’s **Postgres service** on port **5432**). Locally, use a real `DATABASE_URL` in repo-root `.env` (and migrate + seed) to enable them.
 
@@ -36,7 +37,7 @@ Run before Chrome Web Store submit and first production deploy.
 ### First-run (dashboard shell)
 
 - [ ] Clear site data or use a fresh profile; open the dashboard (local dev: **`http://localhost:5173`** after `npm run dev -w @phantom/dashboard` or full `npm run dev` from repo root — see **`run.ps1`**).
-- [ ] **Onboarding:** 7-step modal appears until completed or **Skip**; steps follow **welcome → aliases → inbox → vault → brokers → billing → extension**; **Back** / **Next** / **Done**; **Next** navigates to the matching in-app route where applicable.
+- [ ] **Onboarding:** 7-step modal appears until completed or **Skip**; steps follow **welcome → install extension → first alias → inbox → vault → brokers → billing (optional Pro)**; **Back** / **Next** / **Done**; **Next** navigates to the matching in-app route where applicable (Chrome Web Store / load-unpacked copy on the install step).
 - [ ] **Extension step:** Chrome Web Store link opens (placeholder listing URL unless **`VITE_CWS_LISTING_URL`** is set); copy explains **load unpacked** dev build and that **`chrome-extension://`** cannot be opened from the https dashboard.
 - [ ] **Overview** (with zero aliases): **Get started** links go to **`/aliases`**, **`/inbox`**, **`/vault`**, **`/brokers`**, **`/billing`**, **`/settings`**.
 - [ ] **Quick actions** on overview: same routes plus **Settings**; keyboard **Tab** shows visible focus rings.

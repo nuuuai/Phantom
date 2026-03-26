@@ -2,6 +2,7 @@ import type { ActivityItem, DashboardOverview } from "@phantom/shared";
 import { prisma } from "./prisma.js";
 import { advanceRemovalSimulation } from "./brokerScanAdvance.js";
 import { computeBrokerScanSummaryFromRows } from "./computeBrokerScanSummary.js";
+import { isPaidTier } from "./userTierPaid.js";
 
 function formatRelativeShort(date: Date): string {
   const sec = Math.floor((Date.now() - date.getTime()) / 1000);
@@ -83,28 +84,33 @@ export async function buildDashboardOverview(
     };
   });
 
-  const filler: ActivityItem[] = [
-    {
-      type: "sword",
-      label: "Scam engaged",
-      desc: "IRS scam · Confused Retiree persona · 23 min",
-      time: "2m",
-    },
-    {
-      type: "brain",
-      label: "Breach detected",
-      desc: "Email alias found in LinkedIn data breach",
-      time: "3h",
-    },
-    {
-      type: "shield",
-      label: "Call screened",
-      desc: "Unknown caller identified as FedEx — forwarded",
-      time: "4h",
-    },
-  ];
+  let darkWebActivity: ActivityItem[] = [];
+  if (isPaidTier(user.tier)) {
+    const dwRows = await prisma.darkWebFinding.findMany({
+      where: { userId, status: "open" },
+      orderBy: { detectedAt: "desc" },
+      take: 6,
+    });
+    darkWebActivity = dwRows.map((f) => ({
+      type: "brain" as const,
+      label: "Dark web exposure",
+      desc: `${f.breachName ?? f.title} · ${f.identifierDisplay}`,
+      time: formatRelativeShort(f.detectedAt),
+    }));
+  }
 
-  const activity = [...brokerActivity, ...filler].slice(0, 8);
+  const activity = [...brokerActivity, ...darkWebActivity].slice(0, 8);
+
+  let darkWebAlerts = 0;
+  if (isPaidTier(user.tier)) {
+    darkWebAlerts = await prisma.darkWebFinding.count({
+      where: {
+        userId,
+        status: "open",
+        severity: { in: ["medium", "high", "critical"] },
+      },
+    });
+  }
 
   const riskScore = Math.min(
     92,
@@ -133,7 +139,7 @@ export async function buildDashboardOverview(
     scamsEngaged: 342,
     scammerMinutes: 4870,
     complaintsFile: 298,
-    darkWebAlerts: 3,
+    darkWebAlerts,
     activity,
     weeklyScams: [12, 18, 9, 24, 15, 21, 14],
     weekDays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],

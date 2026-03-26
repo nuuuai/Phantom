@@ -39,6 +39,11 @@ const BillingPage = lazy(() =>
     default: m.BillingPage,
   }))
 );
+const DarkWebPage = lazy(() =>
+  import("@/features/darkWeb/DarkWebPage.js").then((m) => ({
+    default: m.DarkWebPage,
+  }))
+);
 
 function SessionBootstrap() {
   const accessToken = useSessionStore((s) => s.accessToken);
@@ -172,15 +177,7 @@ export function App() {
               />
             }
           />
-          <Route
-            path="/dark-web"
-            element={
-              <PlaceholderPage
-                title="Dark web"
-                description="Dark web monitoring alerts and triage. No raw breach data in the UI."
-              />
-            }
-          />
+          <Route path="/dark-web" element={<DarkWebPage />} />
           <Route
             path="/scam-engage"
             element={

@@ -74,6 +74,7 @@ Point load balancers / Kubernetes probes at these paths over HTTPS.
 | `TWILIO_AUTH_TOKEN` | Future | Reserved for real Twilio Number API / webhooks (not used in Phase 1 stub). |
 | `TWILIO_FROM_NUMBER` | Future | Reserved for outbound caller ID / SMS. |
 | `NOTIFICATIONS_EMAIL_ENABLED` | Optional (future) | **`0`** / unset = no outbound email (Phase 1 default). **Not read by `src/api` application code today** — reserved for a future outbound worker; `.env.example` documents the placeholder so ops can plan. In-app **`/api/notifications`** + dashboard bell require **no** env. When a worker is added, set to **`1`** and supply provider keys — see **`EMAIL_INBOUND.md`** / **`QA_MANUAL.md`**. |
+| `DARK_WEB_HIBP_API_KEY` | Optional | **Have I Been Pwned** API key for **`POST /api/dark-web/refresh`** (paid/enterprise only). When **unset**, refresh returns **`skippedNoApiKey: true`** and **no** external call — dashboard shows an honest empty state. This is **public breach corpus lookup** for the account email, **not** 24/7 dark-web marketplace monitoring. Respect HIBP rate limits; the API never logs raw email addresses in responses. |
 
 **Vault (E2E):** `User.vaultSyncCiphertext` and `vaultSyncVersion` hold an **opaque** encrypted blob produced by the client (**PBKDF2** + **AES-GCM** per `AUTH_AND_VAULT_PHASE1.md`). The API never receives the vault passphrase or plaintext passwords; do not log ciphertext bodies. **`409`** on **`PUT /api/vault/sync`** means another client wrote first — clients must **GET**, merge, and retry.
 
@@ -125,8 +126,9 @@ See [EXTENSION_STORE_BUILD.md](./EXTENSION_STORE_BUILD.md) and [CHROME_WEB_STORE
 | Lint | `npm run lint` |
 | Test | `npm run test` |
 | Build | `npm run build` |
+| Terraform (optional) | `cd infra/terraform && terraform init -backend=false && terraform validate` — validates the placeholder root module; **no AWS resources** (see `INFRA_AWS_PHASE1.md`) |
 
-Workflow: [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml). **Concurrency:** new pushes to the same branch cancel an in-flight run (`cancel-in-progress`) so the latest commit is what CI finishes on. Keep green before release.
+Workflow: [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) runs the first six steps, then **Terraform validate** on `infra/terraform/`. **Concurrency:** new pushes to the same branch cancel an in-flight run (`cancel-in-progress`) so the latest commit is what CI finishes on. Keep green before release.
 
 **Integration tests** (`launch.integration.test.ts`, `auth.integration.test.ts`, `authSession.integration.test.ts`, `billingSyncSession.integration.test.ts`, `brokerScanQuota.integration.test.ts`, …) run when `DATABASE_URL` is set to a **real** database (not the vitest `phantom_placeholder` URL). They are skipped in the default local test run without Postgres. **GitHub Actions** defines **Postgres 16** and **Redis 7** services and sets **`DATABASE_URL`**, **`REDIS_URL=redis://localhost:6379`** (see the workflow) so refresh-token rotation tests can run. **Seed** supplies **`DataBroker`** rows so broker-quota integration tests run. For local parity, use a real Postgres URL in `.env`, **`docker compose up -d redis`** (or cloud Redis), **`REDIS_URL`**, and `npm run db:seed -w @phantom/api` after migrate.
 

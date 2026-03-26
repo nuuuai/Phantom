@@ -17,6 +17,9 @@ import {
   type UserAccountSnapshot,
   type VaultSyncGetResponse,
   type VaultSyncPutRequest,
+  type DarkWebFindingPublic,
+  type DarkWebFindingsSummary,
+  type DarkWebRefreshResult,
   RATE_LIMIT_RETRY_MS,
 } from "@phantom/shared";
 import { useSessionStore } from "@/stores/useSessionStore.js";
@@ -269,6 +272,74 @@ export const phantomApi = {
         "/api/dashboard/metrics",
         accessToken ?? null,
         init ?? {}
+      );
+      return parseApiResponseJson(res);
+    },
+  },
+
+  darkWeb: {
+    summary: async (
+      accessToken: Token,
+      init?: RequestInit
+    ): Promise<ApiResponse<DarkWebFindingsSummary>> => {
+      const res = await fetchWithRefresh(
+        "/api/dark-web/summary",
+        accessToken,
+        init ?? {}
+      );
+      return parseApiResponseJson(res);
+    },
+
+    findings: async (
+      accessToken: Token,
+      init?: RequestInit
+    ): Promise<
+      ApiResponse<{ items: DarkWebFindingPublic[]; tierGated: boolean }>
+    > => {
+      const res = await fetchWithRefresh(
+        "/api/dark-web/findings",
+        accessToken,
+        init ?? {}
+      );
+      return parseApiResponseJson(res);
+    },
+
+    refresh: async (accessToken: Token): Promise<
+      ApiResponse<DarkWebRefreshResult>
+    > => {
+      const res = await fetchWithRefresh("/api/dark-web/refresh", accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      return parseApiResponseJson(res);
+    },
+
+    dismiss: async (
+      accessToken: Token,
+      id: string
+    ): Promise<ApiResponse<{ finding: DarkWebFindingPublic }>> => {
+      const res = await fetchWithRefresh(
+        `/api/dark-web/findings/${encodeURIComponent(id)}`,
+        accessToken,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "dismissed" }),
+        }
+      );
+      return parseApiResponseJson(res);
+    },
+
+    seedDemo: async (
+      accessToken: Token
+    ): Promise<ApiResponse<{ seeded: number }>> => {
+      const res = await fetchWithRefresh(
+        "/api/dark-web/seed-demo",
+        accessToken,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        }
       );
       return parseApiResponseJson(res);
     },

@@ -2,9 +2,9 @@
 
 ## What is in the repo (Phase 1)
 
-- **Terraform:** minimal **root module** at [`infra/terraform/`](../../infra/terraform/) (`terraform.tf`, `variables.tf`, `outputs.tf`, **`.gitignore`**, README) — **`terraform validate`** when the CLI is installed; **~24%** toward “IaC in repo” (no AWS resources yet; avoids **0%** while staying honest).
+- **Terraform:** minimal **root module** at [`infra/terraform/`](../../infra/terraform/) (`terraform.tf`, `variables.tf`, `outputs.tf`, **`.gitignore`**, README) — **`terraform validate`** in **GitHub Actions** after the build step (and locally when the CLI is installed); **~38%** toward “IaC in repo” (no AWS resources yet; avoids **0%** while staying honest).
 - **Deployment contract** is documented in [`DEPLOYMENT.md`](./DEPLOYMENT.md): PostgreSQL, optional Redis, Node API, static dashboard, env-only secrets, **`GET /health/live`** (liveness) and **`GET /health`** (readiness).
-- **CI** — same step order as [`DEPLOYMENT.md`](./DEPLOYMENT.md) **§ CI**: `npm ci` → migrate → **seed** → lint → test → build (`.github/workflows/ci.yml`).
+- **CI** — same step order as [`DEPLOYMENT.md`](./DEPLOYMENT.md) **§ CI**: `npm ci` → migrate → **seed** → lint → test → build → **`terraform validate`** on `infra/terraform/` (`.github/workflows/ci.yml`).
 
 ## Recommended AWS shape (operator choice)
 

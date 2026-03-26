@@ -248,11 +248,17 @@ function VaultPageInner() {
           )}
         </div>
         <div className="flex items-center gap-3">
-          {passwordUsage && passwordUsage.max !== null && (
-            <span className="font-mono text-[11px] text-ph-text-muted">
-              {passwordUsage.used}/{passwordUsage.max} passwords
-            </span>
-          )}
+          {passwordUsage ? (
+            passwordUsage.max !== null ? (
+              <span className="font-mono text-[11px] text-ph-text-muted">
+                {passwordUsage.used}/{passwordUsage.max} passwords
+              </span>
+            ) : (
+              <span className="font-mono text-[11px] text-ph-text-muted">
+                {passwordUsage.used} saved · unlimited (paid plan)
+              </span>
+            )
+          ) : null}
           <button
             type="button"
             onClick={() => setModalOpen(true)}
@@ -296,9 +302,18 @@ function VaultPageInner() {
         </p>
       )}
       {listQuery.isError && (
-        <p className="mt-8 font-sans text-sm text-ph-danger">
-          Could not load vault. Is the API running?
-        </p>
+        <div className="mt-8 rounded-md border border-ph-danger/40 bg-ph-danger/5 px-4 py-3">
+          <p className="font-sans text-sm text-ph-danger">
+            {getQueryErrorMessage(listQuery.error)}
+          </p>
+          <button
+            type="button"
+            onClick={() => void listQuery.refetch()}
+            className="mt-3 cursor-pointer rounded-md border border-ph-border bg-ph-surface px-3 py-1.5 font-sans text-xs text-ph-text-secondary hover:bg-ph-raised"
+          >
+            Retry
+          </button>
+        </div>
       )}
 
       {!listQuery.isPending && !listQuery.isError && items.length === 0 && (

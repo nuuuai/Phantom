@@ -37,4 +37,11 @@ describe("upgradeCopy strings", () => {
     expect(s).toMatch(/email/);
     expect(s).toMatch(/3/);
   });
+
+  it("dark_web mentions HIBP honestly", () => {
+    expect(upgradeTitle("dark_web")).toMatch(/Dark web/i);
+    expect(upgradeBody("dark_web")).toMatch(/Have I Been Pwned/i);
+    expect(upgradeBody("dark_web")).toMatch(/not 24\/7/i);
+  });
 });
+

@@ -7,6 +7,7 @@ export type UpgradeReason =
   | "removal_queue"
   | "alias_cap"
   | "broker_exposure"
+  | "dark_web"
   | "generic";
 
 export type UpgradeContext = {
@@ -62,6 +63,10 @@ function genericBody(_ctx: UpgradeContext): string {
   return "Upgrade to Phantom Pro for unlimited aliases, unlimited broker scans, and the removal queue (simulated in Phase 1).";
 }
 
+function darkWebBody(_ctx: UpgradeContext): string {
+  return "Phantom Pro includes basic dark web exposure checks (public breach datasets via Have I Been Pwned when configured). This is not 24/7 marketplace monitoring — see DEPLOYMENT.md for what is actually wired.";
+}
+
 export function upgradeTitle(reason: UpgradeReason): string {
   switch (reason) {
     case "scan_rate_limited":
@@ -72,6 +77,8 @@ export function upgradeTitle(reason: UpgradeReason): string {
       return "Alias limit reached";
     case "broker_exposure":
       return "Upgrade to Phantom Pro";
+    case "dark_web":
+      return "Dark web checks — Phantom Pro";
     default:
       return "Upgrade to Phantom Pro";
   }
@@ -87,6 +94,8 @@ export function upgradeBody(reason: UpgradeReason, ctx: UpgradeContext = {}): st
       return aliasBody(ctx);
     case "broker_exposure":
       return brokerExposureBody(ctx);
+    case "dark_web":
+      return darkWebBody(ctx);
     default:
       return genericBody(ctx);
   }
