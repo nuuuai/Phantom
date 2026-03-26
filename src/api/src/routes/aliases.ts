@@ -7,9 +7,13 @@ import type {
   PatchAliasRequest,
 } from "@phantom/shared";
 import { Router } from "express";
-import type { AliasCategory as PrismaAliasCategory } from "@prisma/client";
+import type {
+  AliasCategory as PrismaAliasCategory,
+  AliasType as PrismaAliasType,
+} from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { generateValueForType } from "../lib/aliasGenerators.js";
+import { assertCanCreateAlias } from "../lib/aliasTierLimits.js";
 import { mapAliasToDto } from "../lib/mapAlias.js";
 
 export const aliasesRouter = Router();
@@ -111,6 +115,31 @@ aliasesRouter.post("/generate", async (req, res) => {
     typeof body.serviceUrl === "string" && body.serviceUrl.length > 0
       ? body.serviceUrl
       : null;
+
+  const userRow = await prisma.user.findUnique({ where: { id: userId } });
+  if (!userRow) {
+    res.status(401).json({
+      ok: false,
+      error: { code: "unauthorized", message: "User not found" },
+    });
+    return;
+  }
+
+  const limitCheck = await assertCanCreateAlias(
+    userId,
+    userRow.tier,
+    type as PrismaAliasType
+  );
+  if (!limitCheck.ok) {
+    res.status(403).json({
+      ok: false,
+      error: {
+        code: "tier_limit",
+        message: limitCheck.message,
+      },
+    });
+    return;
+  }
 
   const existsEmail = async (value: string): Promise<boolean> => {
     const found = await prisma.alias.findFirst({

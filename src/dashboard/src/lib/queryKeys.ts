@@ -15,4 +15,9 @@ export const queryKeys = {
   ) => ["broker-scan-results", accessToken, status, q] as const,
   brokerScanCatalog: (accessToken: string | null) =>
     ["broker-scan-catalog", accessToken] as const,
+  userMe: (accessToken: string | null) => ["user-me", accessToken] as const,
+  notifications: (accessToken: string | null) =>
+    ["notifications", accessToken] as const,
+  notificationCount: (accessToken: string | null) =>
+    ["notification-count", accessToken] as const,
 };

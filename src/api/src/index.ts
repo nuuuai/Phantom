@@ -8,6 +8,8 @@ import { authRouter } from "./routes/auth.js";
 import { aliasesRouter } from "./routes/aliases.js";
 import { brokerScanRouter } from "./routes/brokerScan.js";
 import { dashboardRouter } from "./routes/dashboard.js";
+import { notificationsRouter } from "./routes/notifications.js";
+import { userRouter } from "./routes/user.js";
 
 const app = express();
 const port = Number(process.env.API_PORT ?? "8787");
@@ -29,8 +31,10 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/api/auth", authRouter);
+app.use("/api/user", authenticateJwt, userRouter);
 app.use("/api/aliases", authenticateJwt, aliasesRouter);
 app.use("/api/broker-scan", authenticateJwt, brokerScanRouter);
+app.use("/api/notifications", authenticateJwt, notificationsRouter);
 app.use("/api/dashboard", authenticateJwt, dashboardRouter);
 
 app.listen(port, () => {

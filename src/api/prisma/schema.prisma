@@ -16,6 +16,7 @@ model User {
   aliases          Alias[]
   brokerScanRuns   BrokerScanRun[]
   brokerScanResults BrokerScanResult[]
+  notifications    Notification[]
 }
 
 enum UserTier {
@@ -125,6 +126,36 @@ enum RemovalMethod {
   form
   email
   manual
+}
+
+model Notification {
+  id        String               @id @default(cuid())
+  userId    String
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  layer     String               @default("shield")
+  priority  NotificationPriority @default(medium)
+  category  NotificationCategory
+  title     String
+  body      String
+  isRead    Boolean              @default(false)
+  createdAt DateTime             @default(now())
+  linkTo    String?
+
+  @@index([userId, isRead, createdAt(sort: Desc)])
+}
+
+enum NotificationPriority {
+  critical
+  high
+  medium
+  low
+}
+
+enum NotificationCategory {
+  alias_health
+  broker_removal
+  security_alert
+  system
 }
 
 enum BrokerScanStatus {

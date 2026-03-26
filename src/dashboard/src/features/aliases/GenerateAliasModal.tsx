@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import type { AliasCategory, AliasType } from "@phantom/shared";
 import { ALIAS_CATEGORIES } from "@phantom/shared";
 import { phantomApi } from "@/lib/api/phantomApi.js";
+import { queryKeys } from "@/lib/queryKeys.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 
 const TYPES: { id: AliasType; label: string; hint: string }[] = [
@@ -42,6 +43,9 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["aliases"] });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.userMe(accessToken),
+      });
       onClose();
       setStep(1);
       setType(null);

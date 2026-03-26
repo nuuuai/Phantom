@@ -7,6 +7,11 @@ export type {
   PatchAliasRequest,
 } from "./types/alias.js";
 export type { User } from "./types/user.js";
+export type {
+  AliasTypeUsage,
+  UserAccountSnapshot,
+} from "./types/userAccount.js";
+export { FREE_TIER_ALIAS_MAX } from "./constants/tierLimits.js";
 export type { ThreatPattern } from "./types/threatPattern.js";
 export type {
   BrokerCategory,
@@ -27,6 +32,11 @@ export type {
   SystemLayerStatus,
 } from "./types/dashboardOverview.js";
 export type { ApiResponse, ApiFailure, ApiSuccess } from "./types/apiResponse.js";
+export type {
+  NotificationCategory,
+  NotificationPriority,
+  PhantomNotification,
+} from "./types/notification.js";
 export {
   ALIAS_CATEGORIES,
   type AliasCategoryId,

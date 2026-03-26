@@ -1,33 +1,11 @@
 import bcrypt from "bcrypt";
 import { Router } from "express";
 import type { ApiResponse, User } from "@phantom/shared";
-import type { UserTier as PrismaUserTier } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { signAccessToken } from "../lib/jwt.js";
+import { toPublicUser } from "../lib/userPublic.js";
 
 export const authRouter = Router();
-
-function mapTier(tier: PrismaUserTier): User["tier"] {
-  if (tier === "enterprise") return "enterprise";
-  if (tier === "paid") return "paid";
-  return "free";
-}
-
-function toPublicUser(row: {
-  id: string;
-  email: string;
-  createdAt: Date;
-  tier: PrismaUserTier;
-}): User {
-  const local = row.email.split("@")[0] ?? "user";
-  return {
-    id: row.id,
-    email: row.email,
-    displayName: local.length > 0 ? local : "User",
-    createdAt: row.createdAt.toISOString(),
-    tier: mapTier(row.tier),
-  };
-}
 
 authRouter.post("/register", async (req, res) => {
   const body = req.body as {

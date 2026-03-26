@@ -8,7 +8,9 @@ import type {
   DataBroker,
   GenerateAliasRequest,
   PatchAliasRequest,
+  PhantomNotification,
   User,
+  UserAccountSnapshot,
 } from "@phantom/shared";
 
 type Token = string | null | undefined;
@@ -83,6 +85,17 @@ export const phantomApi = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+      });
+      return parseJson(res);
+    },
+  },
+
+  user: {
+    me: async (
+      accessToken: Token
+    ): Promise<ApiResponse<UserAccountSnapshot>> => {
+      const res = await fetch(buildUrl("/api/user/me"), {
+        headers: bearerHeaders(accessToken),
       });
       return parseJson(res);
     },
@@ -166,6 +179,67 @@ export const phantomApi = {
           headers: jsonAuthHeaders(accessToken),
         }
       );
+      return parseJson(res);
+    },
+  },
+
+  notifications: {
+    list: async (
+      accessToken: Token,
+      params?: { unread?: boolean; limit?: number }
+    ): Promise<
+      ApiResponse<{ items: PhantomNotification[]; unreadCount: number }>
+    > => {
+      const q = new URLSearchParams();
+      if (params?.unread) q.set("unread", "true");
+      if (params?.limit) q.set("limit", String(params.limit));
+      const qs = q.toString();
+      const path = qs
+        ? `/api/notifications?${qs}`
+        : "/api/notifications";
+      const res = await fetch(buildUrl(path), {
+        headers: bearerHeaders(accessToken),
+      });
+      return parseJson(res);
+    },
+
+    count: async (
+      accessToken: Token
+    ): Promise<ApiResponse<{ unreadCount: number }>> => {
+      const res = await fetch(buildUrl("/api/notifications/count"), {
+        headers: bearerHeaders(accessToken),
+      });
+      return parseJson(res);
+    },
+
+    markRead: async (
+      accessToken: Token,
+      id: string
+    ): Promise<ApiResponse<{ notification: PhantomNotification }>> => {
+      const res = await fetch(buildUrl(`/api/notifications/${id}/read`), {
+        method: "POST",
+        headers: jsonAuthHeaders(accessToken),
+      });
+      return parseJson(res);
+    },
+
+    markAllRead: async (
+      accessToken: Token
+    ): Promise<ApiResponse<{ updated: number }>> => {
+      const res = await fetch(buildUrl("/api/notifications/read-all"), {
+        method: "POST",
+        headers: jsonAuthHeaders(accessToken),
+      });
+      return parseJson(res);
+    },
+
+    seedDemo: async (
+      accessToken: Token
+    ): Promise<ApiResponse<{ seeded: number }>> => {
+      const res = await fetch(buildUrl("/api/notifications/seed-demo"), {
+        method: "POST",
+        headers: jsonAuthHeaders(accessToken),
+      });
       return parseJson(res);
     },
   },

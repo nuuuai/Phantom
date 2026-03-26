@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { NotificationCenter } from "@/features/notifications/NotificationCenter.js";
 import { titleForPath } from "@/lib/routeTitles.js";
 
 export function TopBar() {
@@ -29,6 +30,7 @@ export function TopBar() {
         <span className="font-mono text-xs text-ph-text-tertiary">{dateLabel}</span>
       </div>
       <div className="flex items-center gap-3">
+        <NotificationCenter />
         <button
           type="button"
           className="cursor-pointer rounded-md border border-[#2a2a34] bg-ph-raised px-3.5 py-1.5 font-sans text-xs text-ph-text-secondary"

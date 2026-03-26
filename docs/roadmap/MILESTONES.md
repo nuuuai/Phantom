@@ -9,9 +9,9 @@
 | Milestone | Target Date | Progress | Definition of Done |
 |-----------|------------|----------|---------------------|
 | M1: Infrastructure Ready | Month 1 | **45%** | API server, database, auth system deployed. CI/CD pipeline green. |
-| M2: Vault Operational | Month 2 | **5%** | Client-side encryption working. Extension ↔ dashboard vault sync. |
-| M3: Extension MVP | Month 2 | **40%** | Form detection, alias generation, autofill working on top 20 sites. |
-| M4: Dashboard MVP | Month 3 | **45%** | Login, alias list, alias detail, create/delete alias functional. |
+| M2: Vault Operational | Month 2 | **25%** | Client-side encryption working. Extension ↔ dashboard vault sync. Vault page with card grid, strength meter, generate modal, search/filter. |
+| M3: Extension MVP | Month 2 | **55%** | Form detection (heuristic + label parsing), alias generation, autofill via Shadow DOM shield icon, working on top 20 sites. |
+| M4: Dashboard MVP | Month 3 | **55%** | Login, alias list, alias detail, create/delete alias, notification center (bell + dropdown + mark read). |
 | M5: Phone Aliases | Month 3 | **15%** | VoIP numbers provisioned. Call/SMS forwarding working. |
 | M6: Broker Scanner | Month 4 | **50%** | 150+ brokers searchable. Scan results display in dashboard. |
 | M7: Broker Removal | Month 5 | **35%** | Automated removal for 50+ brokers. Manual guidance for rest. |
@@ -56,22 +56,22 @@
 
 ## North Star Metrics
 
-| Metric | What It Measures | Target (Month 24) |
-|--------|-----------------|-------------------|
-| **Active Aliases** | Product value (more aliases = more protection) | 2,000,000 |
-| **Scammer Minutes Wasted** | Sword layer impact (time not spent scamming real people) | 500,000 total |
-| **Data Broker Records Removed** | Shield layer effectiveness | 10,000,000 total |
-| **Monthly Risk Score Improvement** | Brain layer value (users getting safer over time) | 70% of users improve |
-| **Net Promoter Score** | User satisfaction and likelihood to recommend | 60+ |
+| Metric | What It Measures | Target (Month 24) | Progress |
+|--------|-----------------|-------------------|----------|
+| **Active Aliases** | Product value (more aliases = more protection) | 2,000,000 | **~0%** |
+| **Scammer Minutes Wasted** | Sword layer impact (time not spent scamming real people) | 500,000 total | **~0%** |
+| **Data Broker Records Removed** | Shield layer effectiveness | 10,000,000 total | **~0%** |
+| **Monthly Risk Score Improvement** | Brain layer value (users getting safer over time) | 70% of users improve | **0%** |
+| **Net Promoter Score** | User satisfaction and likelihood to recommend | 60+ | **0%** |
 
 ## Guardrail Metrics (Never Let These Degrade)
 
-| Metric | Threshold | Action if Breached |
-|--------|-----------|-------------------|
-| Alias generation latency | < 500ms p95 | Performance sprint |
-| Call screening decision time | < 2s p95 | Infra scaling |
-| False positive rate (call screening) | < 2% | Retrain model, raise thresholds |
-| Vault encryption failures | 0 | Incident response, halt deploys |
-| Dashboard uptime | > 99.5% | Infrastructure redundancy |
-| Extension crash rate | < 0.1% | Hotfix release |
-| User data exposure incidents | 0 | Full incident response |
+| Metric | Threshold | Progress vs threshold | Action if Breached |
+|--------|-----------|------------------------|---------------------|
+| Alias generation latency | < 500ms p95 | **TBD** (not in prod) | Performance sprint |
+| Call screening decision time | < 2s p95 | **N/A** (Call Guard not live) | Infra scaling |
+| False positive rate (call screening) | < 2% | **N/A** | Retrain model, raise thresholds |
+| Vault encryption failures | 0 | **TBD** | Incident response, halt deploys |
+| Dashboard uptime | > 99.5% | **TBD** | Infrastructure redundancy |
+| Extension crash rate | < 0.1% | **TBD** | Hotfix release |
+| User data exposure incidents | 0 | **0** (target) | Full incident response |

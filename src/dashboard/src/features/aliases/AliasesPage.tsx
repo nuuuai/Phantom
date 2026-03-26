@@ -75,6 +75,16 @@ export function AliasesPage() {
     enabled: accessToken !== null,
   });
 
+  const userMeQuery = useQuery({
+    queryKey: queryKeys.userMe(accessToken),
+    queryFn: async () => {
+      const res = await phantomApi.user.me(accessToken);
+      if (!res.ok) throw new Error(res.error.message);
+      return res.data;
+    },
+    enabled: accessToken !== null,
+  });
+
   const rotateMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await phantomApi.aliases.rotate(accessToken, id);
@@ -83,6 +93,9 @@ export function AliasesPage() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["aliases"] });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.userMe(accessToken),
+      });
     },
   });
 
@@ -94,6 +107,9 @@ export function AliasesPage() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["aliases"] });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.userMe(accessToken),
+      });
     },
   });
 
@@ -136,6 +152,20 @@ export function AliasesPage() {
           + Generate alias
         </button>
       </div>
+
+      {userMeQuery.data?.user.tier === "free" ? (
+        <div className="mt-4 flex flex-wrap gap-3 rounded-lg border border-ph-border bg-ph-bg px-4 py-3 font-mono text-[11px] text-ph-text-tertiary">
+          <span className="text-ph-text-muted">Free tier usage:</span>
+          {userMeQuery.data.aliasUsage.map((u) => (
+            <span key={u.type}>
+              {u.type}{" "}
+              <span className="text-ph-text-secondary">
+                {u.used}/{u.max === null ? "∞" : u.max}
+              </span>
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap gap-1">

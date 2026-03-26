@@ -16,142 +16,142 @@ Deploy the AI Brain layer. Launch Call Guard, Scammer Engagement Engine v1, cros
 
 ## Platform Scope
 
-| Platform | Status |
-|----------|--------|
-| Chrome Extension | **ENHANCE** — Call Guard UI, threat alerts |
-| Web Dashboard | **ENHANCE** — SEE transcript viewer, threat intel dashboard |
-| Firefox Extension | **BUILD** |
-| Safari Extension | **BUILD** |
-| Mobile Apps | Not started |
+| Platform | Status | Progress |
+|----------|--------|----------|
+| Chrome Extension | **ENHANCE** — Call Guard UI, threat alerts | **0%** |
+| Web Dashboard | **ENHANCE** — SEE transcript viewer, threat intel dashboard | **0%** |
+| Firefox Extension | **BUILD** | **0%** |
+| Safari Extension | **BUILD** | **0%** |
+| Mobile Apps | Not started | **0%** |
 
 ## Deliverables
 
 ### Month 6–7: The Brain v1
 
 - [ ] **Behavioral baseline engine** — **0%**
-  - Time-series data collection (anonymized timestamps, no content)
-  - 30-day rolling window for baseline calculation
-  - Anomaly detection (Z-score + ML classifier)
-  - Per-alias communication pattern tracking
-  - Weekly baseline recalculation
+  - Time-series data collection (anonymized timestamps, no content) — **0%**
+  - 30-day rolling window for baseline calculation — **0%**
+  - Anomaly detection (Z-score + ML classifier) — **0%**
+  - Per-alias communication pattern tracking — **0%**
+  - Weekly baseline recalculation — **0%**
 
 - [ ] **Risk scoring engine** — **0%**
-  - 6-factor model (exposure, alias health, breaches, call threats, password hygiene, dark web)
-  - Real-time score calculation on data change events
-  - Dashboard widget: risk score with trend chart
-  - Score-based action triggers (notifications at thresholds)
+  - 6-factor model (exposure, alias health, breaches, call threats, password hygiene, dark web) — **0%**
+  - Real-time score calculation on data change events — **0%**
+  - Dashboard widget: risk score with trend chart — **0%**
+  - Score-based action triggers (notifications at thresholds) — **0%**
 
 - [ ] **Alias health monitoring** — **0%**
-  - 4-state model: Healthy → Warning → Compromised → Quarantined
-  - Spam volume tracking per alias
-  - Breach cross-reference (auto-check aliases against new breach databases)
-  - Health change notifications in extension and dashboard
-  - Recommended actions per health state
+  - 4-state model: Healthy → Warning → Compromised → Quarantined — **0%**
+  - Spam volume tracking per alias — **0%**
+  - Breach cross-reference (auto-check aliases against new breach databases) — **0%**
+  - Health change notifications in extension and dashboard — **0%**
+  - Recommended actions per health state — **0%**
 
 ### Month 7–9: Telephony Upgrade + Call Guard
 
 - [ ] **Carrier-grade phone numbers** — **0%**
-  - Tier-1 carrier partnership signed and integrated
-  - Migration path from VoIP to carrier numbers
-  - Number porting for existing users
-  - Data poisoning engine (multi-user number assignment)
+  - Tier-1 carrier partnership signed and integrated — **0%**
+  - Migration path from VoIP to carrier numbers — **0%**
+  - Number porting for existing users — **0%**
+  - Data poisoning engine (multi-user number assignment) — **0%**
 
 - [ ] **Call Guard AI v1** — **0%**
-  - SIP/RTP gateway for call interception
-  - Speech-to-text (Whisper) for caller transcription
-  - Intent classification model (legitimate / suspicious / scam)
-  - Call routing: contacts → pass through, unknowns → screen
-  - Transcript streaming to dashboard via WebSocket
-  - "Take over" button in dashboard (switch from AI to user mid-call)
-  - Call log with transcripts in dashboard
+  - SIP/RTP gateway for call interception — **0%**
+  - Speech-to-text (Whisper) for caller transcription — **0%**
+  - Intent classification model (legitimate / suspicious / scam) — **0%**
+  - Call routing: contacts → pass through, unknowns → screen — **0%**
+  - Transcript streaming to dashboard via WebSocket — **0%**
+  - "Take over" button in dashboard (switch from AI to user mid-call) — **0%**
+  - Call log with transcripts in dashboard — **0%**
 
 - [ ] **Scammer Engagement Engine v1** — **0%**
-  - 3 initial personas: Confused Retiree, Nervous Newbie, Interested Buyer
-  - TTS voice synthesis per persona (age-appropriate, distinct voices)
-  - Background noise injection (TV, keyboard, ambient)
-  - Engagement quality scoring (is scammer still engaged?)
-  - Transcript viewer in dashboard (real-time streaming)
-  - Basic intelligence extraction (payment methods, callback numbers)
+  - 3 initial personas: Confused Retiree, Nervous Newbie, Interested Buyer — **0%**
+  - TTS voice synthesis per persona (age-appropriate, distinct voices) — **0%**
+  - Background noise injection (TV, keyboard, ambient) — **0%**
+  - Engagement quality scoring (is scammer still engaged?) — **0%**
+  - Transcript viewer in dashboard (real-time streaming) — **0%**
+  - Basic intelligence extraction (payment methods, callback numbers) — **0%**
 
 ### Month 9–10: Threat Intelligence + Broker Expansion
 
 - [ ] **Cross-user threat intelligence network** — **0%**
-  - Anonymization pipeline (strip PII at point of collection)
-  - Pattern recognition: scam campaign clustering
-  - Pre-protection: when pattern detected across 50+ users, alert all users
-  - Threat feed API (internal, for dashboard consumption)
-  - VulnIQ bridge (initial API endpoint for threat data exchange)
+  - Anonymization pipeline (strip PII at point of collection) — **0%**
+  - Pattern recognition: scam campaign clustering — **0%**
+  - Pre-protection: when pattern detected across 50+ users, alert all users — **0%**
+  - Threat feed API (internal, for dashboard consumption) — **0%**
+  - VulnIQ bridge (initial API endpoint for threat data exchange) — **0%**
 
 - [ ] **Data broker expansion** — **0%**
-  - Broker registry expanded to 250+
-  - Re-listing monitor (14-day re-scan cycle)
-  - Auto-re-removal on re-listing detection
-  - Dashboard: re-listing tracking per broker
-  - Basic legal escalation (CCPA notice template for repeat offenders)
+  - Broker registry expanded to 250+ — **0%**
+  - Re-listing monitor (14-day re-scan cycle) — **0%**
+  - Auto-re-removal on re-listing detection — **0%**
+  - Dashboard: re-listing tracking per broker — **0%**
+  - Basic legal escalation (CCPA notice template for repeat offenders) — **0%**
 
 - [ ] **Automated complaint filing** — **0%**
-  - FTC complaint auto-generation from scam engagement transcripts
-  - FCC complaint submission
-  - Dashboard: complaint tracking (filed, acknowledged, case number)
+  - FTC complaint auto-generation from scam engagement transcripts — **0%**
+  - FCC complaint submission — **0%**
+  - Dashboard: complaint tracking (filed, acknowledged, case number) — **0%**
 
 ### Month 10–11: Virtual Cards + VPN
 
 - [ ] **Virtual payment cards** — **0%**
-  - Card issuer partnership (Marqeta / Stripe Issuing)
-  - Card generation API (per-merchant, single-use, recurring)
-  - Spending limits and merchant locking
-  - Transaction notifications in dashboard
-  - Extension: autofill virtual card at checkout
+  - Card issuer partnership (Marqeta / Stripe Issuing) — **0%**
+  - Card generation API (per-merchant, single-use, recurring) — **0%**
+  - Spending limits and merchant locking — **0%**
+  - Transaction notifications in dashboard — **0%**
+  - Extension: autofill virtual card at checkout — **0%**
 
 - [ ] **VPN** — **0%**
-  - WireGuard-based VPN infrastructure
-  - Identity-aware routing (different exit node per active alias context)
-  - Extension toggle (one-click enable/disable)
-  - Dashboard: VPN status, data usage, connection logs
+  - WireGuard-based VPN infrastructure — **0%**
+  - Identity-aware routing (different exit node per active alias context) — **0%**
+  - Extension toggle (one-click enable/disable) — **0%**
+  - Dashboard: VPN status, data usage, connection logs — **0%**
 
 ### Month 11–12: Firefox/Safari + Dark Web Monitoring
 
 - [ ] **Firefox extension** — **0%**
-  - Port Chrome extension via Plasmo
-  - Firefox Add-ons store submission
-  - Cross-browser testing
+  - Port Chrome extension via Plasmo — **0%**
+  - Firefox Add-ons store submission — **0%**
+  - Cross-browser testing — **0%**
 
 - [ ] **Safari extension** — **0%**
-  - Plasmo → Safari Web Extension conversion
-  - App Store submission (requires Xcode wrapper)
-  - macOS/iOS Safari testing
+  - Plasmo → Safari Web Extension conversion — **0%**
+  - App Store submission (requires Xcode wrapper) — **0%**
+  - macOS/iOS Safari testing — **0%**
 
 - [ ] **Dark web monitoring** — **0%**
-  - Integration with dark web data providers
-  - Monitoring: SSN, emails, phones, credit cards, addresses
-  - Alert pipeline: detection → classification → notification → recommended action
-  - Dashboard: dark web findings list with severity
+  - Integration with dark web data providers — **0%**
+  - Monitoring: SSN, emails, phones, credit cards, addresses — **0%**
+  - Alert pipeline: detection → classification → notification → recommended action — **0%**
+  - Dashboard: dark web findings list with severity — **0%**
 
 - [ ] **Identity theft insurance** — **0%**
-  - Insurance provider partnership (AIG or similar)
-  - Integration into account provisioning
-  - Claims process documentation
+  - Insurance provider partnership (AIG or similar) — **0%**
+  - Integration into account provisioning — **0%**
+  - Claims process documentation — **0%**
 
 ## Success Metrics (End of Phase 2)
 
-| Metric | Target |
-|--------|--------|
-| Paid subscribers | 5,000 |
-| Total aliases generated | 500,000 |
-| Calls screened | 100,000 |
-| Scam engagements completed | 10,000 |
-| Avg scammer time wasted | 12 min |
-| FTC complaints filed | 5,000 |
-| Brokers covered | 250+ |
-| Cross-user threat patterns | 500+ |
-| Firefox/Safari installs | 5,000 |
+| Metric | Target | Progress to target |
+|--------|--------|---------------------|
+| Paid subscribers | 5,000 | **0%** |
+| Total aliases generated | 500,000 | **0%** |
+| Calls screened | 100,000 | **0%** |
+| Scam engagements completed | 10,000 | **0%** |
+| Avg scammer time wasted | 12 min | **0%** |
+| FTC complaints filed | 5,000 | **0%** |
+| Brokers covered | 250+ | **0%** |
+| Cross-user threat patterns | 500+ | **0%** |
+| Firefox/Safari installs | 5,000 | **0%** |
 
 ## Key Risks
 
-| Risk | Mitigation |
-|------|-----------|
-| Carrier partnership delays | Keep VoIP as fallback. Document carrier-rejected services for transparency. |
-| Call Guard false positives | Conservative thresholds (default: only block >80% confidence). Easy override. User feedback training loop. |
-| SEE personas not convincing | Extensive testing with real scam call recordings. Iterate on voice quality and conversation flow. |
-| Virtual card issuer compliance | Start with established issuer (Marqeta). Follow PCI DSS requirements. |
-| Safari extension approval | Apple review is strict. Start submission process early. Minimal permissions. |
+| Risk | Mitigation | Status |
+|------|-----------|--------|
+| Carrier partnership delays | Keep VoIP as fallback. Document carrier-rejected services for transparency. | **Open** |
+| Call Guard false positives | Conservative thresholds (default: only block >80% confidence). Easy override. User feedback training loop. | **Open** |
+| SEE personas not convincing | Extensive testing with real scam call recordings. Iterate on voice quality and conversation flow. | **Open** |
+| Virtual card issuer compliance | Start with established issuer (Marqeta). Follow PCI DSS requirements. | **Open** |
+| Safari extension approval | Apple review is strict. Start submission process early. Minimal permissions. | **Open** |
