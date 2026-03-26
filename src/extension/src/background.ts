@@ -8,6 +8,7 @@ import {
   generatePassword,
   importKeyHex,
   normalizeClientError,
+  PHANTOM_API_ERROR_CODES,
 } from "@phantom/shared";
 import {
   EXTENSION_API_BASE_KEY,
@@ -191,7 +192,18 @@ chrome.runtime.onMessage.addListener(
             }
             sendResponse({ ok: true });
           } else {
-            sendResponse({ ok: false, error: result.error.message });
+            const meta = clientErrorFromApiFailure(result);
+            let errMsg = meta.message;
+            if (result.error.code === PHANTOM_API_ERROR_CODES.tier_limit) {
+              errMsg = `${errMsg} Open the Phantom dashboard → Billing to upgrade.`;
+            } else if (
+              result.error.code === PHANTOM_API_ERROR_CODES.rate_limited &&
+              typeof result.error.retryAfterSeconds === "number" &&
+              result.error.retryAfterSeconds > 0
+            ) {
+              errMsg = `${errMsg} Retry in ~${String(Math.ceil(result.error.retryAfterSeconds))}s.`;
+            }
+            sendResponse({ ok: false, error: errMsg });
           }
         })
         .catch((err: unknown) => {
@@ -199,7 +211,7 @@ chrome.runtime.onMessage.addListener(
           sendResponse({
             ok: false,
             error: normalizeClientError({
-              code: "network_error",
+              code: PHANTOM_API_ERROR_CODES.network_error,
               message: "",
             }).userMessage,
           });
@@ -245,10 +257,10 @@ chrome.runtime.onMessage.addListener(
           } else {
             const meta = clientErrorFromApiFailure(result);
             let errMsg = meta.message;
-            if (result.error.code === "tier_limit") {
+            if (result.error.code === PHANTOM_API_ERROR_CODES.tier_limit) {
               errMsg = `${errMsg} Open the Phantom dashboard → Billing to upgrade.`;
             } else if (
-              result.error.code === "rate_limited" &&
+              result.error.code === PHANTOM_API_ERROR_CODES.rate_limited &&
               typeof result.error.retryAfterSeconds === "number" &&
               result.error.retryAfterSeconds > 0
             ) {
@@ -261,7 +273,7 @@ chrome.runtime.onMessage.addListener(
           sendResponse({
             ok: false,
             error: normalizeClientError({
-              code: "network_error",
+              code: PHANTOM_API_ERROR_CODES.network_error,
               message: "",
             }).userMessage,
           });

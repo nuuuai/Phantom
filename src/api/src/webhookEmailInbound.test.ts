@@ -31,6 +31,7 @@ describe("POST /api/webhooks/email-inbound", () => {
       .set("Content-Type", "text/plain")
       .send("not-json");
     expect(res.status).toBe(415);
+    expect(typeof res.headers["x-request-id"]).toBe("string");
   });
 
   it("returns 401 when signature is invalid", async () => {

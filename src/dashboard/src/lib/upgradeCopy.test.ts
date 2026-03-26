@@ -1,3 +1,4 @@
+import { PHANTOM_API_ERROR_CODES } from "@phantom/shared";
 import { describe, expect, it } from "vitest";
 import {
   apiErrorCodeToUpgradeReason,
@@ -7,13 +8,15 @@ import {
 
 describe("apiErrorCodeToUpgradeReason", () => {
   it("maps API codes to upgrade reasons", () => {
-    expect(apiErrorCodeToUpgradeReason("scan_rate_limited")).toBe(
-      "scan_rate_limited"
+    expect(
+      apiErrorCodeToUpgradeReason(PHANTOM_API_ERROR_CODES.scan_rate_limited)
+    ).toBe("scan_rate_limited");
+    expect(
+      apiErrorCodeToUpgradeReason(PHANTOM_API_ERROR_CODES.upgrade_required)
+    ).toBe("removal_queue");
+    expect(apiErrorCodeToUpgradeReason(PHANTOM_API_ERROR_CODES.tier_limit)).toBe(
+      "alias_cap"
     );
-    expect(apiErrorCodeToUpgradeReason("upgrade_required")).toBe(
-      "removal_queue"
-    );
-    expect(apiErrorCodeToUpgradeReason("tier_limit")).toBe("alias_cap");
     expect(apiErrorCodeToUpgradeReason("unknown")).toBeNull();
   });
 });

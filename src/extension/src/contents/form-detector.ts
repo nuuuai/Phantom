@@ -57,8 +57,23 @@ function classifyByLabel(el: HTMLInputElement): "email" | "username" | null {
   return null;
 }
 
-function collectFields(): DetectedField[] {
-  const seen = new Set<Element>();
+/** Sets value in a way React/Vue controlled inputs observe (prototype setter). */
+function setNativeInputValue(el: HTMLInputElement, value: string): void {
+  const desc = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    "value"
+  );
+  if (desc?.set) {
+    desc.set.call(el, value);
+  } else {
+    el.value = value;
+  }
+}
+
+function collectFieldsInRoot(
+  root: Document | ShadowRoot,
+  seen: Set<Element>
+): DetectedField[] {
   const fields: DetectedField[] = [];
 
   function add(el: Element, kind: DetectedField["kind"]) {
@@ -69,16 +84,16 @@ function collectFields(): DetectedField[] {
   }
 
   for (const sel of EMAIL_SELECTORS) {
-    document.querySelectorAll(sel).forEach((n) => add(n, "email"));
+    root.querySelectorAll(sel).forEach((n) => add(n, "email"));
   }
   for (const sel of PASSWORD_SELECTORS) {
-    document.querySelectorAll(sel).forEach((n) => add(n, "password"));
+    root.querySelectorAll(sel).forEach((n) => add(n, "password"));
   }
   for (const sel of USERNAME_SELECTORS) {
-    document.querySelectorAll(sel).forEach((n) => add(n, "username"));
+    root.querySelectorAll(sel).forEach((n) => add(n, "username"));
   }
 
-  document
+  root
     .querySelectorAll('input[type="text"]:not([data-phantom-shielded])')
     .forEach((el) => {
       if (seen.has(el) || !(el instanceof HTMLInputElement)) return;
@@ -88,6 +103,36 @@ function collectFields(): DetectedField[] {
     });
 
   return fields;
+}
+
+function collectOpenShadowRoots(root: ParentNode): ShadowRoot[] {
+  const out: ShadowRoot[] = [];
+  function walk(node: ParentNode) {
+    node.querySelectorAll("*").forEach((el) => {
+      if (el.shadowRoot) {
+        out.push(el.shadowRoot);
+        walk(el.shadowRoot);
+      }
+    });
+  }
+  walk(root);
+  return out;
+}
+
+function collectFields(): DetectedField[] {
+  const seen = new Set<Element>();
+  const roots: (Document | ShadowRoot)[] = [document];
+  collectOpenShadowRoots(document.documentElement).forEach((s) => {
+    roots.push(s);
+  });
+
+  const byInput = new Map<HTMLInputElement, DetectedField>();
+  for (const r of roots) {
+    for (const f of collectFieldsInRoot(r, seen)) {
+      byInput.set(f.element, f);
+    }
+  }
+  return Array.from(byInput.values());
 }
 
 function createShieldIcon(field: DetectedField): HTMLDivElement {
@@ -162,10 +207,15 @@ function createShieldIcon(field: DetectedField): HTMLDivElement {
         return;
       }
       const fillValue = result.plainValue ?? result.alias.value;
-      field.element.value = fillValue;
+      setNativeInputValue(field.element, fillValue);
       try {
         field.element.dispatchEvent(
-          new InputEvent("input", { bubbles: true, inputType: "insertReplacementText" })
+          new InputEvent("input", {
+            bubbles: true,
+            cancelable: true,
+            inputType: "insertReplacementText",
+            data: fillValue,
+          })
         );
       } catch {
         field.element.dispatchEvent(new Event("input", { bubbles: true }));

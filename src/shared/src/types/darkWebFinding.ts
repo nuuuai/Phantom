@@ -30,6 +30,15 @@ export interface DarkWebFindingsSummary {
   tierGated: boolean;
 }
 
+/** Paginated list from `GET /api/dark-web/findings`. */
+export interface DarkWebFindingsListResponse {
+  items: DarkWebFindingPublic[];
+  tierGated: boolean;
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 export interface DarkWebRefreshResult {
   /** New rows inserted this run (deduped against existing `dedupeKey`). */
   inserted: number;

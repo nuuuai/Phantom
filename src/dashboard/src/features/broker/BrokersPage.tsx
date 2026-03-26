@@ -17,6 +17,7 @@ import {
   clientErrorFromApiFailure,
   formatBrokerScanRateLimit,
   getQueryErrorMessage,
+  PHANTOM_API_ERROR_CODES,
   type BrokerScanSummary,
   type ClientErrorMeta,
   FREE_TIER_BROKER_SCAN_MAX_PER_24H,
@@ -144,7 +145,7 @@ export function BrokersPage() {
     },
     onError: (e: Error) => {
       const ce = e as ClientErrorMeta;
-      if (ce.apiErrorCode === "scan_rate_limited") {
+      if (ce.apiErrorCode === PHANTOM_API_ERROR_CODES.scan_rate_limited) {
         setScanLimitRetryAfter(ce.retryAfterSeconds);
         setScanLimitMessage(
           formatBrokerScanRateLimit(e.message, ce.retryAfterSeconds)
@@ -160,7 +161,7 @@ export function BrokersPage() {
     mutationFn: async () => {
       const res = await phantomApi.brokerScan.removeAll(accessToken);
       if (!res.ok) {
-        if (res.error.code === "upgrade_required") {
+        if (res.error.code === PHANTOM_API_ERROR_CODES.upgrade_required) {
           setUpgradeUi({ open: true, reason: "removal_queue" });
         }
         throw clientErrorFromApiFailure(res);
@@ -192,7 +193,7 @@ export function BrokersPage() {
           resultId
         );
         if (!res.ok) {
-          if (res.error.code === "upgrade_required") {
+          if (res.error.code === PHANTOM_API_ERROR_CODES.upgrade_required) {
             setUpgradeUi({ open: true, reason: "removal_queue" });
           }
           throw clientErrorFromApiFailure(res);
@@ -329,6 +330,7 @@ export function BrokersPage() {
           <button
             type="button"
             disabled={startMutation.isPending}
+            aria-busy={startMutation.isPending}
             onClick={() => {
               setScanErrorMessage(null);
               startMutation.mutate();
@@ -369,6 +371,7 @@ export function BrokersPage() {
           <button
             type="button"
             disabled={startMutation.isPending}
+            aria-busy={startMutation.isPending}
             onClick={() => {
               setScanErrorMessage(null);
               startMutation.mutate();

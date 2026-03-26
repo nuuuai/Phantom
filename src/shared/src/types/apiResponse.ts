@@ -28,6 +28,11 @@ export interface ApiErrorBody {
    * (non-secret misconfiguration hint).
    */
   lastError?: string | null;
+  /**
+   * Same as **`X-Request-Id`** — included on some global handler responses when
+   * **`NODE_ENV !== 'production'`** (omitted in production JSON bodies; header still set).
+   */
+  requestId?: string;
 }
 
 export interface ApiFailure {

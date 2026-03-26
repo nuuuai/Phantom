@@ -1,4 +1,5 @@
 import type { ApiResponse, UserAccountSnapshot } from "@phantom/shared";
+import { parseForwardToEmailPatchBody } from "@phantom/shared";
 import { Router } from "express";
 import { buildAliasUsage } from "../lib/buildAliasUsage.js";
 import { prisma } from "../lib/prisma.js";
@@ -34,9 +35,6 @@ userRouter.get("/me", async (req, res) => {
   res.json(response);
 });
 
-const EMAIL_RE =
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 userRouter.patch("/me", async (req, res) => {
   const userId = req.user?.id;
   if (!userId) {
@@ -47,47 +45,19 @@ userRouter.patch("/me", async (req, res) => {
     return;
   }
 
-  const body = req.body as { forwardToEmail?: unknown };
-  if (!("forwardToEmail" in body)) {
+  const parsed = parseForwardToEmailPatchBody(req.body);
+  if (!parsed.ok) {
     res.status(400).json({
       ok: false,
       error: {
         code: "validation_error",
-        message: "forwardToEmail required (use null to clear)",
+        message: parsed.message,
       },
     });
     return;
   }
 
-  let forwardToEmail: string | null = null;
-  if (body.forwardToEmail === null) {
-    forwardToEmail = null;
-  } else if (typeof body.forwardToEmail === "string") {
-    const t = body.forwardToEmail.trim();
-    if (t.length === 0) {
-      forwardToEmail = null;
-    } else if (!EMAIL_RE.test(t)) {
-      res.status(400).json({
-        ok: false,
-        error: {
-          code: "validation_error",
-          message: "forwardToEmail must be a valid email or empty",
-        },
-      });
-      return;
-    } else {
-      forwardToEmail = t.toLowerCase();
-    }
-  } else {
-    res.status(400).json({
-      ok: false,
-      error: {
-        code: "validation_error",
-        message: "forwardToEmail must be string or null",
-      },
-    });
-    return;
-  }
+  const forwardToEmail = parsed.value;
 
   const row = await prisma.user.update({
     where: { id: userId },

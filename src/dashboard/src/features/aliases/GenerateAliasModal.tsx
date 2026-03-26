@@ -10,6 +10,7 @@ import {
   importKeyHex,
   isFreeTierAliasTypeAtCap,
   isValidE164Phone,
+  PHANTOM_API_ERROR_CODES,
   type Alias,
   type AliasCategory,
   type AliasType,
@@ -24,6 +25,7 @@ import {
 } from "@/lib/queryKeys.js";
 import { STALE } from "@/lib/queryStaleTimes.js";
 import { useEscapeKey } from "@/hooks/useEscapeKey.js";
+import { useRestoreFocusToMainOnClose } from "@/hooks/useRestoreFocusToMainOnClose.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 import { Link } from "react-router-dom";
 import { UpgradeModal } from "@/components/upgrade/UpgradeModal.js";
@@ -125,7 +127,7 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
     onError: (e: Error) => {
       setError(e.message);
       const ce = e as ClientErrorMeta;
-      if (ce.apiErrorCode === "tier_limit" && type) {
+      if (ce.apiErrorCode === PHANTOM_API_ERROR_CODES.tier_limit && type) {
         const row = userMeQuery.data?.aliasUsage.find((u) => u.type === type);
         if (row && row.max !== null) {
           setUpgradeCtx({
@@ -157,6 +159,7 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
   }, [generateMutation.isPending, onClose]);
 
   useEscapeKey(open, handleClose);
+  useRestoreFocusToMainOnClose(open);
 
   if (!open) return null;
 
@@ -396,6 +399,7 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
                       phoneProviderQuery.isError ||
                       phoneProviderQuery.data?.ready === false))
                 }
+                aria-busy={generateMutation.isPending}
                 onClick={() => generateMutation.mutate()}
                 className="rounded-md border border-ph-accent-border bg-[#6C3AED15] px-4 py-2 font-sans text-xs font-medium text-ph-accent-light disabled:opacity-40"
               >
@@ -409,7 +413,7 @@ export function GenerateAliasModal({ open, onClose }: GenerateAliasModalProps) {
           <div className="mt-4 space-y-2">
             <p className="font-sans text-xs text-ph-danger">{error}</p>
             {(error as unknown as ClientErrorMeta).apiErrorCode ===
-            "tier_limit" ? (
+            PHANTOM_API_ERROR_CODES.tier_limit ? (
               <button
                 type="button"
                 className="font-sans text-xs font-medium text-ph-accent-light underline-offset-2 hover:underline"

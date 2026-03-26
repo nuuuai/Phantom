@@ -11,6 +11,7 @@ import {
   generatePassword,
   importKeyHex,
   isFreeTierAliasTypeAtCap,
+  PHANTOM_API_ERROR_CODES,
   type AliasCategory,
   type ClientErrorMeta,
 } from "@phantom/shared";
@@ -105,7 +106,7 @@ export function VaultGenerateModal({ open, onClose }: Props) {
     onError: (err: Error) => {
       setError(err.message);
       const ce = err as ClientErrorMeta;
-      if (ce.apiErrorCode === "tier_limit") {
+      if (ce.apiErrorCode === PHANTOM_API_ERROR_CODES.tier_limit) {
         const row = userMeQuery.data?.aliasUsage.find((u) => u.type === "password");
         if (row && row.max !== null) {
           setUpgradeCtx({
@@ -255,7 +256,7 @@ export function VaultGenerateModal({ open, onClose }: Props) {
             <div className="mt-3 space-y-2">
               <p className="font-sans text-[11px] text-ph-danger">{error}</p>
               {(error as unknown as ClientErrorMeta).apiErrorCode ===
-              "tier_limit" ? (
+              PHANTOM_API_ERROR_CODES.tier_limit ? (
                 <button
                   type="button"
                   className="font-sans text-[11px] font-medium text-ph-accent-light underline-offset-2 hover:underline"
@@ -292,6 +293,7 @@ export function VaultGenerateModal({ open, onClose }: Props) {
             <button
               type="button"
               disabled={generateMutation.isPending || passwordAtCap}
+              aria-busy={generateMutation.isPending}
               title={
                 passwordAtCap
                   ? "Free tier limit — upgrade or remove a password alias"

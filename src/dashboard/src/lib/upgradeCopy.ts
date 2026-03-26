@@ -2,6 +2,8 @@
  * Single source for upgrade / conversion copy (dashboard). Keep honest about Phase 1 simulation.
  */
 
+import { PHANTOM_API_ERROR_CODES } from "@phantom/shared";
+
 export type UpgradeReason =
   | "scan_rate_limited"
   | "removal_queue"
@@ -22,11 +24,11 @@ const SIM_FOOTNOTE =
 
 export function apiErrorCodeToUpgradeReason(code: string): UpgradeReason | null {
   switch (code) {
-    case "scan_rate_limited":
+    case PHANTOM_API_ERROR_CODES.scan_rate_limited:
       return "scan_rate_limited";
-    case "upgrade_required":
+    case PHANTOM_API_ERROR_CODES.upgrade_required:
       return "removal_queue";
-    case "tier_limit":
+    case PHANTOM_API_ERROR_CODES.tier_limit:
       return "alias_cap";
     default:
       return null;

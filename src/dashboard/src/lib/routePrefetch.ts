@@ -92,7 +92,11 @@ export function prefetchDashboardRoute(
     void queryClient.prefetchQuery({
       queryKey: queryKeys.darkWebFindings(accessToken),
       queryFn: async ({ signal }) => {
-        const res = await phantomApi.darkWeb.findings(accessToken, { signal });
+        const res = await phantomApi.darkWeb.findings(
+          accessToken,
+          undefined,
+          { signal }
+        );
         if (!res.ok) throw clientErrorFromApiFailure(res);
         return res.data;
       },

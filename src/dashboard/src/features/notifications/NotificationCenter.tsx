@@ -239,7 +239,7 @@ export function NotificationCenter() {
       <button
         type="button"
         onClick={() => setOpen((p) => !p)}
-        className="flex cursor-pointer items-center justify-center rounded-md border border-[#2a2a34] bg-ph-raised p-2 transition-colors hover:border-ph-accent-border"
+        className="flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center rounded-md border border-[#2a2a34] bg-ph-raised p-2 transition-colors hover:border-ph-accent-border"
         aria-controls="phantom-notification-panel"
         aria-expanded={open}
         aria-haspopup="dialog"
@@ -283,7 +283,14 @@ export function NotificationCenter() {
               ) : null}
               {listQuery.isError ? (
                 <div className="px-4 py-6 text-center font-sans text-[12px] text-ph-danger">
-                  {getQueryErrorMessage(listQuery.error)}
+                  <p>{getQueryErrorMessage(listQuery.error)}</p>
+                  <button
+                    type="button"
+                    onClick={() => void listQuery.refetch()}
+                    className="mt-3 cursor-pointer rounded-md border border-ph-border bg-ph-surface px-3 py-1.5 font-sans text-[11px] text-ph-text-secondary hover:bg-ph-raised"
+                  >
+                    Retry
+                  </button>
                 </div>
               ) : null}
               {!listQuery.isPending && !listQuery.isError && items.length === 0 ? (

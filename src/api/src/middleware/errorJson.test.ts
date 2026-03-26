@@ -1,8 +1,15 @@
 import "express-async-errors";
 import express from "express";
+import type { RequestHandler } from "express";
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { errorJsonHandler } from "./errorJson.js";
+import "./requestId.js";
+
+const setTestRequestId: RequestHandler = (req, _res, next) => {
+  req.requestId = "err-test-req-id";
+  next();
+};
 
 describe("errorJsonHandler", () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
@@ -43,5 +50,19 @@ describe("errorJsonHandler", () => {
     const res = await request(app).get("/boom").expect(500);
     expect(res.body.ok).toBe(false);
     expect(res.body.error.code).toBe("server_error");
+  });
+
+  it("includes error.requestId when NODE_ENV is not production and req.requestId is set", async () => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = "development";
+    const app = express();
+    app.use(setTestRequestId);
+    app.get("/boom", () => {
+      throw new Error("something broke");
+    });
+    app.use(errorJsonHandler);
+    const res = await request(app).get("/boom").expect(500);
+    expect(res.body.error.requestId).toBe("err-test-req-id");
+    process.env.NODE_ENV = prev;
   });
 });

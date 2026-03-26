@@ -88,5 +88,38 @@ describe.skipIf(!hasDb)("email inbox (integration)", () => {
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
     expect(unread.body.data.items).toHaveLength(0);
+
+    const listMeta = await request(app)
+      .get("/api/email-inbox?limit=40&offset=0")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+    expect(listMeta.body.data.meta).toMatchObject({
+      limit: 40,
+      offset: 0,
+    });
+
+    const patchAgain = await request(app)
+      .patch(`/api/email-inbox/${msg.id}/read`)
+      .set("Authorization", `Bearer ${token}`)
+      .set("Content-Type", "application/json")
+      .send({ isRead: true })
+      .expect(200);
+    expect(patchAgain.body.data.item.isRead).toBe(true);
+  });
+
+  it("clamps inbox limit to 100 and offset to max", async () => {
+    const capEmail = `inbox-cap-${randomUUID()}@phantom.test`;
+    const reg = await request(app)
+      .post("/api/auth/register")
+      .send({ email: capEmail, password })
+      .expect(201);
+    const token = reg.body.data.accessToken as string;
+    const res = await request(app)
+      .get("/api/email-inbox?limit=999&offset=60000")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+    expect(res.body.data.meta.limit).toBe(100);
+    expect(res.body.data.meta.offset).toBe(50_000);
+    await prisma.user.deleteMany({ where: { email: capEmail } });
   });
 });

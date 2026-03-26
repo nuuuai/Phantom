@@ -107,13 +107,18 @@ describe.skipIf(!hasDb)("notifications API (integration)", () => {
       .expect(201);
     const token = reg.body.data.accessToken as string;
 
+    const prevEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = "production";
-    const res = await request(app)
-      .post("/api/notifications/seed-demo")
-      .set("Authorization", `Bearer ${token}`);
-    expect(res.status).toBe(403);
-    expect(res.body.ok).toBe(false);
-    expect(res.body.error?.code).toBe("forbidden");
+    try {
+      const res = await request(app)
+        .post("/api/notifications/seed-demo")
+        .set("Authorization", `Bearer ${token}`);
+      expect(res.status).toBe(403);
+      expect(res.body.ok).toBe(false);
+      expect(res.body.error?.code).toBe("forbidden");
+    } finally {
+      process.env.NODE_ENV = prevEnv;
+    }
 
     await prisma.user.deleteMany({ where: { email: seedEmail } });
   });

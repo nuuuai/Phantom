@@ -1,4 +1,8 @@
-import type { AliasInboxItem, ApiResponse } from "@phantom/shared";
+import type {
+  AliasInboxItem,
+  AliasInboxListMeta,
+  ApiResponse,
+} from "@phantom/shared";
 import { Router } from "express";
 import { buildAliasInboxWhere } from "../lib/emailInboxWhere.js";
 import { prisma } from "../lib/prisma.js";
@@ -17,6 +21,9 @@ emailInboxRouter.get("/", async (req, res) => {
 
   const limitRaw = typeof req.query.limit === "string" ? req.query.limit : "40";
   const limit = Math.min(100, Math.max(1, parseInt(limitRaw, 10) || 40));
+  const offsetRaw =
+    typeof req.query.offset === "string" ? req.query.offset : "0";
+  const offset = Math.min(50_000, Math.max(0, parseInt(offsetRaw, 10) || 0));
   const qRaw = typeof req.query.q === "string" ? req.query.q : "";
   const unreadOnly =
     req.query.unread === "1" || req.query.unread === "true";
@@ -24,6 +31,7 @@ emailInboxRouter.get("/", async (req, res) => {
   const rows = await prisma.aliasInboxMessage.findMany({
     where: buildAliasInboxWhere(userId, qRaw, unreadOnly),
     orderBy: { receivedAt: "desc" },
+    skip: offset,
     take: limit,
     include: {
       alias: { select: { value: true } },
@@ -41,9 +49,13 @@ emailInboxRouter.get("/", async (req, res) => {
     isRead: r.isRead,
   }));
 
-  const response: ApiResponse<{ items: AliasInboxItem[] }> = {
+  const meta: AliasInboxListMeta = { limit, offset };
+  const response: ApiResponse<{
+    items: AliasInboxItem[];
+    meta: AliasInboxListMeta;
+  }> = {
     ok: true,
-    data: { items },
+    data: { items, meta },
   };
   res.json(response);
 });

@@ -120,7 +120,7 @@ export function BillingPage() {
   const canUpgrade = tier === "free";
 
   return (
-    <div className="px-4 py-6 sm:px-8">
+    <div className="min-w-0 max-w-full overflow-x-hidden px-4 py-6 sm:px-8">
       <h1 className="font-sans text-lg font-semibold text-ph-text-primary">
         Billing
       </h1>
@@ -159,9 +159,34 @@ export function BillingPage() {
         <p className="mt-8 font-sans text-sm text-ph-text-tertiary">Loading…</p>
       )}
       {billingQuery.isError && (
-        <p className="mt-8 font-sans text-sm text-ph-danger">
-          {getQueryErrorMessage(billingQuery.error)}
-        </p>
+        <div
+          className="mt-8 max-w-xl rounded-lg border border-ph-danger/40 bg-ph-danger/5 px-4 py-3 font-sans text-sm text-ph-danger"
+          role="alert"
+        >
+          <p>{getQueryErrorMessage(billingQuery.error)}</p>
+          <button
+            type="button"
+            className="mt-3 rounded-md border border-ph-border bg-ph-surface px-3 py-1.5 font-sans text-xs text-ph-text-secondary hover:bg-ph-raised"
+            onClick={() => void billingQuery.refetch()}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+      {meQuery.isError && (
+        <div
+          className="mt-8 max-w-xl rounded-lg border border-ph-danger/40 bg-ph-danger/5 px-4 py-3 font-sans text-sm text-ph-danger"
+          role="alert"
+        >
+          <p>{getQueryErrorMessage(meQuery.error)}</p>
+          <button
+            type="button"
+            className="mt-3 rounded-md border border-ph-border bg-ph-surface px-3 py-1.5 font-sans text-xs text-ph-text-secondary hover:bg-ph-raised"
+            onClick={() => void meQuery.refetch()}
+          >
+            Retry
+          </button>
+        </div>
       )}
 
       {billing && (
@@ -220,6 +245,7 @@ export function BillingPage() {
                 portalMutation.isPending ||
                 !billing.hasStripeClient
               }
+              aria-busy={portalMutation.isPending}
               onClick={() => portalMutation.mutate()}
               className="rounded-md border border-ph-border px-4 py-2 font-sans text-xs text-ph-text-secondary transition-colors hover:bg-ph-raised/80 disabled:cursor-not-allowed disabled:opacity-40"
             >

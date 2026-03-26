@@ -1,3 +1,4 @@
+import { PHANTOM_API_ERROR_CODES } from "../constants/apiErrorCodes.js";
 import type { ApiErrorBody, ApiFailure } from "../types/apiResponse.js";
 
 /** Canonical client-side error bucket (dashboard + extension). */
@@ -30,7 +31,7 @@ export function normalizeClientError(err: ApiErrorBody): {
   const serverMsg = err.message?.trim() ?? "";
   const code = err.code;
 
-  if (code === "network_error") {
+  if (code === PHANTOM_API_ERROR_CODES.network_error) {
     return {
       code: "network_error",
       userMessage:
@@ -39,7 +40,7 @@ export function normalizeClientError(err: ApiErrorBody): {
     };
   }
 
-  if (code === "invalid_response" && http >= 500) {
+  if (code === PHANTOM_API_ERROR_CODES.invalid_response && http >= 500) {
     return {
       code: "service_unavailable",
       userMessage:
@@ -47,7 +48,7 @@ export function normalizeClientError(err: ApiErrorBody): {
     };
   }
 
-  if (http === 401 || code === "unauthorized") {
+  if (http === 401 || code === PHANTOM_API_ERROR_CODES.unauthorized) {
     return {
       code: "unauthorized",
       userMessage:
@@ -57,9 +58,9 @@ export function normalizeClientError(err: ApiErrorBody): {
 
   if (
     http === 403 ||
-    code === "forbidden" ||
-    code === "tier_limit" ||
-    code === "upgrade_required"
+    code === PHANTOM_API_ERROR_CODES.forbidden ||
+    code === PHANTOM_API_ERROR_CODES.tier_limit ||
+    code === PHANTOM_API_ERROR_CODES.upgrade_required
   ) {
     return {
       code: "forbidden",
@@ -70,8 +71,8 @@ export function normalizeClientError(err: ApiErrorBody): {
 
   if (
     http === 429 ||
-    code === "rate_limited" ||
-    code === "scan_rate_limited"
+    code === PHANTOM_API_ERROR_CODES.rate_limited ||
+    code === PHANTOM_API_ERROR_CODES.scan_rate_limited
   ) {
     return {
       code: "rate_limited",
@@ -82,9 +83,9 @@ export function normalizeClientError(err: ApiErrorBody): {
 
   if (
     http === 503 ||
-    code === "service_unavailable" ||
-    code === "overloaded" ||
-    code === "phone_provider_unavailable"
+    code === PHANTOM_API_ERROR_CODES.service_unavailable ||
+    code === PHANTOM_API_ERROR_CODES.overloaded ||
+    code === PHANTOM_API_ERROR_CODES.phone_provider_unavailable
   ) {
     return {
       code: "service_unavailable",

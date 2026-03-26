@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { PHANTOM_API_ERROR_CODES } from "../constants/apiErrorCodes.js";
 import {
   clientErrorFromApiFailure,
   formatBrokerScanRateLimit,
@@ -8,7 +9,7 @@ import {
 describe("normalizeClientError", () => {
   it("maps 401 to unauthorized", () => {
     const n = normalizeClientError({
-      code: "unauthorized",
+      code: PHANTOM_API_ERROR_CODES.unauthorized,
       message: "",
       httpStatus: 401,
     });
@@ -18,7 +19,7 @@ describe("normalizeClientError", () => {
 
   it("preserves tier_limit message as forbidden", () => {
     const n = normalizeClientError({
-      code: "tier_limit",
+      code: PHANTOM_API_ERROR_CODES.tier_limit,
       message: "Cap reached",
       httpStatus: 403,
     });
@@ -28,7 +29,7 @@ describe("normalizeClientError", () => {
 
   it("maps scan_rate_limited to rate_limited", () => {
     const n = normalizeClientError({
-      code: "scan_rate_limited",
+      code: PHANTOM_API_ERROR_CODES.scan_rate_limited,
       message: "Daily scan limit reached",
       httpStatus: 429,
       retryAfterSeconds: 3600,
@@ -39,7 +40,7 @@ describe("normalizeClientError", () => {
 
   it("maps network_error code", () => {
     const n = normalizeClientError({
-      code: "network_error",
+      code: PHANTOM_API_ERROR_CODES.network_error,
       message: "Could not reach API",
     });
     expect(n.code).toBe("network_error");
@@ -48,7 +49,7 @@ describe("normalizeClientError", () => {
 
   it("maps phone_provider_unavailable to service_unavailable", () => {
     const n = normalizeClientError({
-      code: "phone_provider_unavailable",
+      code: PHANTOM_API_ERROR_CODES.phone_provider_unavailable,
       message: "Set TWILIO_ACCOUNT_SID or use mock",
       httpStatus: 503,
     });
@@ -62,7 +63,7 @@ describe("clientErrorFromApiFailure", () => {
     const err = clientErrorFromApiFailure({
       ok: false,
       error: {
-        code: "scan_rate_limited",
+        code: PHANTOM_API_ERROR_CODES.scan_rate_limited,
         message: "limit",
         httpStatus: 429,
         retryAfterSeconds: 120,
@@ -77,7 +78,7 @@ describe("clientErrorFromApiFailure", () => {
     const err = clientErrorFromApiFailure({
       ok: false,
       error: {
-        code: "phone_provider_unavailable",
+        code: PHANTOM_API_ERROR_CODES.phone_provider_unavailable,
         message: "Twilio not configured",
         httpStatus: 503,
         lastError: "TWILIO_ACCOUNT_SID missing",

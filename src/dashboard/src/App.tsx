@@ -7,12 +7,9 @@ import { useQuery } from "@tanstack/react-query";
 import { lazy, useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout.js";
-import { AliasDetailPage } from "@/features/aliases/AliasDetailPage.js";
-import { AliasesPage } from "@/features/aliases/AliasesPage.js";
 import { DashboardPage } from "@/features/dashboard/DashboardPage.js";
 import { OnboardingModal } from "@/features/onboarding/OnboardingModal.js";
 import { PlaceholderPage } from "@/features/placeholder/PlaceholderPage.js";
-import { SettingsPage } from "@/features/settings/SettingsPage.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { shouldSkipDevBootstrap } from "@/lib/devBootstrap.js";
 import { queryKeys } from "@/lib/queryKeys.js";
@@ -42,6 +39,21 @@ const BillingPage = lazy(() =>
 const DarkWebPage = lazy(() =>
   import("@/features/darkWeb/DarkWebPage.js").then((m) => ({
     default: m.DarkWebPage,
+  }))
+);
+const AliasesPage = lazy(() =>
+  import("@/features/aliases/AliasesPage.js").then((m) => ({
+    default: m.AliasesPage,
+  }))
+);
+const AliasDetailPage = lazy(() =>
+  import("@/features/aliases/AliasDetailPage.js").then((m) => ({
+    default: m.AliasDetailPage,
+  }))
+);
+const SettingsPage = lazy(() =>
+  import("@/features/settings/SettingsPage.js").then((m) => ({
+    default: m.SettingsPage,
   }))
 );
 
@@ -173,7 +185,7 @@ export function App() {
             element={
               <PlaceholderPage
                 title="Call Guard"
-                description="Call screening and telephony posture. Phase 1 wiring connects here."
+                description="Call screening, robocall labeling, and telephony posture — planned product surface, not wired in Phase 1."
               />
             }
           />
@@ -183,7 +195,7 @@ export function App() {
             element={
               <PlaceholderPage
                 title="Scam engage"
-                description="Scammer Engagement Engine transcripts and controls."
+                description="Scammer Engagement Engine — transcripts and controls (roadmap; no live SEE in Phase 1)."
               />
             }
           />
@@ -192,7 +204,7 @@ export function App() {
             element={
               <PlaceholderPage
                 title="Threat intel"
-                description="Anonymized campaign intelligence from the Brain."
+                description="Campaign-style intelligence feeds — not connected to live community or marketplace data in Phase 1."
               />
             }
           />
@@ -201,7 +213,7 @@ export function App() {
             element={
               <PlaceholderPage
                 title="Reports"
-                description="Exposure and removal reporting."
+                description="Scheduled exposure and removal reporting — export and digests are a future slice."
               />
             }
           />
@@ -210,7 +222,7 @@ export function App() {
             element={
               <PlaceholderPage
                 title="Family"
-                description="Family command center (Phase 1 shell)."
+                description="Shared family command center — multi-seat policies and dashboards are not in Phase 1."
               />
             }
           />

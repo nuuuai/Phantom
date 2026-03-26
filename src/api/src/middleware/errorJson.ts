@@ -71,7 +71,13 @@ export const errorJsonHandler: ErrorRequestHandler = (err, req, res, next) => {
   const clientMessage = publicMessage(err);
   const body: ApiResponse<never> = {
     ok: false,
-    error: { code, message: clientMessage },
+    error: {
+      code,
+      message: clientMessage,
+      ...(process.env.NODE_ENV !== "production" && req.requestId
+        ? { requestId: req.requestId }
+        : {}),
+    },
   };
   res.status(status).type("application/json").json(body);
 };

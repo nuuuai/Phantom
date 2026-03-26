@@ -1,6 +1,7 @@
 import {
   type Alias,
   type AliasInboxItem,
+  type AliasInboxListMeta,
   type ApiResponse,
   type BillingStatus,
   type BrokerScanResult,
@@ -18,6 +19,7 @@ import {
   type VaultSyncGetResponse,
   type VaultSyncPutRequest,
   type DarkWebFindingPublic,
+  type DarkWebFindingsListResponse,
   type DarkWebFindingsSummary,
   type DarkWebRefreshResult,
   RATE_LIMIT_RETRY_MS,
@@ -205,9 +207,18 @@ export const phantomApi = {
   emailInbox: {
     list: async (
       accessToken: Token,
-      limitOrOpts?: number | { limit?: number; q?: string; unread?: boolean },
+      limitOrOpts?:
+        | number
+        | {
+            limit?: number;
+            offset?: number;
+            q?: string;
+            unread?: boolean;
+          },
       init?: RequestInit
-    ): Promise<ApiResponse<{ items: AliasInboxItem[] }>> => {
+    ): Promise<
+      ApiResponse<{ items: AliasInboxItem[]; meta: AliasInboxListMeta }>
+    > => {
       const opts =
         typeof limitOrOpts === "number"
           ? { limit: limitOrOpts }
@@ -215,6 +226,9 @@ export const phantomApi = {
       const params = new URLSearchParams();
       if (opts.limit !== undefined) {
         params.set("limit", String(opts.limit));
+      }
+      if (opts.offset !== undefined && opts.offset > 0) {
+        params.set("offset", String(opts.offset));
       }
       if (opts.q?.trim()) {
         params.set("q", opts.q.trim());
@@ -292,12 +306,15 @@ export const phantomApi = {
 
     findings: async (
       accessToken: Token,
+      opts?: { limit?: number; offset?: number },
       init?: RequestInit
-    ): Promise<
-      ApiResponse<{ items: DarkWebFindingPublic[]; tierGated: boolean }>
-    > => {
+    ): Promise<ApiResponse<DarkWebFindingsListResponse>> => {
+      const params = new URLSearchParams();
+      if (opts?.limit !== undefined) params.set("limit", String(opts.limit));
+      if (opts?.offset !== undefined) params.set("offset", String(opts.offset));
+      const qs = params.toString() ? `?${params.toString()}` : "";
       const res = await fetchWithRefresh(
-        "/api/dark-web/findings",
+        `/api/dark-web/findings${qs}`,
         accessToken,
         init ?? {}
       );

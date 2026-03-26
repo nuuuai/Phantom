@@ -91,5 +91,9 @@ describe("createApp", () => {
         message: expect.stringContaining("GET /nonexistent-route"),
       },
     });
+    if (process.env.NODE_ENV !== "production") {
+      expect(typeof res.body.error?.requestId).toBe("string");
+      expect(res.headers["x-request-id"]).toBe(res.body.error.requestId);
+    }
   });
 });

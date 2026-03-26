@@ -13,6 +13,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { UpgradeModal } from "@/components/upgrade/UpgradeModal.js";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { useCopiedFeedback } from "@/hooks/useCopiedFeedback.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
@@ -67,6 +68,7 @@ export function AliasDetailPage() {
   const [decryptedPlain, setDecryptedPlain] = useState<string | null>(null);
   const [forwardDraft, setForwardDraft] = useState("");
   const { copiedId, setCopiedId } = useCopiedFeedback();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const aliasQuery = useQuery({
     queryKey: queryKeys.aliasDetail(accessToken, id),
@@ -90,14 +92,14 @@ export function AliasDetailPage() {
     enabled: Boolean(accessToken && alias?.type === "phone"),
   });
 
-  const userMeForEmailQuery = useQuery({
+  const userMeQuery = useQuery({
     queryKey: queryKeys.userMe(accessToken),
     queryFn: async ({ signal }) => {
       const res = await phantomApi.user.me(accessToken, { signal });
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
-    enabled: Boolean(accessToken && alias?.type === "email"),
+    enabled: Boolean(accessToken && alias),
     staleTime: STALE.userMe,
   });
 
@@ -139,6 +141,10 @@ export function AliasDetailPage() {
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
+    onError: (e: Error) => {
+      const ce = e as ClientErrorMeta;
+      if (ce.apiErrorCode === "tier_limit") setUpgradeOpen(true);
+    },
     onSuccess: (data) => {
       void qc.invalidateQueries({ queryKey: aliasesAll });
       void qc.invalidateQueries({ queryKey: vaultAll });
@@ -149,6 +155,12 @@ export function AliasDetailPage() {
         queryKey: dashboardOverviewAll,
       });
       void qc.invalidateQueries({ queryKey: queryKeys.userMe(accessToken) });
+      void qc.invalidateQueries({
+        queryKey: queryKeys.notifications(accessToken),
+      });
+      void qc.invalidateQueries({
+        queryKey: queryKeys.notificationCount(accessToken),
+      });
       void navigate(`/aliases/${data.alias.id}`, { replace: true });
     },
   });
@@ -179,6 +191,10 @@ export function AliasDetailPage() {
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
+    onError: (e: Error) => {
+      const ce = e as ClientErrorMeta;
+      if (ce.apiErrorCode === "tier_limit") setUpgradeOpen(true);
+    },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: aliasesAll });
       void qc.invalidateQueries({ queryKey: vaultAll });
@@ -187,6 +203,12 @@ export function AliasDetailPage() {
         queryKey: dashboardOverviewAll,
       });
       void qc.invalidateQueries({ queryKey: queryKeys.userMe(accessToken) });
+      void qc.invalidateQueries({
+        queryKey: queryKeys.notifications(accessToken),
+      });
+      void qc.invalidateQueries({
+        queryKey: queryKeys.notificationCount(accessToken),
+      });
       void navigate("/aliases", { replace: true });
     },
   });
@@ -238,6 +260,12 @@ export function AliasDetailPage() {
 
   const page = (
     <div className="px-8 py-6">
+      <UpgradeModal
+        open={upgradeOpen}
+        reason="alias_cap"
+        onDismiss={() => setUpgradeOpen(false)}
+        titleId="alias-detail-upgrade-title"
+      />
       <button
         type="button"
         onClick={() => void navigate("/aliases")}
@@ -314,16 +342,16 @@ export function AliasDetailPage() {
               automatic in Phase 1 — see{" "}
               <span className="font-mono text-[10px]">EMAIL_INBOUND.md</span>.
             </p>
-            {userMeForEmailQuery.isPending ? (
+            {userMeQuery.isPending ? (
               <p className="mt-2 font-sans text-[11px] text-ph-text-muted">
                 Loading account forward…
               </p>
             ) : (
               <p className="mt-2 font-sans text-[11px] text-ph-text-secondary">
                 Optional account forward-to:{" "}
-                {userMeForEmailQuery.data?.user.forwardToEmail?.trim() ? (
+                {userMeQuery.data?.user.forwardToEmail?.trim() ? (
                   <span className="font-mono text-[10px] text-ph-text-primary">
-                    {userMeForEmailQuery.data.user.forwardToEmail}
+                    {userMeQuery.data.user.forwardToEmail}
                   </span>
                 ) : (
                   <span className="text-ph-text-muted">not set</span>
@@ -352,8 +380,7 @@ export function AliasDetailPage() {
             ) : phoneProviderQuery.isError ? (
               <div className="mb-3 space-y-2">
                 <p className="font-sans text-[11px] text-ph-danger">
-                  {(phoneProviderQuery.error as ClientErrorMeta)?.message ??
-                    "Could not load phone provider status."}
+                  {getQueryErrorMessage(phoneProviderQuery.error)}
                 </p>
                 {(phoneProviderQuery.error as ClientErrorMeta)?.lastError ? (
                   <p className="rounded-md border border-ph-danger/40 bg-ph-danger/5 px-3 py-2 font-mono text-[10px] text-ph-danger">
@@ -361,6 +388,13 @@ export function AliasDetailPage() {
                     {(phoneProviderQuery.error as ClientErrorMeta).lastError}
                   </p>
                 ) : null}
+                <button
+                  type="button"
+                  onClick={() => void phoneProviderQuery.refetch()}
+                  className="cursor-pointer rounded-md border border-ph-border bg-ph-surface px-3 py-1.5 font-sans text-[11px] text-ph-text-secondary hover:bg-ph-raised"
+                >
+                  Retry
+                </button>
               </div>
             ) : phoneProviderQuery.data ? (
               <div className="mb-4 space-y-2">
@@ -436,9 +470,17 @@ export function AliasDetailPage() {
                 Stored for future call/SMS routing. Phase 1 does not dial PSTN.
               </p>
               {patchForwardMutation.isError ? (
-                <p className="mt-2 font-sans text-[11px] text-ph-danger">
-                  {(patchForwardMutation.error as Error).message}
-                </p>
+                <div className="mt-2 space-y-1">
+                  <p className="font-sans text-[11px] text-ph-danger">
+                    {getQueryErrorMessage(patchForwardMutation.error)}
+                  </p>
+                  {(patchForwardMutation.error as ClientErrorMeta)?.lastError ? (
+                    <p className="rounded-md border border-ph-danger/40 bg-ph-danger/5 px-3 py-2 font-mono text-[10px] text-ph-danger">
+                      Last error:{" "}
+                      {(patchForwardMutation.error as ClientErrorMeta).lastError}
+                    </p>
+                  ) : null}
+                </div>
               ) : null}
             </div>
           </div>

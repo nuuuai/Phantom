@@ -2,6 +2,7 @@ import type { ActivityItem, DashboardOverview } from "@phantom/shared";
 import { prisma } from "./prisma.js";
 import { advanceRemovalSimulation } from "./brokerScanAdvance.js";
 import { computeBrokerScanSummaryFromRows } from "./computeBrokerScanSummary.js";
+import { isOverviewDemoMetricsEnabled } from "./envOverviewDemo.js";
 import { isPaidTier } from "./userTierPaid.js";
 
 function formatRelativeShort(date: Date): string {
@@ -27,6 +28,7 @@ export async function buildDashboardOverview(
 
   const aliases = await prisma.alias.findMany({
     where: { userId, isActive: true },
+    select: { id: true, healthStatus: true },
   });
   const activeAliases = aliases.length;
   const aliasesHealthy = aliases.filter((a) => a.healthStatus === "healthy").length;
@@ -123,10 +125,36 @@ export async function buildDashboardOverview(
     )
   );
 
+  const demo = isOverviewDemoMetricsEnabled();
+
+  const callsScreened = demo ? 1284 : 0;
+  const scamsEngaged = demo ? 342 : 0;
+  const scammerMinutes = demo ? 4870 : 0;
+  const complaintsFile = demo ? 298 : 0;
+  const weeklyScams = demo
+    ? ([12, 18, 9, 24, 15, 21, 14] as const)
+    : ([0, 0, 0, 0, 0, 0, 0] as const);
+  const riskTrend = demo ? -12 : 0;
+
+  const systemLayers = demo
+    ? ([
+        { name: "Shield", status: "Broker & alias posture", layer: "shield" as const },
+        { name: "Brain", status: "Risk model updated 2h ago", layer: "brain" as const },
+        { name: "Sword", status: "342 scammers engaged", layer: "sword" as const },
+        { name: "Autopilot", status: "3 auto-actions today", layer: "autopilot" as const },
+      ] as const)
+    : ([
+        { name: "Shield", status: "Broker & alias posture", layer: "shield" as const },
+        { name: "Brain", status: "Risk model (Phase 2)", layer: "brain" as const },
+        { name: "Sword", status: "Scam Engage not live — Phase 1", layer: "sword" as const },
+        { name: "Autopilot", status: "Automation not live — Phase 1", layer: "autopilot" as const },
+      ] as const);
+
   return {
     userId,
     riskScore,
-    riskTrend: -12,
+    riskTrend,
+    metricsDemoMode: demo,
     activeAliases,
     aliasesHealthy,
     aliasesWarning,
@@ -135,19 +163,14 @@ export async function buildDashboardOverview(
     brokersRemoved: brokerSummary.removed,
     brokersPending: brokerSummary.pending,
     brokersRelisted: brokerSummary.relisted,
-    callsScreened: 1284,
-    scamsEngaged: 342,
-    scammerMinutes: 4870,
-    complaintsFile: 298,
+    callsScreened,
+    scamsEngaged,
+    scammerMinutes,
+    complaintsFile,
     darkWebAlerts,
     activity,
-    weeklyScams: [12, 18, 9, 24, 15, 21, 14],
+    weeklyScams: [...weeklyScams],
     weekDays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-    systemLayers: [
-      { name: "Shield", status: "Broker & alias posture", layer: "shield" },
-      { name: "Brain", status: "Risk model updated 2h ago", layer: "brain" },
-      { name: "Sword", status: "342 scammers engaged", layer: "sword" },
-      { name: "Autopilot", status: "3 auto-actions today", layer: "autopilot" },
-    ],
+    systemLayers: [...systemLayers],
   };
 }

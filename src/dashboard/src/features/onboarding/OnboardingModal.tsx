@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useEscapeKey } from "@/hooks/useEscapeKey.js";
+import { useRestoreFocusToMainOnClose } from "@/hooks/useRestoreFocusToMainOnClose.js";
 import {
   DASHBOARD_PATHS,
   chromeWebStoreHref,
@@ -21,8 +22,13 @@ const STEPS = [
     cta: "Next",
   },
   {
+    title: "Sign in to Phantom",
+    body: "Open the extension popup (puzzle icon → find Phantom → Pin so it stays next to the address bar in Chrome), then sign in with your Phantom account. Manifest V3: the popup is the primary UI — there is no separate background page for login.",
+    cta: "Next",
+  },
+  {
     title: "Generate your first alias",
-    body: "Open the Aliases page or use the extension popup on a form. Create a disposable email, username, or phone alias — use it for signups instead of your real info.",
+    body: "With a signed-in session, use the extension on a form field or open the Aliases page in this dashboard. Create a disposable email, username, or phone alias — use it for signups instead of your real info.",
     cta: "Next",
     link: DASHBOARD_PATHS.aliases,
   },
@@ -46,7 +52,7 @@ const STEPS = [
   },
   {
     title: "Phantom Pro (optional)",
-    body: "Free tier includes exposure scans and DIY opt-out links. Upgrade for simulated removal queue, unlimited aliases, and billing in one place.",
+    body: "Free tier includes exposure scans and DIY opt-out links. Upgrade for simulated removal queue, unlimited aliases, dark web breach checks (HIBP when your operator configures the API key), and billing in one place.",
     cta: "Done",
     link: DASHBOARD_PATHS.billing,
   },
@@ -94,6 +100,7 @@ export function OnboardingModal() {
   }, []);
 
   useEscapeKey(open, close);
+  useRestoreFocusToMainOnClose(open);
 
   useEffect(() => {
     if (!open) return;
@@ -214,10 +221,11 @@ export function OnboardingModal() {
                   </p>
                   <p className="text-[11px] text-ph-text-muted">
                     This dashboard runs on <span className="font-mono">https</span>
-                    — it cannot open{" "}
-                    <span className="font-mono">chrome-extension://</span> URLs.
-                    Use the extension toolbar, Options, or Manage extensions in
-                    Chrome.
+                    — browsers block linking to{" "}
+                    <span className="font-mono">chrome-extension://…</span> from web
+                    pages. Open the extension from the toolbar (or{" "}
+                    <span className="font-mono">chrome://extensions</span> →
+                    Details) — never expect a deep link from the dashboard.
                   </p>
                 </div>
               ) : null}

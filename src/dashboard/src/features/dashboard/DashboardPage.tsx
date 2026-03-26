@@ -103,6 +103,17 @@ export function DashboardPage() {
 
   return (
     <div className="px-4 py-6 sm:px-8">
+      {data.metricsDemoMode ? (
+        <p
+          className="mb-4 rounded-md border border-ph-warning/40 bg-ph-warning/10 px-3 py-2 font-sans text-[11px] text-ph-warning"
+          role="status"
+        >
+          Sword / weekly chart metrics are <strong>synthetic</strong> (
+          <span className="font-mono">DASHBOARD_DEMO_METRICS=1</span> or{" "}
+          <span className="font-mono">OVERVIEW_DEMO_METRICS=1</span> on the API).
+          Unset for honest Phase 1 zeros.
+        </p>
+      ) : null}
       {data.activeAliases === 0 ? <DashboardGettingStarted /> : null}
       <StatGrid data={data} />
 
@@ -112,6 +123,7 @@ export function DashboardPage() {
           <WeeklyScamsChart
             values={data.weeklyScams}
             labels={data.weekDays}
+            demoMode={data.metricsDemoMode}
           />
           <SystemLayersPanel layers={data.systemLayers} />
           <QuickActionsGrid />

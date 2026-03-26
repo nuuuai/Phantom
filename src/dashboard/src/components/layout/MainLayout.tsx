@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { Outlet } from "react-router-dom";
+import { FeatureRouteErrorBoundary } from "./FeatureRouteErrorBoundary.js";
 import { RouteFallback } from "./RouteFallback.js";
 import { MobileNavBar } from "./MobileNavBar.js";
 import { SidebarNav } from "./SidebarNav.js";
@@ -24,7 +25,9 @@ export function MainLayout() {
           className="flex-1 overflow-y-auto outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ph-accent/30"
         >
           <Suspense fallback={<RouteFallback />}>
-            <Outlet />
+            <FeatureRouteErrorBoundary>
+              <Outlet />
+            </FeatureRouteErrorBoundary>
           </Suspense>
         </main>
       </div>

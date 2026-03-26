@@ -8,6 +8,7 @@ export const DASHBOARD_PATHS = {
   inbox: "/inbox",
   vault: "/vault",
   brokers: "/brokers",
+  darkWeb: "/dark-web",
   billing: "/billing",
   settings: "/settings",
 } as const;
@@ -19,6 +20,7 @@ export const QUICK_ACTIONS = [
   { label: "New alias", to: DASHBOARD_PATHS.aliases, color: "#6C3AED" },
   { label: "Vault", to: DASHBOARD_PATHS.vault, color: "#A78BFA" },
   { label: "Run broker scan", to: DASHBOARD_PATHS.brokers, color: "#34D399" },
+  { label: "Dark web", to: DASHBOARD_PATHS.darkWeb, color: "#F472B6" },
   { label: "Alias inbox", to: DASHBOARD_PATHS.inbox, color: "#FBBF24" },
   { label: "Billing & Pro", to: DASHBOARD_PATHS.billing, color: "#60A5FA" },
   { label: "Settings", to: DASHBOARD_PATHS.settings, color: "#94A3B8" },

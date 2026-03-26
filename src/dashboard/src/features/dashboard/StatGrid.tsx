@@ -26,7 +26,9 @@ export function StatGrid({ data }: StatGridProps) {
           </span>
         </div>
         <div className="mt-1 font-sans text-xs text-ph-text-muted">
-          Low risk — strong posture
+          {data.metricsDemoMode
+            ? "Low risk — strong posture"
+            : "Heuristic from broker + alias posture"}
         </div>
       </div>
 
@@ -71,7 +73,13 @@ export function StatGrid({ data }: StatGridProps) {
           <span className="text-sm text-ph-text-tertiary"> min</span>
         </div>
         <div className="mt-1 font-sans text-xs text-ph-text-muted">
-          {data.scamsEngaged} scammers · {data.complaintsFile} complaints
+          {data.metricsDemoMode ? (
+            <>
+              {data.scamsEngaged} scammers · {data.complaintsFile} complaints
+            </>
+          ) : (
+            <>Phase 1: Sword / SEE not live — zeros are honest.</>
+          )}
         </div>
       </div>
     </div>

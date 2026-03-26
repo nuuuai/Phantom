@@ -36,6 +36,24 @@ Phantom operates across four capability layers:
 
 On Windows, [`run.ps1`](run.ps1) wraps common dev commands (e.g. **`-DashboardOnly`** for UI-only).
 
+### 5-minute local (first run)
+
+1. **Dependencies:** `npm install` at the repo root (Node **20+**).
+2. **Data services:** `docker compose up -d postgres redis` (or point **`DATABASE_URL`** / **`REDIS_URL`** at your own instances).
+3. **Env:** copy [`.env.example`](.env.example) → `.env`; set **`DATABASE_URL`**, **`JWT_SECRET`** (≥16 chars or RS256 keys), and **`REDIS_URL`** if you want refresh sessions.
+4. **Migrate + seed:** `npm run db:migrate:deploy -w @phantom/api` then `npm run db:seed -w @phantom/api`.
+5. **Run:** `npm run dev` — API on **8787**, dashboard on **5173** (see [§ Local dashboard](#local-dashboard-dev)).
+6. **Extension (optional):** `npm run build:extension:store`, then load the unpacked output in `chrome://extensions` (see [`docs/roadmap/EXTENSION_STORE_BUILD.md`](docs/roadmap/EXTENSION_STORE_BUILD.md)).
+
+Full production-like steps, CI parity, and env tables: [`docs/roadmap/DEPLOYMENT.md`](docs/roadmap/DEPLOYMENT.md).
+
+| Root script | What it runs |
+|-------------|----------------|
+| `npm run dev` | Shared watch + API + dashboard + extension (see [`package.json`](package.json)) |
+| `npm run build` | Shared → API → dashboard → extension |
+| `npm run build:extension:store` | Shared + **extension** prod bundle for Chrome Web Store / unpacked testing |
+| `npm run lint` / `npm run test` | ESLint repo-wide; tests in each workspace |
+
 ## Tech Stack
 
 See [`docs/architecture/TECH_STACK.md`](docs/architecture/TECH_STACK.md) for full details.
@@ -103,7 +121,7 @@ With the API on **`127.0.0.1:8787`** (default), the Vite dashboard serves at **`
 
 - React Query uses explicit **`staleTime`** per surface (for example inbox vs **`user/me`**); query keys include **`accessToken`**, and **`queryClient.clear()`** on sign-out avoids cross-session cache bleed.
 - **`useQuery`** passes **`AbortSignal`** into **`phantomApi`** fetches so rapid inbox/broker filter changes cancel superseded requests.
-- Heavy routes (**brokers**, **vault**, **inbox**, **billing**) are **`React.lazy`**-loaded with a **`Suspense`** skeleton; primary nav and **Quick actions** **prefetch** data on hover/focus.
+- Heavy routes (**aliases**, **alias detail**, **settings**, **brokers**, **vault**, **inbox**, **billing**, **dark web**) are **`React.lazy`**-loaded with a **`Suspense`** skeleton in **`MainLayout`**; primary nav and **Quick actions** **prefetch** data on hover/focus.
 - Memoized list/table rows on aliases, inbox, and broker removal cells cut re-renders while parent state updates.
 - To compare bundle weight locally: `npm run build -w @phantom/dashboard` and inspect `src/dashboard/dist/assets`; use Chrome DevTools **Performance** for interaction timing in dev.
 
@@ -120,7 +138,14 @@ From the **repository root** on **Node 20**:
 
 Details, Postgres **`DATABASE_URL`** in Actions, and which tests are DB-gated: [`docs/roadmap/DEPLOYMENT.md`](docs/roadmap/DEPLOYMENT.md) **§ CI** and [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
+### Integration tests (API)
+
+Postgres-backed **`src/api/src/*.integration.test.ts`** files run automatically in CI when **`DATABASE_URL`** points at a real database. Locally, use Docker Compose for Postgres + Redis, configure **`.env`**, migrate, seed, then `npm run test -w @phantom/api`. See **[`CONTRIBUTING.md`](CONTRIBUTING.md)** for the full flow.
+
 ## Documentation Index
+
+### Contributing
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — branch naming, local checks, running Postgres-backed integration tests
 
 ### Architecture
 - [`SYSTEM_ARCHITECTURE.md`](docs/architecture/SYSTEM_ARCHITECTURE.md) — High-level system design

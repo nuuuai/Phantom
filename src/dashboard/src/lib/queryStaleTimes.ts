@@ -2,6 +2,9 @@
  * React Query `staleTime` defaults (ms). Keep list/detail keys aligned with
  * `queryKeys` so cached data matches filters; logout clears cache via `queryClient.clear()`.
  */
+/** Default `gcTime` (ms); keep ≥ largest `staleTime` so back navigation hits cache. */
+export const QUERY_GC_TIME_MS = 600_000;
+
 export const STALE = {
   /** Tier / quotas — changes on billing or alias mutations (invalidated). */
   userMe: 60_000,
@@ -25,4 +28,6 @@ export const STALE = {
   aliasesList: 30_000,
   /** Dark web findings + summary — refresh invalidates. */
   darkWeb: 30_000,
+  /** Vault sync push query — tied to alias list `dataUpdatedAt`. */
+  vaultSync: 20_000,
 } as const;

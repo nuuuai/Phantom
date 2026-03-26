@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Alias } from "@phantom/shared";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { queryKeys } from "@/lib/queryKeys.js";
+import { STALE } from "@/lib/queryStaleTimes.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 
 /**
@@ -51,7 +52,7 @@ export function useVaultSync(
     enabled: Boolean(
       accessToken && vaultKeyHex && listReady && passwordAliases !== undefined
     ),
-    staleTime: 20_000,
+    staleTime: STALE.vaultSync,
     retry: 2,
   });
 }

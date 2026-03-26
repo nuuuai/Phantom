@@ -8,3 +8,9 @@ export interface AliasInboxItem {
   receivedAt: string;
   isRead: boolean;
 }
+
+/** Pagination for `GET /api/email-inbox`. */
+export interface AliasInboxListMeta {
+  limit: number;
+  offset: number;
+}

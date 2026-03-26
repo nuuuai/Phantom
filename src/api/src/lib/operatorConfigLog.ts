@@ -1,3 +1,4 @@
+import { isOverviewDemoMetricsEnabled } from "./envOverviewDemo.js";
 import { stripeConfigured } from "./stripeClient.js";
 
 /**
@@ -42,12 +43,18 @@ export function logOperatorConfigSummary(): void {
     ? "DARK_WEB_HIBP_API_KEY set (paid tier can call HIBP on refresh)"
     : "DARK_WEB_HIBP_API_KEY unset (dark web refresh skips external lookup)";
 
+  const overviewDemo = isOverviewDemoMetricsEnabled();
+  const overviewMetrics = overviewDemo
+    ? "DASHBOARD_DEMO_METRICS or OVERVIEW_DEMO_METRICS=1 (synthetic Sword/weekly chart numbers)"
+    : "overview demo metrics unset (honest Phase 1 zeros for unwired telephony/SEE charts)";
+
   const lines = [
     `phantom-api config: NODE_ENV=${nodeEnv} API_PORT=${port}`,
     `  jwt: ${jwtMode}  redis: ${redis}  stripe: ${stripe}`,
     `  DASHBOARD_PUBLIC_URL: ${dash ? "set" : "unset (billing uses localhost default)"}`,
     `  email inbound: ${inboundState}`,
     `  dark web: ${darkWeb}`,
+    `  overview: ${overviewMetrics}`,
   ];
 
   if (nodeEnv === "production" && redis === "disabled") {

@@ -9,7 +9,10 @@ export type {
 export type { User } from "./types/user.js";
 export type { PhoneProviderStatus } from "./types/phoneProvider.js";
 export { isValidE164Phone } from "./lib/phoneE164.js";
-export type { AliasInboxItem } from "./types/aliasInbox.js";
+export type {
+  AliasInboxItem,
+  AliasInboxListMeta,
+} from "./types/aliasInbox.js";
 export type {
   AliasTypeUsage,
   UserAccountSnapshot,
@@ -45,6 +48,7 @@ export type {
 } from "./types/dashboardOverview.js";
 export type {
   DarkWebFindingPublic,
+  DarkWebFindingsListResponse,
   DarkWebFindingsSummary,
   DarkWebRefreshResult,
   DarkWebFindingStatus,
@@ -56,6 +60,10 @@ export type {
   ApiSuccess,
   ApiErrorBody,
 } from "./types/apiResponse.js";
+export {
+  PHANTOM_API_ERROR_CODES,
+  type PhantomApiErrorCode,
+} from "./constants/apiErrorCodes.js";
 export type { BillingStatus } from "./types/billing.js";
 export {
   normalizeClientError,
@@ -65,6 +73,12 @@ export {
   type ClientErrorCode,
   type ClientErrorMeta,
 } from "./lib/clientError.js";
+export {
+  FORWARD_EMAIL_RE,
+  isValidForwardEmailInput,
+  parseForwardToEmailPatchBody,
+  type ParseForwardToEmailPatchResult,
+} from "./lib/forwardEmail.js";
 export type {
   NotificationCategory,
   NotificationPrefItem,

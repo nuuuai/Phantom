@@ -1,6 +1,7 @@
 import type {
   ApiResponse,
   DarkWebFindingPublic,
+  DarkWebFindingsListResponse,
   DarkWebFindingsSummary,
   DarkWebRefreshResult,
 } from "@phantom/shared";
@@ -118,6 +119,9 @@ darkWebRouter.get("/findings", async (req, res) => {
     return;
   }
 
+  const limit = Math.min(Math.max(1, Number(req.query.limit) || 50), 200);
+  const offset = Math.max(0, Number(req.query.offset) || 0);
+
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
     res.status(404).json({
@@ -128,24 +132,39 @@ darkWebRouter.get("/findings", async (req, res) => {
   }
 
   if (!isPaidTier(user.tier)) {
-    const response: ApiResponse<{ items: DarkWebFindingPublic[]; tierGated: boolean }> = {
+    const response: ApiResponse<DarkWebFindingsListResponse> = {
       ok: true,
-      data: { items: [], tierGated: true },
+      data: {
+        items: [],
+        tierGated: true,
+        total: 0,
+        limit,
+        offset,
+      },
     };
     res.json(response);
     return;
   }
 
-  const limit = Math.min(Number(req.query.limit) || 100, 200);
+  const total = await prisma.darkWebFinding.count({ where: { userId } });
   const rows = await prisma.darkWebFinding.findMany({
     where: { userId },
     orderBy: { detectedAt: "desc" },
+    skip: offset,
     take: limit,
   });
 
-  const response: ApiResponse<{ items: DarkWebFindingPublic[]; tierGated: boolean }> = {
+  const payload: DarkWebFindingsListResponse = {
+    items: rows.map(mapDarkWebFinding),
+    tierGated: false,
+    total,
+    limit,
+    offset,
+  };
+
+  const response: ApiResponse<DarkWebFindingsListResponse> = {
     ok: true,
-    data: { items: rows.map(mapDarkWebFinding), tierGated: false },
+    data: payload,
   };
   res.json(response);
 });
@@ -167,12 +186,16 @@ darkWebRouter.patch("/findings/:id", async (req, res) => {
   }
 
   const body = req.body as { status?: unknown };
-  if (body.status !== "dismissed") {
+  const st = body.status;
+  const dismiss =
+    st === "dismissed" || st === "acknowledged";
+  if (!dismiss) {
     res.status(400).json({
       ok: false,
       error: {
         code: "validation_error",
-        message: 'Body must be JSON { "status": "dismissed" }',
+        message:
+          'Body must be JSON { "status": "dismissed" } or { "status": "acknowledged" }',
       },
     });
     return;

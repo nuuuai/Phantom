@@ -22,6 +22,18 @@ describe("assertCanCreateAlias", () => {
     expect(mockCount).not.toHaveBeenCalled();
   });
 
+  it("allows paid tier password aliases without counting", async () => {
+    const r = await assertCanCreateAlias("u1", "paid", "password");
+    expect(r).toEqual({ ok: true });
+    expect(mockCount).not.toHaveBeenCalled();
+  });
+
+  it("allows enterprise tier without counting", async () => {
+    const r = await assertCanCreateAlias("u1", "enterprise", "password");
+    expect(r).toEqual({ ok: true });
+    expect(mockCount).not.toHaveBeenCalled();
+  });
+
   it("returns tier_limit with machine-readable fields when free tier at cap", async () => {
     mockCount.mockResolvedValue(3);
     const r = await assertCanCreateAlias("u1", "free", "email");

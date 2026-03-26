@@ -83,3 +83,43 @@ Engineering judgment: Phase 1 is **not** “all green” until external and high
 | **Nice-to-have** | SRP auth; Argon2id vault KDF; community threat feed; CSV import; Terraform/AWS automation — tracked in `PHASE_1_FOUNDATION.md` gaps table. |
 
 For the rolling **% complete** model, see [`README.md`](./README.md) in this folder.
+
+---
+
+## Run 6 — Post–mega-sprint (Phase 1 honesty + shell + polish)
+
+**Scope:** Unify **demo overview metrics** behind **`DASHBOARD_DEMO_METRICS=1`** with **`OVERVIEW_DEMO_METRICS`** as an alias (`envOverviewDemo.ts` + tests); **production** still returns honest zeros unless an operator sets either var. **Placeholder** routes (Call Guard, Scam engage, Threat intel, Reports, Family) now carry explicit **Phase 2** notices so they are not mistaken for shipped features. **Onboarding** adds **sign in → first alias** (pin/extension toolbar + MV3 popup note + https vs `chrome-extension://` clarity). **Alias detail:** **`UpgradeModal`** on **`tier_limit`** from rotate/deactivate, **`userMe`** prefetch for email forward, notification query invalidation after mutations. **Extension content script:** **open shadow root** traversal, **native value setter** for React/Vue inputs, richer **`InputEvent`**. **Notification center:** **Retry** on list load error. Docs: **`DEPLOYMENT.md`** / **`.env.example`** / dashboard copy for demo env names.
+
+**Outcome:** Clearer prod vs demo story for Sword/SEE-style metrics; fewer misleading nav targets; incremental MVP hardening without new Phase 2 backends.
+
+**Deferred / external:** Live Call Guard, SEE, threat feeds, outbound **`NOTIFICATIONS_EMAIL_ENABLED`** mailer — unchanged; still blocked on product + infra per roadmap tables.
+
+---
+
+## Run 7 — Batch 3 (ops, API hardening, store, QA)
+
+**Scope:** **`error.requestId`** on global **404** / **5xx** JSON when **`NODE_ENV !== 'production'`** (shared **`ApiErrorBody`**); production keeps generic messages without body `requestId` ( **`X-Request-Id`** header unchanged). **`DEPLOYMENT.md`** request-tracing + **docker-compose** port overrides + optional **Elasticsearch** row. **`QA_MANUAL`** — 8-step onboarding, dark web + overview demo metrics, billing query params, vault **409** note, notification **Retry**, integration table for **`POST /api/dark-web/seed-demo`** production **403**. **Tests:** **`darkWeb.integration.test`** production seed-demo; **`webhookEmailInbound`** **415** asserts **`X-Request-Id`**; **`app.test`** 404 **`requestId`** in non-prod; **`errorJson.test`** requestId injection.
+
+**Outcome:** Clearer support correlation in dev/staging; demo seeds documented consistently; no change to Stripe idempotency or rate-limit **fail-open** behavior.
+
+**External:** CWS account, live Stripe/MX, legal privacy URL — unchanged.
+
+---
+
+## Run 8 — Batch 4 (perf, a11y, shared errors, DX polish)
+
+**Scope:** **React Query** — single **`QUERY_GC_TIME_MS`** wired to **`queryClient`**; **`STALE.vaultSync`** for vault sync push; **lazy** **`AliasesPage`**, **`AliasDetailPage`**, **`SettingsPage`** under existing **`Suspense`**. **a11y** — **`useRestoreFocusToMainOnClose`** for **Onboarding**, **Upgrade**, **Generate** modals; **`aria-busy`** on billing checkout/portal, generate mutations, sign-out; **Billing** error surfaces match **Retry** + alert pattern; **MobileNavBar** safe-area padding + **44px** touch targets; **TopBar** bell + **Generate alias** minimum tap size + safe-area top. **`@phantom/shared`** — **`PHANTOM_API_ERROR_CODES`** + **`normalizeClientError`** / **`upgradeCopy`** / tests deduped. **Overview API** — **`alias.findMany`** uses **`select`** for health stats payload. **Docs:** root **README** “5-minute local” + script table (**`build:extension:store`**); **`DEPLOYMENT.md`** CSP note for static dashboard.
+
+**Deferred:** List virtualization; new Prisma indexes (existing notification/dark-web indexes retained; activity feeds already **`take`**-bounded); Playwright E2E; live third-party integrations.
+
+**External:** Unchanged (CWS, live Stripe, MX, legal).
+
+---
+
+## Run 9 — Batch 5 (tests, verticals, resilience)
+
+**Scope:** **`@phantom/shared`** **`forwardEmail`** (`parseForwardToEmailPatchBody`, **`isValidForwardEmailInput`**) — single validation path for **`PATCH /api/user/me`** and dashboard Settings; **`GET /api/email-inbox`** **`offset`** + **`data.meta`** with clamped limits; integration tests (invalid forward email, inbox clamp, idempotent read PATCH, existing auth/vault/notifications coverage retained). **Dashboard** **`FeatureRouteErrorBoundary`** around **`Outlet`** for lazy-route chunk failures. **Docs:** **`EMAIL_INBOUND.md`** + **`DEPLOYMENT.md`** (inbox query + readiness vs liveness); **`CONTRIBUTING.md`**; **`CHANGELOG.md`** Unreleased; **`README`** integration-test pointer; **`dashboardRoutes.test.ts`** notification deep-link sanity.
+
+**Deferred:** Playwright E2E; new broker-scan UI string for **`broker_scan_config_invalid`** (API message already surfaces via **`clientErrorFromApiFailure`**); Phase 2 surfaces.
+
+**External:** Unchanged.

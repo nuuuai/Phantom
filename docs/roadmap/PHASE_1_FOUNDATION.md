@@ -8,8 +8,8 @@
 | Month 2–3 extension + dashboard | **~91%** |
 | Month 3–4 phone + brokers | **~71%** |
 | Month 4–5 removal + notifications | **~65%** |
-| Month 5–6 launch + QA | **~74%** |
-| **Phase 1 (all deliverables)** | **~92%** |
+| Month 5–6 launch + QA | **~75%** |
+| **Phase 1 (all deliverables)** | **~93%** |
 
 ## Objective
 
@@ -53,7 +53,7 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
 - [ ] **Email alias engine** — **74%**
   - Custom domain setup (phantom.id, shade.email) — **0%** (DNS still external)
   - Email alias generation API — **58%** (generated `@phantom.id` aliases; **`POST /generate`** + **`assertCanCreateAlias`** + **`403`** **`tier_limit`**; no live MX in repo)
-  - Email forwarding infrastructure (inbound → user's real email) — **48%** (signed **`POST /api/webhooks/email-inbound`**: **415** / **401** / **503**; **`X-Phantom-Request-Id`**; **256kb** body; **120/min** IP limit; alias length cap; **`providerMessageId`** + **phantom `v1` hash** dedupe; **unique** race → **`deduped: true`**; webhook tests + **`emailInbox.integration.test.ts`** in CI; optional **`User.forwardToEmail`**; worker/MX still external)
+  - Email forwarding infrastructure (inbound → user's real email) — **50%** (signed **`POST /api/webhooks/email-inbound`**: **415** / **401** / **503**; **`X-Phantom-Request-Id`**; **256kb** body; **120/min** IP limit; alias length cap; **`providerMessageId`** + **phantom `v1` hash** dedupe; **unique** race → **`deduped: true`**; webhook tests + **`emailInbox.integration.test.ts`** (list **`meta`/`offset`**, clamp, idempotent read PATCH) + **`PATCH /user/me`** forward-email validation in CI; shared **`parseForwardToEmailPatchBody`**; optional **`User.forwardToEmail`**; worker/MX still external)
   - Alias inbox (view forwarded emails in dashboard) — **62%** (`AliasInboxMessage` **`isRead`** + **`GET /api/email-inbox`** **`q`** **`unread=1`**; **`PATCH /api/email-inbox/:id/read`**; dashboard **`/inbox`** retry on load error + mark read/unread + filter; **Settings** forward field client validation + API parity)
   - SPF, DKIM, DMARC configuration for deliverability — **15%** (checklist: `docs/roadmap/EMAIL_INBOUND.md` aligned with code)
 
@@ -67,7 +67,7 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - Service worker for API communication — **81%** (login + alias generate + **`pushVaultSyncFromExtension`** after unlock — **dynamic import** of vault sync chunk; **`fetchAuth` / `refreshSession`**: offline → synthetic **`network_error`** (**503**); API **503** passthrough; **401** when refresh fails; **refresh** exponential backoff on **503/429** + **documented caps** in `apiClient.ts` + tests; **`onInstalled`**: clear invalid API URL override; **options** page: **`validateApiBaseUrlInput`** + loading/saved states; shared **`clientError`** mapping for responses)
   - Encrypted credential cache in IndexedDB — **58%** (DEK + session-wrapped vault key material; see extension **`vaultStorage`**)
 
-- [ ] **Web dashboard v1** — **90%**
+- [ ] **Web dashboard v1** — **92%**
   - Login / account management — **58%** (dev login path; **`PATCH /api/user/me`** for `forwardToEmail` with validation; **`/settings`** shows **email** + **displayName** + tier from **`GET /api/user/me`**; bootstrap errors use **`clientErrorFromApiFailure`**)
   - Alias list view (all generated aliases with metadata) — **68%** (loading / empty / **Retry** on **normalized** error; category + health filters)
   - Alias detail view (service, creation date, health status, forwarding rules) — **62%** (**phone:** adapter banner + edit forward; **email:** inbox/forwarding honesty + Settings link; **Retry** on load error)
@@ -136,19 +136,19 @@ Ship the desktop platform MVP: web dashboard + Chrome browser extension. Establi
   - Data broker removal (150+ brokers) — **32%** (simulated queue + catalog DIY URLs)
   - Unlimited password storage — **92%** (paid/enterprise: **`assertCanCreateAlias`** bypass + **`buildAliasUsage`** `max: null`; vault header shows **unlimited (paid plan)**; **`buildAliasUsage` tests**)
   - Billing / subscription surface — **78%** (Stripe **`/api/billing/checkout-session`**, **`/portal-session`**, **`GET /status`**; **`POST /api/webhooks/stripe`** **claims** **`event.id`** in **`StripeWebhookEvent`** *before* handler work → duplicate deliveries **`duplicate: true`** without re-running side effects; handler failure **deletes** claim for Stripe retry; **`POST /api/billing/sync-checkout-session`** idempotent for same `session_id`; dashboard **`/billing`** strips `session_id`; **integration tests:** signed webhooks + duplicate **`event.id`** + **sync-checkout-session** ×2 with mocked Stripe in CI)
-  - Dark web monitoring (basic) — **78%** (Prisma **`DarkWebFinding`**; **`GET/PATCH/POST`** `/api/dark-web/*`; HIBP refresh when **`DARK_WEB_HIBP_API_KEY`**; paid-only; notifications **`security_alert`** + **`/dark-web`**; dashboard **`/dark-web`**; overview **`darkWebAlerts`** from DB — **not** marketplace crawling; see **`DEPLOYMENT.md`**)
+  - Dark web monitoring (basic) — **80%** (Prisma **`DarkWebFinding`**; paginated **`GET`** + **`PATCH`** (`acknowledged` alias); HIBP refresh when **`DARK_WEB_HIBP_API_KEY`**; paid-only; notifications **`security_alert`** + **`/dark-web`**; dashboard **`/dark-web`**; overview **`darkWebAlerts`** from DB — **not** marketplace crawling; **`DASHBOARD_DEMO_METRICS`** / **`OVERVIEW_DEMO_METRICS`** for synthetic Sword chart demos; see **`DEPLOYMENT.md`**)
   - Priority support — **0%**
 
-- [ ] **Onboarding flow** — **82%**
-  - Extension install → account creation → first alias generation — **55%** (7-step modal: **install extension → first alias** → inbox → vault → brokers → billing; overview **Get started** copy aligned)
+- [ ] **Onboarding flow** — **84%**
+  - Extension install → sign in → first alias generation — **62%** (8-step modal: welcome → **install extension** → **sign in** (pin/MV3 popup) → **first alias** → inbox → vault → brokers → billing; **`DASHBOARD_PATHS`** + **`QUICK_ACTIONS`**)
   - Guided exposure scan ("see who's selling your data") — **50%** (brokers **first scan** CTA + pre-scan legend + **429** UI with **retryAfterSeconds**)
-  - Multi-step modal — **80%** (**7 steps**: welcome → aliases → **inbox** → vault → brokers → **billing** → extension; **billing** step CTA matches app-wide **upgrade** path (**`/billing`**); **`DASHBOARD_PATHS`** + **`QUICK_ACTIONS`**; **Back** / **Next** / **Done**; scrollable modal; Chrome Web Store + **load unpacked** honesty; **no `chrome-extension://` from https** documented in UI)
+  - Multi-step modal — **82%** (**8 steps**; **billing** step CTA matches app-wide **upgrade** path (**`/billing`**); Chrome Web Store + **load unpacked** honesty; **no `chrome-extension://` links from https** documented in UI)
   - Import existing passwords — **0%**
   - Generate aliases for top services (Gmail, Amazon, Facebook, etc.) — **0%**
 
-- [ ] **Testing and QA** — **75%**
-  - Unit tests for: vault encryption, alias generation, API auth — **73%** (+ **`upgradeCopy`** **`apiErrorCodeToUpgradeReason`** + copy helpers; **`aliasTierLimits`**, **`tierQuota`** edge cases **max null** / missing row / **enterprise**, **extension** `fetchAuth` **429** retry + **401** refresh success path + **no token** synthetic **401**, **`validateApiBaseUrlInput`** + invalid storage override fallback, **`refreshSession`** exponential backoff, **`inboundWebhookDedupe`**, **`brokerScanQuota`**, **`brokerScanSummaryAugment`**, **`notificationCategoryFilter`**, **`assertJwtEnvConfigured`**, **`operatorConfigLog`**, **vault sync** `executeVaultSyncPush` wrong passphrase + **409 retry**, **tampered blob**, **phone** `phoneConfig` / `validateForward` / `provisionPhone`, **paid tier** helper, webhook smoke tests, **broker** `computeBrokerScanSummary`, **`brokerRemovalPipeline`** (**email** vs **manual**, clamp), scan **delay env** parsing, **`prismaUnique`** Stripe dedupe helper)
-  - Integration tests for: API auth + vault **409** + **Stripe webhooks (signed)** + **billing sync-checkout-session** idempotency + **broker scan free-tier 429** — **58%** (`auth.integration.test.ts`, `launch.integration.test.ts`, **`billingSyncSession.integration.test.ts`**, **`brokerScanQuota.integration.test.ts`** when Postgres + seeded catalog; **CI** `DATABASE_URL` + **duplicate `event.id`**); **`webhookEmailInbound.test.ts`** (503 / 415 / 401 / invalid JSON); **`app.test.ts`** health + route smoke + **`X-Request-Id`**
+- [ ] **Testing and QA** — **77%**
+  - Unit tests for: vault encryption, alias generation, API auth — **74%** (+ **`envOverviewDemo`**; **`upgradeCopy`** **`apiErrorCodeToUpgradeReason`** + copy helpers; **`aliasTierLimits`**, **`tierQuota`** edge cases **max null** / missing row / **enterprise**, **extension** `fetchAuth` **429** retry + **401** refresh success path + **no token** synthetic **401**, **`validateApiBaseUrlInput`** + invalid storage override fallback, **`refreshSession`** exponential backoff, **`inboundWebhookDedupe`**, **`brokerScanQuota`**, **`brokerScanSummaryAugment`**, **`notificationCategoryFilter`**, **`assertJwtEnvConfigured`**, **`operatorConfigLog`**, **vault sync** `executeVaultSyncPush` wrong passphrase + **409 retry**, **tampered blob**, **phone** `phoneConfig` / `validateForward` / `provisionPhone`, **paid tier** helper, webhook smoke tests, **broker** `computeBrokerScanSummary`, **`brokerRemovalPipeline`** (**email** vs **manual**, clamp), scan **delay env** parsing, **`prismaUnique`** Stripe dedupe helper, **`errorJson`** **`requestId`** in non-prod bodies)
+  - Integration tests for: API auth + vault **409** + **Stripe webhooks (signed)** + **billing sync-checkout-session** idempotency + **broker scan free-tier 429** — **60%** (`auth.integration.test.ts`, `launch.integration.test.ts`, **`billingSyncSession.integration.test.ts`**, **`brokerScanQuota.integration.test.ts`** when Postgres + seeded catalog; **CI** `DATABASE_URL` + **duplicate `event.id`**); **`webhookEmailInbound.test.ts`** (503 / 415 / 401 / invalid JSON); **`app.test.ts`** health + route smoke + **`X-Request-Id`** + **404** **`error.requestId`**; **`darkWeb.integration.test`** production **`seed-demo` 403**; **`notifications.integration.test`** production **`seed-demo` 403** with **`NODE_ENV` restore**
   - E2E tests with Playwright (extension + dashboard flows) — **0%** (deferred; manual list in **`docs/roadmap/QA_MANUAL.md`**; **CHROME_WEB_STORE_CHECKLIST** / **`README.md`** / **`DEPLOYMENT.md`** document **`npm ci` → migrate → seed → lint → test → build**)
   - Security audit of encryption implementation — **0%**
   - Load testing for alias generation and broker scanning — **0%**

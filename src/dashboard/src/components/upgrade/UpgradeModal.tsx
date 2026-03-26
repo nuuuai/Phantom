@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useEscapeKey } from "@/hooks/useEscapeKey.js";
+import { useRestoreFocusToMainOnClose } from "@/hooks/useRestoreFocusToMainOnClose.js";
 import { DASHBOARD_PATHS } from "@/lib/dashboardRoutes.js";
 import {
   type UpgradeContext,
@@ -36,6 +37,7 @@ export function UpgradeModal({
   const primaryRef = useRef<HTMLButtonElement>(null);
 
   useEscapeKey(open, onDismiss);
+  useRestoreFocusToMainOnClose(open);
 
   useEffect(() => {
     if (!open) return;

@@ -86,7 +86,7 @@ export function SettingsPage() {
 
   if (meQuery.isPending && !meQuery.data) {
     return (
-      <div className="px-8 py-6 font-sans text-sm text-ph-text-tertiary">
+      <div className="min-w-0 max-w-full overflow-x-hidden px-4 py-6 font-sans text-sm text-ph-text-tertiary sm:px-8">
         Loading account…
       </div>
     );
@@ -94,7 +94,7 @@ export function SettingsPage() {
 
   if (meQuery.isError || !meQuery.data) {
     return (
-      <div className="px-8 py-6">
+      <div className="min-w-0 max-w-full overflow-x-hidden px-4 py-6 sm:px-8">
         <h1 className="font-sans text-lg font-semibold text-ph-text-primary">
           Settings
         </h1>
@@ -118,7 +118,7 @@ export function SettingsPage() {
   const tierIsFree = user.tier === "free";
 
   return (
-    <div className="px-8 py-6">
+    <div className="min-w-0 max-w-full overflow-x-hidden px-4 py-6 sm:px-8">
       <UpgradeModal
         open={upgradeOpen}
         reason="generic"
@@ -441,9 +441,7 @@ function ForwardingSection({
       ) : null}
       {saveMutation.isError && (
         <p className="mt-2 font-sans text-xs text-ph-danger" role="alert">
-          {saveMutation.error instanceof Error
-            ? saveMutation.error.message
-            : "Save failed"}
+          {getQueryErrorMessage(saveMutation.error)}
         </p>
       )}
       {saveSuccess && !saveMutation.isError ? (

@@ -49,6 +49,25 @@ describe.skipIf(!hasDb)("auth + aliases (integration)", () => {
     }
   });
 
+  it("PATCH /api/user/me rejects invalid forwardToEmail", async () => {
+    const fwdEmail = `fwd-${Date.now()}@phantom.test`;
+    const reg = await request(app)
+      .post("/api/auth/register")
+      .send({ email: fwdEmail, password })
+      .expect(201);
+    const token = reg.body.data.accessToken as string;
+    const bad = await request(app)
+      .patch("/api/user/me")
+      .set("Authorization", `Bearer ${token}`)
+      .set("Content-Type", "application/json")
+      .send({ forwardToEmail: "not-an-email" })
+      .expect(400);
+    expect(bad.body.ok).toBe(false);
+    expect(bad.body.error?.code).toBe("validation_error");
+
+    await prisma.user.deleteMany({ where: { email: fwdEmail } });
+  });
+
   it("register, then list aliases with Bearer token", async () => {
     const reg = await request(app)
       .post("/api/auth/register")

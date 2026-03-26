@@ -17,6 +17,11 @@ export interface DashboardOverview {
   userId: string;
   riskScore: number;
   riskTrend: number;
+  /**
+   * When true, Sword / SEE-style counters and weekly chart are **synthetic** for screenshots.
+   * Set when API env **`OVERVIEW_DEMO_METRICS=1`**; otherwise **false** (honest Phase 1 zeros).
+   */
+  metricsDemoMode: boolean;
   activeAliases: number;
   aliasesHealthy: number;
   aliasesWarning: number;

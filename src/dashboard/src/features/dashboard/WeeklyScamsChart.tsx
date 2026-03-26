@@ -3,10 +3,17 @@ import { motion } from "framer-motion";
 interface WeeklyScamsChartProps {
   values: readonly number[];
   labels: readonly string[];
+  /** Synthetic chart bars for marketing screenshots — see `DASHBOARD_DEMO_METRICS` in DEPLOYMENT.md. */
+  demoMode: boolean;
 }
 
-export function WeeklyScamsChart({ values, labels }: WeeklyScamsChartProps) {
-  const maxScam = Math.max(...values);
+export function WeeklyScamsChart({
+  values,
+  labels,
+  demoMode,
+}: WeeklyScamsChartProps) {
+  const maxScam = Math.max(1, ...values);
+  const allZero = values.every((v) => v === 0);
 
   return (
     <motion.div
@@ -18,6 +25,13 @@ export function WeeklyScamsChart({ values, labels }: WeeklyScamsChartProps) {
       <div className="mb-4 font-mono text-xs font-semibold uppercase tracking-wide text-ph-text-tertiary">
         Scams this week
       </div>
+      {!demoMode && allZero ? (
+        <p className="mb-3 font-sans text-[11px] leading-relaxed text-ph-text-muted">
+          No Sword-layer telemetry in Phase 1. Set{" "}
+          <span className="font-mono text-[10px]">DASHBOARD_DEMO_METRICS=1</span> on
+          the API only for demo chart data.
+        </p>
+      ) : null}
       <div className="flex h-20 items-end gap-2">
         {values.map((v, i) => (
           <div

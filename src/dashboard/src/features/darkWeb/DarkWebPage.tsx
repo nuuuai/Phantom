@@ -57,7 +57,11 @@ export function DarkWebPage() {
   const findingsQuery = useQuery({
     queryKey: queryKeys.darkWebFindings(accessToken),
     queryFn: async ({ signal }) => {
-      const res = await phantomApi.darkWeb.findings(accessToken!, { signal });
+      const res = await phantomApi.darkWeb.findings(
+        accessToken!,
+        undefined,
+        { signal }
+      );
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
@@ -110,6 +114,7 @@ export function DarkWebPage() {
     findingsQuery.data?.tierGated === true;
 
   const items = findingsQuery.data?.items ?? [];
+  const findingsMeta = findingsQuery.data;
   const summary = summaryQuery.data;
 
   return (
@@ -237,6 +242,18 @@ export function DarkWebPage() {
             </p>
           ) : null}
         </div>
+      ) : null}
+
+      {!tierGated &&
+      findingsMeta &&
+      findingsMeta.total > 0 &&
+      !findingsQuery.isPending ? (
+        <p className="mt-8 font-mono text-[10px] text-ph-text-muted">
+          {findingsMeta.total} total
+          {findingsMeta.items.length < findingsMeta.total
+            ? ` · showing ${findingsMeta.offset + 1}–${findingsMeta.offset + findingsMeta.items.length}`
+            : ""}
+        </p>
       ) : null}
 
       {!tierGated && items.length > 0 ? (

@@ -51,6 +51,9 @@ describe.skipIf(!hasDb)("dark web API (integration)", () => {
       .expect(200);
     expect(list.body.data.tierGated).toBe(true);
     expect(list.body.data.items).toEqual([]);
+    expect(list.body.data.total).toBe(0);
+    expect(list.body.data.limit).toBeGreaterThan(0);
+    expect(list.body.data.offset).toBe(0);
 
     const ov = await request(app)
       .get("/api/dashboard/metrics")
@@ -115,6 +118,7 @@ describe.skipIf(!hasDb)("dark web API (integration)", () => {
     expect(list.body.data.items.some((x: { id: string }) => x.id === row.id)).toBe(
       true
     );
+    expect(list.body.data.total).toBeGreaterThanOrEqual(1);
 
     const patch = await request(app)
       .patch(`/api/dark-web/findings/${row.id}`)
@@ -124,10 +128,59 @@ describe.skipIf(!hasDb)("dark web API (integration)", () => {
       .expect(200);
     expect(patch.body.data.finding.status).toBe("dismissed");
 
+    const row2 = await prisma.darkWebFinding.create({
+      data: {
+        userId: user.id,
+        severity: "medium",
+        status: "open",
+        title: "Ack test",
+        summary: "Summary.",
+        sourceLabel: "Test",
+        breachName: null,
+        identifierType: "email_address",
+        identifierDisplay: "a***@phantom.test",
+        recommendedAction: "Rotate.",
+        detectedAt: new Date(),
+        dedupeKey: `it-ack:${String(Date.now())}`,
+      },
+    });
+    const ack = await request(app)
+      .patch(`/api/dark-web/findings/${row2.id}`)
+      .set("Authorization", `Bearer ${token}`)
+      .set("Content-Type", "application/json")
+      .send({ status: "acknowledged" })
+      .expect(200);
+    expect(ack.body.data.finding.status).toBe("dismissed");
+    await prisma.darkWebFinding.delete({ where: { id: row2.id } });
+
     const ov2 = await request(app)
       .get("/api/dashboard/metrics")
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
     expect(ov2.body.data.darkWebAlerts).toBe(0);
+  });
+
+  it("POST /api/dark-web/seed-demo returns 403 in production", async () => {
+    const seedEmail = `dw-seed-${Date.now()}@phantom.test`;
+    const reg = await request(app)
+      .post("/api/auth/register")
+      .send({ email: seedEmail, password })
+      .expect(201);
+    const token = reg.body.data.accessToken as string;
+
+    const prevEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    try {
+      const res = await request(app)
+        .post("/api/dark-web/seed-demo")
+        .set("Authorization", `Bearer ${token}`);
+      expect(res.status).toBe(403);
+      expect(res.body.ok).toBe(false);
+      expect(res.body.error?.code).toBe("forbidden");
+    } finally {
+      process.env.NODE_ENV = prevEnv;
+    }
+
+    await prisma.user.deleteMany({ where: { email: seedEmail } });
   });
 });

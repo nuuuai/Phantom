@@ -61,7 +61,7 @@ export function TopBar() {
   );
 
   return (
-    <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-ph-border bg-ph-topbar px-4 py-4 sm:px-8">
+    <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-ph-border bg-ph-topbar px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top,0px))] sm:px-8">
       <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-4">
         <span className="truncate text-lg font-semibold text-ph-text-primary">
           {title}
@@ -77,6 +77,7 @@ export function TopBar() {
             type="button"
             onClick={() => void onSignOut()}
             disabled={signingOut}
+            aria-busy={signingOut}
             className="cursor-pointer rounded-md border border-ph-border bg-ph-bg px-3.5 py-1.5 font-sans text-xs text-ph-text-tertiary hover:text-ph-text-secondary disabled:opacity-50"
           >
             {signingOut ? "Signing out…" : "Sign out"}
@@ -119,7 +120,7 @@ export function TopBar() {
         <button
           type="button"
           onClick={() => navigate("/aliases")}
-          className="cursor-pointer rounded-md border border-ph-accent-border bg-[#6C3AED15] px-3.5 py-1.5 font-sans text-xs font-medium text-ph-accent-light"
+          className="inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center rounded-md border border-ph-accent-border bg-[#6C3AED15] px-3.5 py-2 font-sans text-xs font-medium text-ph-accent-light"
         >
           + Generate alias
         </button>

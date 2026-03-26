@@ -20,8 +20,9 @@ docker compose up -d postgres redis
 
 | Service | Default port | Env for API |
 |---------|--------------|-------------|
-| Postgres | `5432` | `DATABASE_URL=postgresql://${POSTGRES_USER:-phantom}:${POSTGRES_PASSWORD:-phantom_dev_password}@localhost:5432/${POSTGRES_DB:-phantom}` |
-| Redis | `6379` | `REDIS_URL=redis://localhost:6379` |
+| Postgres | `5432` (override with **`POSTGRES_PORT`**) | `DATABASE_URL=postgresql://${POSTGRES_USER:-phantom}:${POSTGRES_PASSWORD:-phantom_dev_password}@localhost:5432/${POSTGRES_DB:-phantom}` |
+| Redis | `6379` (override with **`REDIS_PORT`**) | `REDIS_URL=redis://localhost:6379` |
+| Elasticsearch (optional) | `9200` (override with **`ELASTICSEARCH_PORT`**) | Not required for Phase 1 API — start with `docker compose up -d elasticsearch` only if you enable ES-backed features later. |
 
 ### Redis keys (Phase 1)
 
@@ -37,14 +38,15 @@ The **API and dashboard are not containerized** in this compose file: run `npm r
 | Endpoint | Use | Success |
 |----------|-----|---------|
 | `GET /health/live` | **Liveness** — process is up (no DB). Orchestrators can restart if this fails. | `200` JSON `{ "status": "ok", "service": "phantom-api" }` |
-| `GET /health` | **Readiness** — DB reachable; `redis` is `ok`, `down`, or `disabled` when `REDIS_URL` is unset. Route traffic only when this returns `200`. | `200` with `db: "connected"` or `503` with `db: "disconnected"` |
+| `GET /health` | **Readiness** — runs **`SELECT 1`** against Postgres; includes **`redis`**: **`ok`** (ping succeeded), **`down`** ( **`REDIS_URL` set** but ping failed — treat like degraded Redis for ops), or **`disabled`** ( **`REDIS_URL` unset** — refresh tokens may be omitted; see env table). **503** when DB is unreachable (`db: "disconnected"`). | `200` with `db: "connected"` or `503` with `db: "disconnected"` |
 
-Point load balancers / Kubernetes probes at these paths over HTTPS.
+Point load balancers / Kubernetes probes at these paths over HTTPS. **Kubernetes:** liveness → **`/health/live`**; readiness → **`/health`** (DB required). Do not route application traffic to pods failing readiness.
 
 ## Request tracing and errors
 
 - Every response includes **`X-Request-Id`** (echoed from the incoming `X-Request-Id` header when present, otherwise generated).
 - Unhandled API errors log one **JSON line** to stderr (`level`, `service`, `ts`, `method`, `path`, `requestId`, `httpStatus`, `errorCode`, `message`) plus a stack trace for operators; clients still receive a generic JSON body in production (see `errorJson` middleware).
+- When **`NODE_ENV !== 'production'`**, JSON **404** (`notFoundJson`) and **5xx** (`errorJsonHandler`) responses may include **`error.requestId`** (same value as **`X-Request-Id`**) for client/support correlation. **Production** omits `requestId` from those JSON bodies (header unchanged).
 
 ## API (`src/api`)
 
@@ -75,6 +77,8 @@ Point load balancers / Kubernetes probes at these paths over HTTPS.
 | `TWILIO_FROM_NUMBER` | Future | Reserved for outbound caller ID / SMS. |
 | `NOTIFICATIONS_EMAIL_ENABLED` | Optional (future) | **`0`** / unset = no outbound email (Phase 1 default). **Not read by `src/api` application code today** — reserved for a future outbound worker; `.env.example` documents the placeholder so ops can plan. In-app **`/api/notifications`** + dashboard bell require **no** env. When a worker is added, set to **`1`** and supply provider keys — see **`EMAIL_INBOUND.md`** / **`QA_MANUAL.md`**. |
 | `DARK_WEB_HIBP_API_KEY` | Optional | **Have I Been Pwned** API key for **`POST /api/dark-web/refresh`** (paid/enterprise only). When **unset**, refresh returns **`skippedNoApiKey: true`** and **no** external call — dashboard shows an honest empty state. This is **public breach corpus lookup** for the account email, **not** 24/7 dark-web marketplace monitoring. Respect HIBP rate limits; the API never logs raw email addresses in responses. |
+| `DASHBOARD_DEMO_METRICS` | Optional | Set to **`1`** to return **synthetic** Sword / weekly-chart style numbers from **`GET /api/dashboard/metrics`** for demos or screenshots. **Unset** (default) = Phase 1 honest zeros / flat bars for metrics not wired to live telephony or threat feeds; response includes **`metricsDemoMode: true|false`**. |
+| `OVERVIEW_DEMO_METRICS` | Optional | **Alias** for **`DASHBOARD_DEMO_METRICS`** (same behavior) — kept for backward compatibility with older `.env` files. |
 
 **Vault (E2E):** `User.vaultSyncCiphertext` and `vaultSyncVersion` hold an **opaque** encrypted blob produced by the client (**PBKDF2** + **AES-GCM** per `AUTH_AND_VAULT_PHASE1.md`). The API never receives the vault passphrase or plaintext passwords; do not log ciphertext bodies. **`409`** on **`PUT /api/vault/sync`** means another client wrote first — clients must **GET**, merge, and retry.
 
@@ -101,6 +105,10 @@ The handler updates `User.tier`, `stripeCustomerId`, `stripeSubscriptionId`, and
 **Settings / account:** **`PATCH /api/user/me`** (`forwardToEmail`) requires no extra dashboard env — validation is server-side. Notification prefs use the same authenticated API as the bell (**`GET`/`PUT /api/notifications/preferences`**); no separate dashboard flag. Outbound email for alerts remains gated by **`NOTIFICATIONS_EMAIL_ENABLED`** on the API (see table above).
 
 Build: `npm run build -w @phantom/dashboard` — serve static assets over HTTPS.
+
+### Content-Security-Policy (static dashboard)
+
+When hosting the Vite dashboard as static files (CDN, S3 + CloudFront, etc.), set a **Content-Security-Policy** appropriate to your deployment: allow **`script-src`** from `'self'` (or nonces / **`strict-dynamic`** if you add inline scripts — the Phase 1 bundle does not require `'unsafe-inline'` for scripts). Include your **API origin** in **`connect-src`** for `fetch` (and **`ws:`** only if you use websockets). Avoid logging credentials in the browser console. The Vite **dev** server does not enforce CSP; add headers at the reverse proxy or CDN in production.
 
 ## Extension
 
