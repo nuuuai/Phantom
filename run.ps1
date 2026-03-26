@@ -1,6 +1,6 @@
-# Phantom local dev — no Docker required.
+# Phantom local dev - no Docker required.
 # Full stack: configure PostgreSQL (see src/README.md "Local Postgres") and .env from .env.example
-# (often src/api/.env when using npm workspaces — same vars as repo root).
+# (often src/api/.env when using npm workspaces - same vars as repo root).
 # Ports: API API_PORT (default 8787), dashboard Vite 5173 (proxies /api -> API), extension PLASMO_PUBLIC_API_URL -> API.
 # Dashboard-only: .\run.ps1 -DashboardOnly (skips API/extension if you only need the UI)
 
@@ -15,18 +15,14 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
     Write-Error "Node.js/npm not found. Install Node 20+ from https://nodejs.org/"
 }
 
-if (-not (Test-Path "node_modules")) {
-    Write-Host "Installing npm dependencies..." -ForegroundColor Cyan
-    npm install
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-}
-elseif (-not (Test-Path "node_modules/concurrently")) {
-    Write-Host "Installing npm dependencies (root devDependencies incomplete — e.g. missing concurrently)..." -ForegroundColor Cyan
+$needInstall = (-not (Test-Path "node_modules")) -or (-not (Test-Path "node_modules/concurrently"))
+if ($needInstall) {
+    Write-Host "Installing npm dependencies (root devDependencies incomplete or missing concurrently)..." -ForegroundColor Cyan
     npm install
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
-# Dashboard / extension resolve `@phantom/shared` types from `dist`; dev runs all workspaces in parallel.
+# Dashboard / extension resolve @phantom/shared types from dist; dev runs all workspaces in parallel.
 if (-not (Test-Path "src/shared/dist/index.d.ts")) {
     Write-Host "Building @phantom/shared (generates dist for TypeScript consumers)..." -ForegroundColor Cyan
     npm run build -w @phantom/shared
