@@ -16,6 +16,7 @@ import {
   type BackgroundMessage,
   type FieldKind,
 } from "./lib/messages";
+import { parseApiResponseJson } from "./lib/parseApiResponse.js";
 import {
   getRefreshToken,
   getVaultKeyHex,
@@ -40,11 +41,11 @@ async function loginRequest(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
-  return (await response.json()) as ApiResponse<{
+  return parseApiResponseJson<{
     user: { id: string; email: string };
     accessToken: string;
     refreshToken?: string;
-  }>;
+  }>(response);
 }
 
 async function initVaultKey(
@@ -52,9 +53,9 @@ async function initVaultKey(
   password: string
 ): Promise<void> {
   const saltRes = await fetchAuth("/api/vault/salt");
-  const saltData = (await saltRes.json()) as ApiResponse<{
+  const saltData = await parseApiResponseJson<{
     vaultSalt: string | null;
-  }>;
+  }>(saltRes);
 
   let salt: string | null = null;
   if (saltData.ok) salt = saltData.data.vaultSalt;
@@ -64,9 +65,9 @@ async function initVaultKey(
       method: "POST",
       headers: { "Content-Type": "application/json" },
     });
-    const initData = (await initRes.json()) as ApiResponse<{
+    const initData = await parseApiResponseJson<{
       vaultSalt: string;
-    }>;
+    }>(initRes);
     if (initData.ok) salt = initData.data.vaultSalt;
   }
 
@@ -106,7 +107,7 @@ async function requestAlias(
       encryptedValue,
     }),
   });
-  return (await response.json()) as ApiResponse<{ alias: Alias }>;
+  return parseApiResponseJson<{ alias: Alias }>(response);
 }
 
 type GenerateResponse =

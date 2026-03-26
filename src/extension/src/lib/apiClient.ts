@@ -1,5 +1,5 @@
-import type { ApiResponse } from "@phantom/shared";
 import { RATE_LIMIT_RETRY_MS } from "@phantom/shared";
+import { parseApiResponseJson } from "./parseApiResponse.js";
 import {
   getAccessToken,
   getRefreshToken,
@@ -37,10 +37,10 @@ export async function refreshSession(): Promise<boolean> {
       body,
     });
   }
-  const data = (await res.json()) as ApiResponse<{
+  const data = await parseApiResponseJson<{
     accessToken: string;
     refreshToken: string;
-  }>;
+  }>(res);
   if (!data.ok) return false;
   await setAccessToken(data.data.accessToken);
   await setRefreshToken(data.data.refreshToken);
