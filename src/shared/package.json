@@ -12,12 +12,13 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "dev": "tsc -p tsconfig.build.json --watch",
-    "lint": "eslint .",
-    "test": "vitest run"
+    "build": "npm exec tsc -- -p tsconfig.build.json",
+    "dev": "npm exec tsc -- -p tsconfig.build.json --watch",
+    "lint": "npm exec eslint -- .",
+    "test": "npm exec vitest -- run"
   },
   "devDependencies": {
+    "@types/node": "^22.10.10",
     "eslint": "^9.18.0",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"

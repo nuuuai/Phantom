@@ -4,17 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "prisma generate && tsc -p tsconfig.build.json",
+    "dev": "npm exec tsx -- watch src/index.ts",
+    "build": "npm exec prisma -- generate && npm exec tsc -- -p tsconfig.build.json",
     "start": "node dist/index.js",
-    "lint": "eslint .",
-    "test": "vitest run",
-    "db:generate": "prisma generate",
-    "db:migrate:deploy": "prisma migrate deploy",
-    "db:migrate": "prisma migrate dev",
-    "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts",
-    "postinstall": "prisma generate"
+    "lint": "npm exec eslint -- .",
+    "test": "npm exec vitest -- run",
+    "db:generate": "npm exec prisma -- generate",
+    "db:migrate:deploy": "npm exec prisma -- migrate deploy",
+    "db:migrate": "npm exec prisma -- migrate dev",
+    "db:push": "npm exec prisma -- db push",
+    "db:seed": "npm exec tsx -- prisma/seed.ts",
+    "postinstall": "npm exec prisma -- generate"
   },
   "dependencies": {
     "@phantom/shared": "*",

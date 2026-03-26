@@ -6,10 +6,10 @@
   "description": "Phantom browser extension — Shield layer",
   "type": "module",
   "scripts": {
-    "dev": "plasmo dev",
-    "build": "plasmo build",
-    "lint": "eslint .",
-    "test": "vitest run"
+    "dev": "npm exec plasmo -- dev",
+    "build": "npm exec plasmo -- build",
+    "lint": "npm exec eslint -- .",
+    "test": "npm exec vitest -- run"
   },
   "dependencies": {
     "@phantom/shared": "*",

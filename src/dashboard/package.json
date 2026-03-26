@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "lint": "eslint .",
-    "test": "vitest run"
+    "dev": "npm exec vite",
+    "build": "npm exec tsc -- --noEmit && npm exec vite -- build",
+    "lint": "npm exec eslint -- .",
+    "test": "npm exec vitest -- run"
   },
   "dependencies": {
     "@phantom/shared": "*",

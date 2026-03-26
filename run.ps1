@@ -18,6 +18,19 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
 if (-not (Test-Path "node_modules")) {
     Write-Host "Installing npm dependencies..." -ForegroundColor Cyan
     npm install
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+elseif (-not (Test-Path "node_modules/concurrently")) {
+    Write-Host "Installing npm dependencies (root devDependencies incomplete — e.g. missing concurrently)..." -ForegroundColor Cyan
+    npm install
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+
+# Dashboard / extension resolve `@phantom/shared` types from `dist`; dev runs all workspaces in parallel.
+if (-not (Test-Path "src/shared/dist/index.d.ts")) {
+    Write-Host "Building @phantom/shared (generates dist for TypeScript consumers)..." -ForegroundColor Cyan
+    npm run build -w @phantom/shared
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
 if ($DashboardOnly) {

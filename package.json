@@ -9,10 +9,10 @@
     "src/extension"
   ],
   "scripts": {
-    "dev": "concurrently -n shared,api,dash,ext -c yellow,magenta,cyan,green \"npm run dev -w @phantom/shared\" \"npm run dev -w @phantom/api\" \"npm run dev -w @phantom/dashboard\" \"npm run dev -w @phantom/extension\"",
+    "dev": "npm exec concurrently -- -n shared,api,dash,ext -c yellow,magenta,cyan,green \"npm run dev -w @phantom/shared\" \"npm run dev -w @phantom/api\" \"npm run dev -w @phantom/dashboard\" \"npm run dev -w @phantom/extension\"",
     "build": "npm run build -w @phantom/shared && npm run build -w @phantom/api && npm run build -w @phantom/dashboard && npm run build -w @phantom/extension",
     "build:extension:store": "npm run build -w @phantom/shared && npm run build -w @phantom/extension",
-    "lint": "eslint .",
+    "lint": "npm exec eslint -- .",
     "test": "npm run test --workspaces --if-present"
   },
   "devDependencies": {
