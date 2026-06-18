@@ -107,5 +107,6 @@ export async function buildIntelligenceContext(
     topRelistedBrokerName: signals.topRelistedBrokerName,
     inboxVolumeSpike: signals.inboxVolumeSpike,
     rotationCandidateAliasId: rotationCandidate?.id ?? null,
+    aiSensitivity: user.aiSensitivity,
   };
 }

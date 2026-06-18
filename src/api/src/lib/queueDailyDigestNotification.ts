@@ -6,6 +6,7 @@ import {
 } from "@phantom/shared";
 import { buildIntelligenceContext } from "./buildIntelligenceContext.js";
 import { mapUserPreferences, USER_AI_PREFERENCES_SELECT } from "./mapUserPreferences.js";
+import { sendPrivacyDigestEmail } from "./sendPrivacyDigestEmail.js";
 import { prisma } from "./prisma.js";
 
 const DIGEST_TITLE = "Daily privacy digest";
@@ -56,7 +57,7 @@ export async function queueDailyDigestNotification(userId: string): Promise<void
       body: [
         body,
         user?.forwardToEmail?.trim() || user?.email
-          ? `\n\nEmail digest stub queued for forward address (Phase 2 SMTP).`
+          ? `\n\nEmail digest queued when NOTIFICATIONS_EMAIL_ENABLED=1 (Phase 2 SMTP).`
           : "",
       ].join(""),
       linkTo: "/reports",
@@ -65,6 +66,11 @@ export async function queueDailyDigestNotification(userId: string): Promise<void
 
   const recipient = user?.forwardToEmail?.trim() || user?.email;
   if (recipient) {
-    void formatPrivacyDigestEmail({ ...digest, digestMode: true });
+    const emailBody = formatPrivacyDigestEmail({ ...digest, digestMode: true });
+    void sendPrivacyDigestEmail({
+      to: recipient,
+      subject: "Phantom — Daily Privacy Digest",
+      body: emailBody,
+    });
   }
 }

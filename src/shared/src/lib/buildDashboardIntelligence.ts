@@ -35,6 +35,8 @@ export interface DashboardIntelligenceContext {
   inboxVolumeSpike: InboxVolumeSpikeSignal | null;
   /** Best alias to rotate via Copilot (non-password). */
   rotationCandidateAliasId: string | null;
+  /** 0–100 — user AI sensitivity slider from Settings. */
+  aiSensitivity: number;
 }
 
 function clampScore(n: number): number {

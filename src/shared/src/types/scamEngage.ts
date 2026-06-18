@@ -20,12 +20,16 @@ export interface ScamEngagementSession {
   transcript: readonly ScamTranscriptLine[];
   startedAt: string;
   complaintFiled: boolean;
+  /** Autopilot queued an FTC stub for this session (demo + pref enabled). */
+  autopilotComplaintQueued?: boolean;
 }
 
 export interface ScamEngagementSummary {
   totalSessions: number;
   totalMinutesWasted: number;
   complaintsFiled: number;
+  /** Sessions with Autopilot FTC queue stubs not yet marked filed. */
+  autopilotComplaintsQueued?: number;
   sessions: readonly ScamEngagementSession[];
   demoMode: boolean;
 }

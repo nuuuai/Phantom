@@ -1,7 +1,6 @@
 import type { ApiResponse, ScamEngagementSummary } from "@phantom/shared";
-import { generateScamEngageDemo } from "@phantom/shared";
 import { Router } from "express";
-import { isOverviewDemoMetricsEnabled } from "../lib/envOverviewDemo.js";
+import { buildScamEngageSummaryForUser } from "../lib/buildScamEngageSummaryForUser.js";
 
 export const scamEngageRouter = Router();
 
@@ -15,8 +14,7 @@ scamEngageRouter.get("/sessions", async (req, res) => {
     return;
   }
 
-  const demo = isOverviewDemoMetricsEnabled();
-  const data: ScamEngagementSummary = generateScamEngageDemo(userId, demo);
+  const data = await buildScamEngageSummaryForUser(userId);
   const response: ApiResponse<ScamEngagementSummary> = { ok: true, data };
   res.json(response);
 });

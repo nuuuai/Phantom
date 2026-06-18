@@ -24,6 +24,8 @@ export interface CopilotAccountSnapshot {
   darkWebAlerts: number;
   unreadInbox: number;
   metricsDemoMode: boolean;
+  /** 0–100 — higher = more aggressive threat recommendations. */
+  aiSensitivity: number;
 }
 
 export function buildCopilotSystemPrompt(snapshot: CopilotAccountSnapshot): string {
@@ -37,6 +39,7 @@ RULES:
 - If the user asks to perform an action (rotate alias, run scan), you may call the available tools — the dashboard will show a Confirm button; never claim an action ran without confirmation.
 - Available tools: start_broker_scan, rotate_alias (optional aliasId), request_broker_removals.
 - If data is missing (e.g. no broker scan), say so and recommend the action.
+- User AI sensitivity is ${snapshot.aiSensitivity}/100 — higher values mean more aggressive phishing and quarantine recommendations; calibrate urgency accordingly.
 
 ACCOUNT SNAPSHOT:
 ${JSON.stringify(snapshot, null, 2)}`;

@@ -55,6 +55,16 @@
 | Alias relationship map | **Shipped** — domain/service clusters on Aliases |
 | Call Guard active session banner | **Shipped** — Phase 2 architecture preview |
 | Billing value summary API | **Shipped** — structured ROI on Billing page |
+| Threat horizon panel (overview) | **Shipped** — re-listing, scan cadence, quota signals |
+| RiskSnapshot historical backfill | **Shipped** — missing weeks persisted on overview load |
+| Copilot AI sensitivity in LLM path | **Shipped** — snapshot + system prompt calibration |
+| Digest email env-gated queue | **Shipped** — `NOTIFICATIONS_EMAIL_ENABLED=1` logs intent |
+| Broker scan progress UX | **Shipped** — `BrokerScanningState` during active scans |
+| Vault compromise response playbook | **Shipped** — post-audit remediation steps |
+| SEE FTC complaint status UI | **Shipped** — Autopilot queue badges on Scam Engage |
+| Autopilot action log API + Settings panel | **Shipped** — full audit trail |
+| Dark web AI remediation steps | **Shipped** — per-finding playbook links |
+| Reports digest queue button | **Shipped** — POST send when env enabled |
 | Real PSTN / carrier Call Guard | **Pending** — Phase 2 |
 | Python ML pipelines | **Pending** — Phase 3 |
 | Virtual cards / VPN | **Pending** — Phase 3 |

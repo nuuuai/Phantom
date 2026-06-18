@@ -76,6 +76,7 @@ export async function runCopilotChat(
   }
 
   const ctx = await buildIntelligenceContext(userId);
+  const aiSensitivity = ctx.aiSensitivity;
   const riskFactors = buildRiskFactors(ctx);
   const priorityActions = buildPriorityActions(ctx);
   const dailyBrief = buildDailyBrief(ctx);
@@ -103,6 +104,7 @@ export async function runCopilotChat(
     darkWebAlerts: ctx.darkWebAlerts,
     unreadInbox: ctx.unreadInbox,
     metricsDemoMode: ctx.metricsDemoMode,
+    aiSensitivity,
   };
 
   const llm = getCopilotLlmConfig();

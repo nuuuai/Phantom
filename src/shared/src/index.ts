@@ -63,6 +63,14 @@ export type {
   DashboardOverview,
   SystemLayerStatus,
 } from "./types/dashboardOverview.js";
+export type { ThreatHorizonItem, ThreatHorizonSeverity } from "./types/threatHorizon.js";
+export type { VaultPlaybookStep } from "./types/vaultCompromisePlaybook.js";
+export type {
+  AutopilotActionKindPublic,
+  AutopilotActionRecord,
+  AutopilotActionsListResponse,
+} from "./types/autopilotAction.js";
+export type { DarkWebRemediationStep } from "./types/darkWebRemediation.js";
 export type {
   CopilotPrompt,
   IntelligenceItem,
@@ -80,6 +88,17 @@ export {
   resolveCopilotResponse,
   type DashboardIntelligenceContext,
 } from "./lib/buildDashboardIntelligence.js";
+export {
+  buildThreatHorizon,
+  type ThreatHorizonInput,
+} from "./lib/buildThreatHorizon.js";
+export {
+  buildVaultCompromisePlaybook,
+  type VaultCompromisePlaybookInput,
+} from "./lib/buildVaultCompromisePlaybook.js";
+export {
+  buildDarkWebRemediationSteps,
+} from "./lib/buildDarkWebRemediationSteps.js";
 export { explainAliasHealth, type AliasHealthExplanation } from "./lib/explainAliasHealth.js";
 export {
   scoreInboxPhishing,

@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { UpgradeModal } from "@/components/upgrade/UpgradeModal.js";
 import { AiPreferencesSection } from "./AiPreferencesSection.js";
+import { AutopilotActivityPanel } from "./AutopilotActivityPanel.js";
 import { AccountDataSection } from "./AccountDataSection.js";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
@@ -253,6 +254,8 @@ export function SettingsPage() {
           accessToken={accessToken}
           preferences={preferences}
         />
+
+        <AutopilotActivityPanel accessToken={accessToken} />
 
         <NotificationPrefsSection
           accessToken={accessToken}

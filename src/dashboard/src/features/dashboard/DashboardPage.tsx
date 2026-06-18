@@ -10,6 +10,7 @@ import { QuickActionsGrid } from "./QuickActionsGrid.js";
 import { StatGrid } from "./StatGrid.js";
 import { SystemLayersPanel } from "./SystemLayersPanel.js";
 import { ThreatIntelPreviewPanel } from "./ThreatIntelPreviewPanel.js";
+import { ThreatHorizonPanel } from "./ThreatHorizonPanel.js";
 import { WeeklyScamsChart } from "./WeeklyScamsChart.js";
 import { DashboardGettingStarted } from "./DashboardGettingStarted.js";
 import { shouldSkipDevBootstrap } from "@/lib/devBootstrap.js";
@@ -141,6 +142,7 @@ export function DashboardPage() {
         trendSeries={data.riskTrendSeries}
         narrative={data.riskNarrative}
       />
+      <ThreatHorizonPanel items={data.threatHorizon} />
       <StatGrid data={data} />
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">

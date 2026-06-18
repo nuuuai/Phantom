@@ -31,6 +31,7 @@ import { reportsRouter } from "./routes/reports.js";
 import { familyRouter } from "./routes/family.js";
 import { intelligenceRouter } from "./routes/intelligence.js";
 import { copilotRouter } from "./routes/copilot.js";
+import { autopilotRouter } from "./routes/autopilot.js";
 
 const globalRateLimiter = createGlobalRateLimiter();
 
@@ -106,6 +107,7 @@ export function createApp() {
   app.use("/api/family", authenticateJwt, familyRouter);
   app.use("/api/intelligence", authenticateJwt, intelligenceRouter);
   app.use("/api/copilot", authenticateJwt, copilotRouter);
+  app.use("/api/autopilot", authenticateJwt, autopilotRouter);
 
   app.use(notFoundJson);
   app.use(errorJsonHandler);

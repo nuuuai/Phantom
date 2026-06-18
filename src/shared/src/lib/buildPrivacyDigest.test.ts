@@ -26,6 +26,7 @@ const ctx: DashboardIntelligenceContext = {
   topRelistedBrokerName: null,
   inboxVolumeSpike: null,
   rotationCandidateAliasId: null,
+  aiSensitivity: 50,
 };
 
 describe("buildPrivacyDigest", () => {

@@ -45,6 +45,7 @@ import {
   type CopilotConfirmRequest,
   type CopilotConfirmResponse,
   type CopilotStatusResponse,
+  type AutopilotActionsListResponse,
   RATE_LIMIT_RETRY_MS,
 } from "@phantom/shared";
 import { useSessionStore } from "@/stores/useSessionStore.js";
@@ -390,6 +391,17 @@ export const phantomApi = {
         "/api/reports/digest/email",
         accessToken,
         init ?? {}
+      );
+      return parseApiResponseJson(res);
+    },
+
+    sendDigestEmail: async (
+      accessToken: Token
+    ): Promise<ApiResponse<{ mode: "disabled" | "logged"; ok: boolean }>> => {
+      const res = await fetchWithRefresh(
+        "/api/reports/digest/email/send",
+        accessToken,
+        { method: "POST", headers: { "Content-Type": "application/json" } }
       );
       return parseApiResponseJson(res);
     },
@@ -966,6 +978,16 @@ export const phantomApi = {
         body: JSON.stringify(body),
         ...init,
       });
+      return parseApiResponseJson(res);
+    },
+  },
+
+  autopilot: {
+    actions: async (
+      accessToken: Token,
+      init?: RequestInit
+    ): Promise<ApiResponse<AutopilotActionsListResponse>> => {
+      const res = await fetchWithRefresh("/api/autopilot/actions", accessToken, init ?? {});
       return parseApiResponseJson(res);
     },
   },

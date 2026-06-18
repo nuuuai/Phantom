@@ -39,6 +39,7 @@ export const STALE = {
   aliasRelationshipMap: 30_000,
   billingValueSummary: 60_000,
   callGuardActiveSession: 10_000,
+  autopilotActions: 30_000,
   copilotStatus: 120_000,
   vaultSync: 20_000,
 } as const;

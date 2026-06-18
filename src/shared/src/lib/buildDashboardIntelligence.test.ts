@@ -30,6 +30,7 @@ const baseCtx: DashboardIntelligenceContext = {
   topRelistedBrokerName: null,
   inboxVolumeSpike: null,
   rotationCandidateAliasId: null,
+  aiSensitivity: 50,
 };
 
 describe("buildDashboardIntelligence", () => {

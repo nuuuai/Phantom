@@ -50,6 +50,7 @@ const mockCtx = {
   inboxVolumeSpike: null,
   rotationCandidateAliasId: null,
   isPaidTier: false,
+  aiSensitivity: 50,
 };
 
 describe("runCopilotChat", () => {

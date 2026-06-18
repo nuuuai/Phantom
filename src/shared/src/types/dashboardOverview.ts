@@ -6,6 +6,7 @@ import type {
   RiskFactor,
 } from "./dashboardIntelligence.js";
 import type { RiskNarrative, RiskTrendPoint } from "./riskNarrative.js";
+import type { ThreatHorizonItem } from "./threatHorizon.js";
 
 export interface ActivityItem {
   type: ActivityLayerType;
@@ -66,4 +67,6 @@ export interface DashboardOverview {
   hasBrokerScan: boolean;
   passwordAliasCount: number;
   isPaidTier: boolean;
+  /** Brain — predictive re-listing, scan cadence, quota signals. */
+  threatHorizon: readonly ThreatHorizonItem[];
 }

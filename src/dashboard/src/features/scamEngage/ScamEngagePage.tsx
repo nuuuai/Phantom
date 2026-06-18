@@ -51,11 +51,22 @@ export function ScamEngagePage() {
       )}
       {sessionsQuery.data && (
         <>
-          <div className="mt-6 grid grid-cols-3 gap-px overflow-hidden rounded-xl bg-ph-border">
+          {sessionsQuery.data.demoMode ? (
+            <p className="mt-4 rounded-md border border-ph-warning/40 bg-ph-warning/10 px-3 py-2 font-sans text-[11px] text-ph-warning">
+              Demo sessions — enable{" "}
+              <span className="font-mono">OVERVIEW_DEMO_METRICS=1</span> on the API
+              and Autopilot auto-complaint to queue FTC stubs.
+            </p>
+          ) : null}
+          <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-ph-border md:grid-cols-4">
             {[
               { label: "Sessions", value: sessionsQuery.data.totalSessions },
               { label: "Minutes wasted", value: sessionsQuery.data.totalMinutesWasted },
               { label: "Complaints filed", value: sessionsQuery.data.complaintsFiled },
+              {
+                label: "Autopilot queued",
+                value: sessionsQuery.data.autopilotComplaintsQueued ?? 0,
+              },
             ].map((c) => (
               <div key={c.label} className="bg-ph-surface px-4 py-5">
                 <div className="font-mono text-[10px] uppercase text-ph-text-muted">
@@ -82,6 +93,16 @@ export function ScamEngagePage() {
                     <div className="font-sans text-xs text-ph-text-tertiary">
                       {s.scamType} · {Math.round(s.durationSec / 60)} min · score{" "}
                       {s.engagementScore}
+                      {s.autopilotComplaintQueued ? (
+                        <span className="ml-2 font-mono text-[10px] uppercase text-ph-info">
+                          · FTC queued
+                        </span>
+                      ) : null}
+                      {s.complaintFiled ? (
+                        <span className="ml-2 font-mono text-[10px] uppercase text-ph-success">
+                          · filed
+                        </span>
+                      ) : null}
                     </div>
                   </button>
                 </li>

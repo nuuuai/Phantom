@@ -1,6 +1,6 @@
 import { clientErrorFromApiFailure, getQueryErrorMessage } from "@phantom/shared";
 import type { ExposureReport } from "@phantom/shared";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { LAYER_STYLES } from "@/lib/layerColors.js";
@@ -54,6 +54,27 @@ export function ReportsPage() {
   });
 
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [queueStatus, setQueueStatus] = useState<string | null>(null);
+
+  const queueDigestMutation = useMutation({
+    mutationFn: async () => {
+      const res = await phantomApi.reports.sendDigestEmail(accessToken!);
+      if (!res.ok) throw clientErrorFromApiFailure(res);
+      return res.data;
+    },
+    onSuccess: (data) => {
+      setQueueStatus(
+        data.ok
+          ? "Digest queued (NOTIFICATIONS_EMAIL_ENABLED=1 — SMTP Phase 2)"
+          : "Email queue disabled — set NOTIFICATIONS_EMAIL_ENABLED=1 on API"
+      );
+      setTimeout(() => setQueueStatus(null), 5000);
+    },
+    onError: (err) => {
+      setQueueStatus(getQueryErrorMessage(err));
+      setTimeout(() => setQueueStatus(null), 5000);
+    },
+  });
 
   const onCopyDigestEmail = useCallback(async () => {
     if (!accessToken) return;
@@ -110,16 +131,29 @@ export function ReportsPage() {
                 {digestQuery.data.headline}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => void onCopyDigestEmail()}
-              className="rounded-md border border-ph-border bg-ph-raised px-3 py-1.5 font-sans text-xs text-ph-text-secondary"
-            >
-              Copy email body
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void onCopyDigestEmail()}
+                className="rounded-md border border-ph-border bg-ph-raised px-3 py-1.5 font-sans text-xs text-ph-text-secondary"
+              >
+                Copy email body
+              </button>
+              <button
+                type="button"
+                disabled={queueDigestMutation.isPending}
+                onClick={() => queueDigestMutation.mutate()}
+                className="rounded-md border border-ph-accent-border bg-ph-accent/[0.12] px-3 py-1.5 font-sans text-xs text-ph-accent-light disabled:opacity-50"
+              >
+                {queueDigestMutation.isPending ? "Queueing…" : "Queue digest email"}
+              </button>
+            </div>
           </div>
           {copyStatus ? (
             <p className="mt-2 font-sans text-[11px] text-ph-text-tertiary">{copyStatus}</p>
+          ) : null}
+          {queueStatus ? (
+            <p className="mt-2 font-sans text-[11px] text-ph-text-tertiary">{queueStatus}</p>
           ) : null}
           <ul className="mt-3 space-y-1">
             {digestQuery.data.topActions.map((action) => (

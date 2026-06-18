@@ -8,10 +8,12 @@ import {
   buildRiskFactors,
   buildRiskNarrative,
   buildSyntheticRiskTrendSeries,
+  buildThreatHorizon,
   riskTrendFromSeries,
 } from "@phantom/shared";
 import { prisma } from "./prisma.js";
 import { advanceRemovalSimulation } from "./brokerScanAdvance.js";
+import { backfillRiskSnapshots } from "./backfillRiskSnapshots.js";
 import { buildIntelligenceContext } from "./buildIntelligenceContext.js";
 import { isOverviewDemoMetricsEnabled } from "./envOverviewDemo.js";
 import { runAutopilotTick } from "./runAutopilotTick.js";
@@ -136,7 +138,21 @@ export async function buildDashboardOverview(
 
   if (!demo) {
     await persistRiskSnapshot(userId, intelCtx.riskScore);
+    await backfillRiskSnapshots(userId);
   }
+
+  const threatHorizon = buildThreatHorizon({
+    brokersRelisted: intelCtx.brokersRelisted,
+    brokersFound: intelCtx.brokersFound,
+    darkWebAlerts: intelCtx.darkWebAlerts,
+    hasBrokerScan: intelCtx.hasBrokerScan,
+    isPaidTier: intelCtx.isPaidTier,
+    daysSinceBrokerScan: intelCtx.daysSinceBrokerScan,
+    topRelistedBrokerName: intelCtx.topRelistedBrokerName,
+    inboxVolumeSpike: intelCtx.inboxVolumeSpike,
+    aliasesCompromised: intelCtx.aliasesCompromised,
+    aliasesWarning: intelCtx.aliasesWarning,
+  });
 
   const callsScreened = demo ? 1284 : 0;
   const scamsEngaged = demo ? 342 : 0;
@@ -203,5 +219,6 @@ export async function buildDashboardOverview(
     hasBrokerScan: intelCtx.hasBrokerScan,
     passwordAliasCount: intelCtx.passwordAliasCount,
     isPaidTier: intelCtx.isPaidTier,
+    threatHorizon,
   };
 }

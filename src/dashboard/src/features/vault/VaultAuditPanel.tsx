@@ -3,8 +3,10 @@ import {
   checkPasswordPwned,
   detectPasswordReuse,
   rankVaultPasswordsForRotation,
+  buildVaultCompromisePlaybook,
 } from "@phantom/shared";
 import { useCallback, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 interface VaultAuditPanelProps {
   aliases: readonly Alias[];
@@ -71,6 +73,16 @@ export function VaultAuditPanel({ aliases, resolveValue }: VaultAuditPanelProps)
       }))
     );
   }, [breachRows, entries, groups]);
+
+  const playbookSteps = useMemo(() => {
+    if (breachRows === null) return [];
+    const breachedCount = breachRows.reduce((n, r) => n + r.entryIds.length, 0);
+    return buildVaultCompromisePlaybook({
+      breachedEntryCount: breachedCount,
+      reuseGroupCount: groups.length,
+      topRotationLabels: rotationCandidates.map((c) => c.label),
+    });
+  }, [breachRows, groups.length, rotationCandidates]);
 
   const checkBreaches = useCallback(async () => {
     if (entries.length === 0) return;
@@ -251,6 +263,37 @@ export function VaultAuditPanel({ aliases, resolveValue }: VaultAuditPanelProps)
               </li>
             ))}
           </ul>
+        </div>
+      ) : null}
+
+      {playbookSteps.length > 0 ? (
+        <div className="mt-5 border-t border-ph-borderSubtle pt-4">
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-wide text-ph-text-muted">
+            Compromise response playbook · Autopilot
+          </p>
+          <ol className="mt-3 space-y-2">
+            {playbookSteps.map((step) => (
+              <li
+                key={step.id}
+                className="rounded-lg border border-ph-borderSubtle bg-ph-bg-base px-3 py-2"
+              >
+                <span className="font-sans text-xs font-medium text-ph-text-primary">
+                  {step.priority}. {step.title}
+                </span>
+                <p className="mt-1 font-sans text-[11px] text-ph-text-tertiary">
+                  {step.description}
+                </p>
+                {step.id === "enable_autopilot" ? (
+                  <Link
+                    to="/settings"
+                    className="mt-1 inline-block font-sans text-[11px] text-ph-accent-light hover:underline"
+                  >
+                    Open Settings
+                  </Link>
+                ) : null}
+              </li>
+            ))}
+          </ol>
         </div>
       ) : null}
     </section>

@@ -28,6 +28,7 @@ export const callGuardAll = ["call-guard"] as const;
 export const scamEngageAll = ["scam-engage"] as const;
 export const threatIntelAll = ["threat-intel"] as const;
 export const reportsAll = ["reports"] as const;
+export const autopilotActionsAll = ["autopilot-actions"] as const;
 export const familyAll = ["family"] as const;
 export const inboxSummaryAll = ["inbox-summary"] as const;
 export const aliasIntelAll = ["alias-intel"] as const;
@@ -117,4 +118,6 @@ export const queryKeys = {
     ["alias-intel", accessToken, aliasId] as const,
   copilotStatus: (accessToken: string | null) =>
     ["copilot", "status", accessToken] as const,
+  autopilotActions: (accessToken: string | null) =>
+    ["autopilot-actions", accessToken] as const,
 };

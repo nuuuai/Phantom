@@ -8,6 +8,8 @@ import {
 import { Router } from "express";
 import { buildIntelligenceContext } from "../lib/buildIntelligenceContext.js";
 import { mapUserPreferences, USER_AI_PREFERENCES_SELECT } from "../lib/mapUserPreferences.js";
+import { sendPrivacyDigestEmail } from "../lib/sendPrivacyDigestEmail.js";
+import { isNotificationsEmailEnabled } from "../lib/envNotificationsEmail.js";
 import { prisma } from "../lib/prisma.js";
 
 export const reportsRouter = Router();
@@ -105,6 +107,60 @@ reportsRouter.get("/digest/email", async (req, res) => {
     res.status(500).json({
       ok: false,
       error: { code: "digest_email_failed", message: "Could not build digest email" },
+    });
+  }
+});
+
+reportsRouter.post("/digest/email/send", async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({
+      ok: false,
+      error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
+
+  if (!isNotificationsEmailEnabled()) {
+    res.status(503).json({
+      ok: false,
+      error: {
+        code: "email_disabled",
+        message: "Set NOTIFICATIONS_EMAIL_ENABLED=1 on the API to queue digest email",
+      },
+    });
+    return;
+  }
+
+  try {
+    const { digest, digestEmail } = await buildReportBundle(userId);
+    if (!digestEmail) {
+      res.status(400).json({
+        ok: false,
+        error: {
+          code: "no_recipient",
+          message: "Set forward-to email or account email in Settings",
+        },
+      });
+      return;
+    }
+
+    const body = formatPrivacyDigestEmail({ ...digest, digestMode: true });
+    const result = await sendPrivacyDigestEmail({
+      to: digestEmail,
+      subject: "Phantom — Daily Privacy Digest",
+      body,
+    });
+
+    const response: ApiResponse<{ mode: typeof result.mode; ok: boolean }> = {
+      ok: true,
+      data: result,
+    };
+    res.status(result.ok ? 201 : 503).json(response);
+  } catch {
+    res.status(500).json({
+      ok: false,
+      error: { code: "digest_send_failed", message: "Could not queue digest email" },
     });
   }
 });

@@ -5,6 +5,7 @@ import { UpgradeModal } from "@/components/upgrade/UpgradeModal.js";
 import { BrokerResultsPanel } from "./BrokerResultsPanel.js";
 import { BrokerRemovalNarrativePanel } from "./BrokerRemovalNarrativePanel.js";
 import { BrokerRemovalPriorityPanel } from "./BrokerRemovalPriorityPanel.js";
+import { BrokerScanningState } from "./BrokerScanningState.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import {
   brokerScanCatalogAll,
@@ -21,6 +22,7 @@ import {
   getQueryErrorMessage,
   PHANTOM_API_ERROR_CODES,
   type BrokerScanSummary,
+  type BrokerScanStartResponse,
   type ClientErrorMeta,
   buildBrokerRemovalNarrative,
   FREE_TIER_BROKER_SCAN_MAX_PER_24H,
@@ -70,6 +72,9 @@ export function BrokersPage() {
     number | undefined
   >(undefined);
   const [scanErrorMessage, setScanErrorMessage] = useState<string | null>(null);
+  const [activeScanMeta, setActiveScanMeta] = useState<
+    Pick<BrokerScanStartResponse, "totalBrokers" | "estimatedTime"> | null
+  >(null);
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedQ(searchQ), 320);
@@ -130,7 +135,14 @@ export function BrokersPage() {
       if (!res.ok) throw clientErrorFromApiFailure(res);
       return res.data;
     },
-    onSuccess: () => {
+    onMutate: () => {
+      setActiveScanMeta(null);
+    },
+    onSuccess: (data) => {
+      setActiveScanMeta({
+        totalBrokers: data.totalBrokers,
+        estimatedTime: data.estimatedTime,
+      });
       setScanLimitMessage(null);
       setScanLimitRetryAfter(undefined);
       setScanErrorMessage(null);
@@ -145,6 +157,9 @@ export function BrokersPage() {
           queryKey: dashboardOverviewAll,
         });
       })();
+    },
+    onSettled: () => {
+      setActiveScanMeta(null);
     },
     onError: (e: Error) => {
       const ce = e as ClientErrorMeta;
@@ -359,7 +374,17 @@ export function BrokersPage() {
         ) : null}
       </div>
 
-      {showPreScan ? (
+      {startMutation.isPending ? (
+        <BrokerScanningState
+          brokerNames={
+            catalogNames.length > 0 ? catalogNames : ["Broker registry…"]
+          }
+          totalBrokers={
+            activeScanMeta?.totalBrokers ?? Math.max(catalogNames.length, 50)
+          }
+          estimatedTime={activeScanMeta?.estimatedTime ?? 120}
+        />
+      ) : showPreScan ? (
         <div className="rounded-xl border border-ph-border bg-ph-surface p-8">
           <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-ph-text-tertiary">
             Layer 1 · Shield · First exposure scan

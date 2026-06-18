@@ -19,6 +19,7 @@ import { STALE } from "@/lib/queryStaleTimes.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 import { DarkWebImpactPanel } from "./DarkWebImpactPanel.js";
 import { DarkWebBreachTimeline } from "./DarkWebBreachTimeline.js";
+import { DarkWebRemediationSteps } from "./DarkWebRemediationSteps.js";
 
 function severityClass(s: DarkWebFindingPublic["severity"]): string {
   if (s === "critical") return "border-rose-500/50 bg-rose-500/10 text-rose-300";
@@ -322,6 +323,7 @@ export function DarkWebPage() {
                     Recommended: {f.recommendedAction}
                   </p>
                   <DarkWebBreachTimeline finding={f} />
+                  {f.status === "open" ? <DarkWebRemediationSteps finding={f} /> : null}
                 </div>
                 {f.status === "open" ? (
                   <button

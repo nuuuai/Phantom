@@ -48,11 +48,17 @@ export function logOperatorConfigSummary(): void {
     ? "DASHBOARD_DEMO_METRICS or OVERVIEW_DEMO_METRICS=1 (synthetic Sword/weekly chart numbers)"
     : "overview demo metrics unset (honest Phase 1 zeros for unwired telephony/SEE charts)";
 
+  const notificationsEmail =
+    process.env.NOTIFICATIONS_EMAIL_ENABLED?.trim() === "1"
+      ? "NOTIFICATIONS_EMAIL_ENABLED=1 (digest queue logs only; SMTP Phase 2)"
+      : "NOTIFICATIONS_EMAIL_ENABLED unset (in-app digest only)";
+
   const lines = [
     `phantom-api config: NODE_ENV=${nodeEnv} API_PORT=${port}`,
     `  jwt: ${jwtMode}  redis: ${redis}  stripe: ${stripe}`,
     `  DASHBOARD_PUBLIC_URL: ${dash ? "set" : "unset (billing uses localhost default)"}`,
     `  email inbound: ${inboundState}`,
+    `  email outbound: ${notificationsEmail}`,
     `  dark web: ${darkWeb}`,
     `  overview: ${overviewMetrics}`,
   ];
