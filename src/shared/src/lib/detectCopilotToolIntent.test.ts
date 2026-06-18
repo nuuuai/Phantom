@@ -20,6 +20,17 @@ describe("detectCopilotToolIntent", () => {
     ).toEqual({ toolId: "request_broker_removals" });
   });
 
+  it("detects alias generation", () => {
+    expect(detectCopilotToolIntent("Create a shopping alias for Amazon")).toEqual({
+      toolId: "generate_alias",
+      params: expect.objectContaining({
+        type: "email",
+        category: "shopping",
+        serviceName: "amazon",
+      }),
+    });
+  });
+
   it("returns null for general questions", () => {
     expect(detectCopilotToolIntent("Why is my risk score 67?")).toBeNull();
   });

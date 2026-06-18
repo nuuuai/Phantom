@@ -1,5 +1,6 @@
 import type { BrokerDataType } from "@phantom/shared";
 import type { BrokerScanProbeResult, BrokerScanSubject } from "./brokerScanTypes.js";
+import { parseBrokerHtml } from "./brokerHtmlParsers.js";
 import { getBrokerScanHttpTimeoutMs } from "./brokerScanConfig.js";
 
 const FOUND_SIGNALS = [
@@ -92,6 +93,8 @@ export async function probeBrokerViaHttp(
     if (html.length < 200) {
       return { status: "not_found", dataTypesFound: [], probeMode: "live" };
     }
+    const parsed = parseBrokerHtml(domain, html, subject);
+    if (parsed) return parsed;
     return analyzeHtmlForExposure(html, subject);
   } catch {
     return { status: "not_found", dataTypesFound: [], probeMode: "live" };

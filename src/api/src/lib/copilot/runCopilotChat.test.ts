@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../buildIntelligenceContext.js", () => ({
   buildIntelligenceContext: vi.fn(),
@@ -16,7 +16,12 @@ vi.mock("./executeCopilotAction.js", () => ({
   buildCopilotPendingAction: vi.fn(),
 }));
 
+vi.mock("../listRotationCandidates.js", () => ({
+  listRotationCandidatesForUser: vi.fn(),
+}));
+
 import { buildIntelligenceContext } from "../buildIntelligenceContext.js";
+import { listRotationCandidatesForUser } from "../listRotationCandidates.js";
 import { buildCopilotPendingAction } from "./executeCopilotAction.js";
 import { callCopilotLlm } from "./callCopilotLlm.js";
 import { getCopilotLlmConfig } from "./envCopilot.js";
@@ -44,11 +49,19 @@ const mockCtx = {
   topRelistedBrokerName: null,
   inboxVolumeSpike: null,
   rotationCandidateAliasId: null,
+  isPaidTier: false,
 };
 
 describe("runCopilotChat", () => {
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  beforeEach(() => {
+    vi.mocked(listRotationCandidatesForUser).mockResolvedValue({
+      candidates: [],
+      totalEligible: 0,
+    });
   });
 
   it("returns rules fallback when LLM disabled", async () => {

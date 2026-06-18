@@ -13,6 +13,8 @@ import { computeAliasHealthScore } from "@phantom/shared";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { EditAliasModal } from "./EditAliasModal.js";
 import { GenerateAliasModal } from "./GenerateAliasModal.js";
+import { RotationCandidatesPanel } from "./RotationCandidatesPanel.js";
+import { AliasRelationshipPanel } from "./AliasRelationshipPanel.js";
 import { useCopiedFeedback } from "@/hooks/useCopiedFeedback.js";
 import { useDecryptedPasswords } from "@/hooks/useDecryptedPasswords.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
@@ -361,6 +363,9 @@ export function AliasesPage() {
           ))}
         </div>
       ) : null}
+
+      <RotationCandidatesPanel />
+      <AliasRelationshipPanel />
 
       <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap gap-1">

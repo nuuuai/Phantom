@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
+import { BillingValuePanel } from "./BillingValuePanel.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { queryKeys } from "@/lib/queryKeys.js";
 import { STALE } from "@/lib/queryStaleTimes.js";
@@ -42,17 +43,6 @@ export function BillingPage() {
     },
     enabled: accessToken !== null,
     staleTime: STALE.userMe,
-  });
-
-  const overviewQuery = useQuery({
-    queryKey: queryKeys.dashboardOverview(accessToken),
-    queryFn: async ({ signal }) => {
-      const res = await phantomApi.dashboard.overview(accessToken, { signal });
-      if (!res.ok) throw clientErrorFromApiFailure(res);
-      return res.data;
-    },
-    enabled: accessToken !== null,
-    staleTime: STALE.dashboardOverview,
   });
 
   const checkoutMutation = useMutation({
@@ -140,30 +130,7 @@ export function BillingPage() {
         Checkout and Customer Portal activate when API keys are configured.
       </p>
 
-      {overviewQuery.data ? (
-        <section className="mt-6 max-w-xl rounded-xl border border-ph-border bg-ph-surface p-5">
-          <div className="font-mono text-[10px] font-semibold uppercase text-ph-text-muted">
-            Pro value · Brain
-          </div>
-          <ul className="mt-3 space-y-1 font-sans text-sm text-ph-text-secondary">
-            <li>
-              {overviewQuery.data.brokersRemoved} broker removal(s) confirmed
-            </li>
-            <li>{overviewQuery.data.activeAliases} active aliases protected</li>
-            <li>
-              {overviewQuery.data.darkWebAlerts} dark web alert(s) monitored
-            </li>
-            <li>
-              Est. hours saved this month:{" "}
-              {Math.max(
-                1,
-                overviewQuery.data.brokersRemoved * 2 +
-                  overviewQuery.data.priorityActions.length
-              )}
-            </li>
-          </ul>
-        </section>
-      ) : null}
+      <BillingValuePanel />
 
       {checkoutSyncSuccess && !syncCheckoutError ? (
         <div

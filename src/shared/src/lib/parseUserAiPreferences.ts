@@ -41,6 +41,12 @@ export function parseUserAiPreferencesPatch(
     }
     patch.autopilotAutoComplaint = src.autopilotAutoComplaint;
   }
+  if ("autopilotAutoRemoval" in src) {
+    if (!isBool(src.autopilotAutoRemoval)) {
+      return { ok: false, message: "autopilotAutoRemoval must be a boolean" };
+    }
+    patch.autopilotAutoRemoval = src.autopilotAutoRemoval;
+  }
   if ("notificationDigestMode" in src) {
     if (!isBool(src.notificationDigestMode)) {
       return { ok: false, message: "notificationDigestMode must be a boolean" };
@@ -66,6 +72,7 @@ export const DEFAULT_USER_AI_PREFERENCES: UserAiPreferences = {
   autopilotAutoRotate: false,
   autopilotAutoQuarantine: false,
   autopilotAutoComplaint: false,
+  autopilotAutoRemoval: false,
   aiSensitivity: 50,
   notificationDigestMode: false,
 };

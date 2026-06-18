@@ -181,6 +181,7 @@ function createShieldIcon(field: DetectedField): HTMLDivElement {
     const payload: BackgroundMessage = {
       type: MESSAGE_GENERATE_ALIAS,
       fieldKind: field.kind,
+      siteHostname: window.location.hostname,
     };
     void chrome.runtime.sendMessage(payload).then((res: unknown) => {
       btn.removeAttribute("aria-busy");

@@ -14,6 +14,7 @@ const TOOL_IDS: CopilotToolId[] = [
   "start_broker_scan",
   "rotate_alias",
   "request_broker_removals",
+  "generate_alias",
 ];
 
 export function isCopilotToolId(name: string): name is CopilotToolId {
@@ -54,6 +55,36 @@ export const COPILOT_OPENAI_TOOLS = [
       parameters: { type: "object", properties: {}, additionalProperties: false },
     },
   },
+  {
+    type: "function" as const,
+    function: {
+      name: "generate_alias",
+      description:
+        "Propose creating a new alias (email, username, or phone). Requires user confirmation. Password aliases are not supported via Copilot.",
+      parameters: {
+        type: "object",
+        properties: {
+          type: { type: "string", enum: ["email", "username", "phone"] },
+          category: {
+            type: "string",
+            enum: [
+              "shopping",
+              "social",
+              "finance",
+              "work",
+              "dating",
+              "newsletter",
+              "temp",
+            ],
+          },
+          serviceName: { type: "string" },
+          serviceUrl: { type: "string" },
+        },
+        required: ["type", "category"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 export const COPILOT_ANTHROPIC_TOOLS = [
@@ -89,7 +120,66 @@ export const COPILOT_ANTHROPIC_TOOLS = [
       additionalProperties: false,
     },
   },
+  {
+    name: "generate_alias",
+    description:
+      "Propose creating a new alias. Requires confirmation. No password aliases.",
+    input_schema: {
+      type: "object",
+      properties: {
+        type: { type: "string", enum: ["email", "username", "phone"] },
+        category: { type: "string" },
+        serviceName: { type: "string" },
+        serviceUrl: { type: "string" },
+      },
+      required: ["type", "category"],
+      additionalProperties: false,
+    },
+  },
 ];
+
+const ALIAS_TYPES = new Set(["email", "username", "phone"]);
+const ALIAS_CATEGORIES = new Set([
+  "shopping",
+  "social",
+  "finance",
+  "work",
+  "dating",
+  "newsletter",
+  "temp",
+]);
+
+function parseToolParams(
+  toolId: CopilotToolId,
+  raw: Record<string, unknown>
+): CopilotActionParams {
+  if (toolId === "rotate_alias" && typeof raw.aliasId === "string") {
+    return { aliasId: raw.aliasId };
+  }
+  if (
+    toolId === "generate_alias" &&
+    typeof raw.type === "string" &&
+    ALIAS_TYPES.has(raw.type) &&
+    typeof raw.category === "string" &&
+    ALIAS_CATEGORIES.has(raw.category)
+  ) {
+    return {
+      type: raw.type as "email" | "username" | "phone",
+      category: raw.category as
+        | "shopping"
+        | "social"
+        | "finance"
+        | "work"
+        | "dating"
+        | "newsletter"
+        | "temp",
+      serviceName:
+        typeof raw.serviceName === "string" ? raw.serviceName : undefined,
+      serviceUrl: typeof raw.serviceUrl === "string" ? raw.serviceUrl : undefined,
+    };
+  }
+  return {};
+}
 
 export function parseOpenAiToolCalls(
   message: {
@@ -105,12 +195,11 @@ export function parseOpenAiToolCalls(
     if (!name || !isCopilotToolId(name)) continue;
     let params: CopilotActionParams = {};
     try {
-      const parsed = JSON.parse(tc.function?.arguments ?? "{}") as {
-        aliasId?: string;
-      };
-      if (name === "rotate_alias" && typeof parsed.aliasId === "string") {
-        params = { aliasId: parsed.aliasId };
-      }
+      const parsed = JSON.parse(tc.function?.arguments ?? "{}") as Record<
+        string,
+        unknown
+      >;
+      params = parseToolParams(name, parsed);
     } catch {
       params = {};
     }
@@ -130,11 +219,8 @@ export function parseAnthropicToolCalls(
       reply += block.text;
     }
     if (block.type === "tool_use" && block.name && isCopilotToolId(block.name)) {
-      const input = (block.input ?? {}) as { aliasId?: string };
-      const params: CopilotActionParams =
-        block.name === "rotate_alias" && typeof input.aliasId === "string"
-          ? { aliasId: input.aliasId }
-          : {};
+      const input = (block.input ?? {}) as Record<string, unknown>;
+      const params = parseToolParams(block.name, input);
       toolCalls.push({ toolId: block.name, params });
     }
   }

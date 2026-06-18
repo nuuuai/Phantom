@@ -12,11 +12,8 @@ import type {
   AliasType as PrismaAliasType,
 } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
-import { generateValueForType } from "../lib/aliasGenerators.js";
+import { generateAliasForUser } from "../lib/generateAliasForUser.js";
 import { rotateAliasForUser } from "../lib/aliasRotate.js";
-import { assertCanCreateAlias } from "../lib/aliasTierLimits.js";
-import { provisionPhoneAlias } from "../lib/phone/provisionPhone.js";
-import { parsePhoneForwardTo } from "../lib/phone/validateForward.js";
 import { mapAliasToDto } from "../lib/mapAlias.js";
 
 export const aliasesRouter = Router();
@@ -96,29 +93,6 @@ aliasesRouter.post("/generate", async (req, res) => {
     return;
   }
 
-  const body = req.body as GenerateAliasRequest;
-  const type = typeof body.type === "string" ? body.type : "";
-  const category = typeof body.category === "string" ? body.category : "";
-  if (!TYPE_SET.has(type) || !CATEGORY_SET.has(category)) {
-    res.status(400).json({
-      ok: false,
-      error: {
-        code: "validation_error",
-        message: "Valid type and category required",
-      },
-    });
-    return;
-  }
-
-  const serviceName =
-    typeof body.serviceName === "string" && body.serviceName.length > 0
-      ? body.serviceName
-      : null;
-  const serviceUrl =
-    typeof body.serviceUrl === "string" && body.serviceUrl.length > 0
-      ? body.serviceUrl
-      : null;
-
   const userRow = await prisma.user.findUnique({ where: { id: userId } });
   if (!userRow) {
     res.status(401).json({
@@ -128,96 +102,33 @@ aliasesRouter.post("/generate", async (req, res) => {
     return;
   }
 
-  const limitCheck = await assertCanCreateAlias(
+  const result = await generateAliasForUser(
     userId,
     userRow.tier,
-    type as PrismaAliasType
+    req.body as GenerateAliasRequest
   );
-  if (!limitCheck.ok) {
-    res.status(403).json({
+
+  if (!result.ok) {
+    const status =
+      result.code === "tier_limit"
+        ? 403
+        : result.code === "phone_unavailable"
+          ? 503
+          : 400;
+    res.status(status).json({
       ok: false,
       error: {
-        code: "tier_limit",
-        message: limitCheck.message,
-        tierLimit: {
-          aliasType: limitCheck.tierLimit.aliasType,
-          used: limitCheck.tierLimit.used,
-          max: limitCheck.tierLimit.max,
-        },
+        code: result.code,
+        message: result.message,
+        ...(result.tierLimit ? { tierLimit: result.tierLimit } : {}),
       },
     });
     return;
   }
 
-  const clientEncrypted =
-    typeof body.encryptedValue === "string" && body.encryptedValue.length > 0
-      ? body.encryptedValue
-      : null;
-
-  let value: string;
-  let phoneProvider: string | null = null;
-  let phoneProviderSid: string | null = null;
-  let phoneForwardTo: string | null = null;
-
-  if (clientEncrypted && type === "password") {
-    value = "[encrypted]";
-  } else if (type === "phone") {
-    const raw =
-      typeof body.phoneForwardTo === "string" ? body.phoneForwardTo : undefined;
-    const parsed = parsePhoneForwardTo(raw);
-    if (!parsed.ok) {
-      res.status(400).json({
-        ok: false,
-        error: { code: "validation_error", message: parsed.message },
-      });
-      return;
-    }
-    const p = provisionPhoneAlias(parsed.value);
-    if (!p.ok) {
-      res.status(503).json({
-        ok: false,
-        error: { code: p.code, message: p.message },
-      });
-      return;
-    }
-    value = p.value;
-    phoneProvider = p.provider;
-    phoneProviderSid = p.providerSid;
-    phoneForwardTo = p.forwardTo;
-  } else {
-    const existsEmail = async (v: string): Promise<boolean> => {
-      const found = await prisma.alias.findFirst({
-        where: { type: "email", value: v, isActive: true },
-      });
-      return found !== null;
-    };
-    value = await generateValueForType(
-      type as AliasType,
-      category as AliasCategory,
-      existsEmail
-    );
-  }
-
-  const row = await prisma.alias.create({
-    data: {
-      userId,
-      type: type as AliasType,
-      value,
-      encryptedValue: clientEncrypted,
-      category: category as AliasCategory,
-      serviceName,
-      serviceUrl,
-      healthStatus: "healthy",
-      lastActivityAt: new Date(),
-      phoneProvider,
-      phoneProviderSid,
-      phoneForwardTo,
-    },
-  });
-
   const response: ApiResponse<{ alias: ReturnType<typeof mapAliasToDto> }> = {
     ok: true,
-    data: { alias: mapAliasToDto(row) },
+    data: { alias: result.data.alias },
   };
   res.status(201).json(response);
 });

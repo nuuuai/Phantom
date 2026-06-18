@@ -1,6 +1,8 @@
 import type {
   AliasHealthIntel,
   ApiResponse,
+  AliasRelationshipMap,
+  AliasRotationCandidatesSummary,
   InboxMessageCategory,
   InboxSummary,
 } from "@phantom/shared";
@@ -11,9 +13,41 @@ import {
   inferAliasCategory,
 } from "@phantom/shared";
 import { Router } from "express";
+import { listRotationCandidatesForUser } from "../lib/listRotationCandidates.js";
+import { listAliasRelationshipMapForUser } from "../lib/listAliasRelationshipMap.js";
 import { prisma } from "../lib/prisma.js";
 
 export const intelligenceRouter = Router();
+
+intelligenceRouter.get("/aliases/rotation-candidates", async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({
+      ok: false,
+      error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
+
+  const data = await listRotationCandidatesForUser(userId);
+  const response: ApiResponse<AliasRotationCandidatesSummary> = { ok: true, data };
+  res.json(response);
+});
+
+intelligenceRouter.get("/aliases/relationship-map", async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({
+      ok: false,
+      error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
+
+  const data = await listAliasRelationshipMapForUser(userId);
+  const response: ApiResponse<AliasRelationshipMap> = { ok: true, data };
+  res.json(response);
+});
 
 const EMPTY_CATEGORIES: Record<InboxMessageCategory, number> = {
   spam: 0,
@@ -145,5 +179,66 @@ intelligenceRouter.get("/inbox/summary", async (req, res) => {
   };
 
   const response: ApiResponse<InboxSummary> = { ok: true, data };
+  res.json(response);
+});
+
+intelligenceRouter.post("/inbox/messages/:id/flag-alias", async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({
+      ok: false,
+      error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
+
+  const messageId = typeof req.params.id === "string" ? req.params.id : "";
+  if (!messageId) {
+    res.status(400).json({
+      ok: false,
+      error: { code: "validation_error", message: "Message id required" },
+    });
+    return;
+  }
+
+  const message = await prisma.aliasInboxMessage.findFirst({
+    where: { id: messageId, userId },
+    select: { aliasId: true },
+  });
+  if (!message) {
+    res.status(404).json({
+      ok: false,
+      error: { code: "not_found", message: "Message not found" },
+    });
+    return;
+  }
+
+  const alias = await prisma.alias.findFirst({
+    where: { id: message.aliasId, userId, isActive: true },
+    select: { id: true, healthStatus: true, spamCount: true },
+  });
+  if (!alias) {
+    res.status(404).json({
+      ok: false,
+      error: { code: "not_found", message: "Alias not found" },
+    });
+    return;
+  }
+
+  if (alias.healthStatus !== "compromised") {
+    await prisma.alias.update({
+      where: { id: alias.id },
+      data: {
+        healthStatus: "warning",
+        spamCount: alias.spamCount + 1,
+        lastActivityAt: new Date(),
+      },
+    });
+  }
+
+  const response: ApiResponse<{ aliasId: string; healthStatus: string }> = {
+    ok: true,
+    data: { aliasId: alias.id, healthStatus: "warning" },
+  };
   res.json(response);
 });

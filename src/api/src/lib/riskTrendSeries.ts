@@ -22,7 +22,7 @@ function computeRiskScore(input: {
 export async function computeRiskTrendSeries(
   userId: string
 ): Promise<RiskTrendPoint[]> {
-  const [runs, aliases] = await Promise.all([
+  const [runs, aliases, snapshots] = await Promise.all([
     prisma.brokerScanRun.findMany({
       where: { userId },
       orderBy: { startedAt: "asc" },
@@ -32,7 +32,14 @@ export async function computeRiskTrendSeries(
       where: { userId },
       select: { createdAt: true, healthStatus: true, isActive: true },
     }),
+    prisma.riskSnapshot.findMany({
+      where: { userId },
+      orderBy: { weekEnding: "asc" },
+      select: { weekEnding: true, score: true },
+    }),
   ]);
+
+  const snapshotByWeek = new Map(snapshots.map((s) => [s.weekEnding, s.score]));
 
   const now = Date.now();
   const points: RiskTrendPoint[] = [];
@@ -66,9 +73,14 @@ export async function computeRiskTrendSeries(
         a.healthStatus === "compromised" || a.healthStatus === "quarantined"
     ).length;
 
+    const weekKey = weekEnd.toISOString().slice(0, 10);
+    const snapshotScore = snapshotByWeek.get(weekKey);
+
     points.push({
-      weekEnding: weekEnd.toISOString().slice(0, 10),
-      score: computeRiskScore({ exposureCount, aliasesCompromised, removed }),
+      weekEnding: weekKey,
+      score:
+        snapshotScore ??
+        computeRiskScore({ exposureCount, aliasesCompromised, removed }),
     });
   }
 

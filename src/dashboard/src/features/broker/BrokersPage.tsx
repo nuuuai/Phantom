@@ -4,6 +4,7 @@ import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { UpgradeModal } from "@/components/upgrade/UpgradeModal.js";
 import { BrokerResultsPanel } from "./BrokerResultsPanel.js";
 import { BrokerRemovalNarrativePanel } from "./BrokerRemovalNarrativePanel.js";
+import { BrokerRemovalPriorityPanel } from "./BrokerRemovalPriorityPanel.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import {
   brokerScanCatalogAll,
@@ -418,6 +419,7 @@ export function BrokersPage() {
             {removalNarrative ? (
               <BrokerRemovalNarrativePanel narrative={removalNarrative} />
             ) : null}
+            <BrokerRemovalPriorityPanel />
             <BrokerResultsPanel
             summary={summary}
             items={resultsQuery.data ?? []}

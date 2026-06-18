@@ -5,6 +5,8 @@ import type {
   PriorityAction,
   RiskFactor,
 } from "../types/dashboardIntelligence.js";
+import type { AliasRotationCandidate } from "../types/aliasRotation.js";
+import { formatRotationCandidatesReply } from "./rankAliasesForRotation.js";
 
 /** Inputs for Phase 1 heuristic intelligence (no ML). */
 export type { InboxVolumeSpikeSignal };
@@ -511,7 +513,10 @@ export function buildCopilotPrompts(): CopilotPrompt[] {
 
 export function resolveCopilotResponse(
   prompt: string,
-  ctx: DashboardIntelligenceContext & { riskFactors: readonly RiskFactor[] }
+  ctx: DashboardIntelligenceContext & {
+    riskFactors: readonly RiskFactor[];
+    rotationCandidates?: readonly AliasRotationCandidate[];
+  }
 ): string {
   const normalized = prompt.trim().toLowerCase();
 
@@ -527,6 +532,10 @@ export function resolveCopilotResponse(
   }
 
   if (normalized.includes("rotate") || normalized.includes("compromised")) {
+    const candidates = ctx.rotationCandidates ?? [];
+    if (candidates.length > 0) {
+      return formatRotationCandidatesReply(candidates);
+    }
     if (ctx.aliasesCompromised > 0) {
       return `Rotate ${ctx.aliasesCompromised} compromised alias(es) first — they are in critical state. Then review ${ctx.aliasesWarning} warning alias(es) on the Aliases page.`;
     }

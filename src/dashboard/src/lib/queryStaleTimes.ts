@@ -35,6 +35,10 @@ export const STALE = {
   family: 60_000,
   inboxSummary: 20_000,
   aliasIntel: 30_000,
+  rotationCandidates: 30_000,
+  aliasRelationshipMap: 30_000,
+  billingValueSummary: 60_000,
+  callGuardActiveSession: 10_000,
   copilotStatus: 120_000,
   vaultSync: 20_000,
 } as const;

@@ -4,11 +4,14 @@ import type {
   CopilotToolId,
   CopilotToolIntent,
 } from "@phantom/shared";
+import { isCopilotGenerateAliasParams } from "@phantom/shared";
 import {
   findBestRotationCandidate,
   rotateAliasForUser,
 } from "../aliasRotate.js";
+import { generateAliasForUser } from "../generateAliasForUser.js";
 import { startBrokerScanForUser } from "../brokerScanStart.js";
+import { submitBrokerRemovalsForUser } from "../submitBrokerRemovals.js";
 import { isPaidTier } from "../userTierPaid.js";
 import { prisma } from "../prisma.js";
 
@@ -88,6 +91,19 @@ export async function buildCopilotPendingAction(
       };
     }
 
+    case "generate_alias": {
+      if (!isCopilotGenerateAliasParams(intent.params)) return null;
+      const label =
+        intent.params.serviceName ??
+        `${intent.params.category} ${intent.params.type}`;
+      return {
+        toolId: "generate_alias",
+        title: `Create ${intent.params.type} alias`,
+        description: `Generate a new ${intent.params.category} ${intent.params.type} alias for ${label}.`,
+        params: intent.params,
+      };
+    }
+
     default:
       return null;
   }
@@ -148,41 +164,53 @@ export async function executeCopilotAction(
     }
 
     case "request_broker_removals": {
-      const user = await prisma.user.findUnique({ where: { id: userId } });
-      if (!user || !isPaidTier(user.tier)) {
+      const result = await submitBrokerRemovalsForUser(userId);
+      if (!result.ok) {
         return {
           ok: false,
-          code: "upgrade_required",
-          message: "Data broker removal is available on Phantom Pro",
+          code: result.code === "not_paid" ? "upgrade_required" : result.code,
+          message: result.message,
         };
       }
-      const latest = await prisma.brokerScanRun.findFirst({
-        where: { userId },
-        orderBy: { startedAt: "desc" },
-      });
-      if (!latest) {
-        return {
-          ok: false,
-          code: "no_scan",
-          message: "Run a broker scan first",
-        };
-      }
-      const updated = await prisma.brokerScanResult.updateMany({
-        where: {
-          userId,
-          brokerScanRunId: latest.id,
-          status: "found",
-        },
-        data: {
-          status: "removal_submitted",
-          removalSubmittedAt: new Date(),
-        },
-      });
       return {
         ok: true,
         data: {
-          message: `Submitted ${updated.count} broker removal request(s).`,
-          removalsSubmitted: updated.count,
+          message: `Submitted ${result.count} broker removal request(s).`,
+          removalsSubmitted: result.count,
+        },
+      };
+    }
+
+    case "generate_alias": {
+      if (!isCopilotGenerateAliasParams(params)) {
+        return {
+          ok: false,
+          code: "validation_error",
+          message: "type and category required",
+        };
+      }
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        return { ok: false, code: "not_found", message: "User not found" };
+      }
+      const result = await generateAliasForUser(userId, user.tier, {
+        type: params.type,
+        category: params.category,
+        serviceName: params.serviceName,
+        serviceUrl: params.serviceUrl,
+      });
+      if (!result.ok) {
+        return {
+          ok: false,
+          code: result.code,
+          message: result.message,
+        };
+      }
+      return {
+        ok: true,
+        data: {
+          message: `Created ${result.data.alias.type} alias (${result.data.alias.category}).`,
+          aliasId: result.data.alias.id,
         },
       };
     }

@@ -5,6 +5,7 @@ export type UserAiPreferencesRow = {
   autopilotAutoRotate: boolean;
   autopilotAutoQuarantine: boolean;
   autopilotAutoComplaint: boolean;
+  autopilotAutoRemoval: boolean;
   aiSensitivity: number;
   notificationDigestMode: boolean;
 };
@@ -23,6 +24,9 @@ export function mapUserPreferences(
     autopilotAutoComplaint:
       row.autopilotAutoComplaint ??
       DEFAULT_USER_AI_PREFERENCES.autopilotAutoComplaint,
+    autopilotAutoRemoval:
+      row.autopilotAutoRemoval ??
+      DEFAULT_USER_AI_PREFERENCES.autopilotAutoRemoval,
     aiSensitivity: row.aiSensitivity ?? DEFAULT_USER_AI_PREFERENCES.aiSensitivity,
     notificationDigestMode:
       row.notificationDigestMode ??
@@ -34,6 +38,7 @@ export const USER_AI_PREFERENCES_SELECT = {
   autopilotAutoRotate: true,
   autopilotAutoQuarantine: true,
   autopilotAutoComplaint: true,
+  autopilotAutoRemoval: true,
   aiSensitivity: true,
   notificationDigestMode: true,
 } as const;

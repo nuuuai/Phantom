@@ -53,6 +53,7 @@ export function AiPreferencesSection({
             ["autopilotAutoRotate", "Auto-rotate compromised aliases"],
             ["autopilotAutoQuarantine", "Auto-quarantine high-risk inbox mail"],
             ["autopilotAutoComplaint", "Auto-file FTC complaints from SEE"],
+            ["autopilotAutoRemoval", "Auto-submit broker opt-outs (Pro)"],
             ["notificationDigestMode", "Daily digest instead of per-event alerts"],
           ] as const
         ).map(([key, label]) => (

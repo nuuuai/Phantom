@@ -8,9 +8,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { memo, useCallback, useEffect, useState } from "react";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { InboxMessageViewer } from "./InboxMessageViewer.js";
+import { InboxSummaryPanel } from "./InboxSummaryPanel.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { formatRelativeTime } from "@/lib/formatRelative.js";
-import { emailInboxAll, queryKeys } from "@/lib/queryKeys.js";
+import { aliasesAll, emailInboxAll, queryKeys } from "@/lib/queryKeys.js";
 import { STALE } from "@/lib/queryStaleTimes.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 
@@ -204,18 +205,8 @@ export function EmailInboxPage() {
         .
       </p>
 
-      {summaryQuery.data && summaryQuery.data.totalMessages > 0 ? (
-        <div className="mt-4 rounded-xl border border-ph-border bg-ph-surface px-5 py-4">
-          <div className="font-mono text-[10px] font-semibold uppercase text-ph-text-muted">
-            Inbox intelligence · Brain
-          </div>
-          <p className="mt-1 font-sans text-sm text-ph-text-secondary">
-            {summaryQuery.data.unreadCount} unread ·{" "}
-            {summaryQuery.data.byCategory.phishing ?? 0} phishing ·{" "}
-            {summaryQuery.data.byCategory.spam ?? 0} spam ·{" "}
-            {summaryQuery.data.byCategory.transactional ?? 0} transactional
-          </p>
-        </div>
+      {summaryQuery.data ? (
+        <InboxSummaryPanel summary={summaryQuery.data} />
       ) : null}
 
       <div className="mt-6 flex max-w-2xl flex-col gap-3 sm:flex-row sm:items-center">
@@ -288,11 +279,16 @@ export function EmailInboxPage() {
           ))}
         </ul>
       )}
-      {selectedMessage ? (
+      {selectedMessage && accessToken ? (
         <InboxMessageViewer
+          accessToken={accessToken}
           message={selectedMessage}
           onClose={() => setSelectedMessage(null)}
           onToggleRead={onToggleRead}
+          onAliasFlagged={() => {
+            void queryClient.invalidateQueries({ queryKey: aliasesAll });
+            void queryClient.invalidateQueries({ queryKey: emailInboxAll });
+          }}
           markBusy={markReadMutation.isPending}
         />
       ) : null}

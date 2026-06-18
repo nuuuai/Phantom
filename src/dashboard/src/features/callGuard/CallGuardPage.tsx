@@ -6,6 +6,8 @@ import { phantomApi } from "@/lib/api/phantomApi.js";
 import { queryKeys } from "@/lib/queryKeys.js";
 import { STALE } from "@/lib/queryStaleTimes.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
+import { CallGuardLiveDemo } from "./CallGuardLiveDemo.js";
+import { CallGuardActiveBanner } from "./CallGuardActiveBanner.js";
 
 export function CallGuardPage() {
   const accessToken = useSessionStore((s) => s.accessToken);
@@ -43,6 +45,8 @@ export function CallGuardPage() {
         telephony is live.
       </p>
 
+      <CallGuardActiveBanner />
+
       {logsQuery.isPending && (
         <p className="mt-8 font-sans text-sm text-ph-text-tertiary">Loading…</p>
       )}
@@ -58,6 +62,7 @@ export function CallGuardPage() {
               Demo telemetry — enable live Call Guard when carrier integration ships.
             </p>
           ) : null}
+          {logsQuery.data.demoMode ? <CallGuardLiveDemo /> : null}
           <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-ph-border md:grid-cols-4">
             {[
               { label: "Screened", value: logsQuery.data.totalScreened },

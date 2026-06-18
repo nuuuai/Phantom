@@ -32,6 +32,9 @@ export const familyAll = ["family"] as const;
 export const inboxSummaryAll = ["inbox-summary"] as const;
 export const aliasIntelAll = ["alias-intel"] as const;
 
+export const rotationCandidatesAll = ["rotation-candidates"] as const;
+export const aliasRelationshipMapAll = ["alias-relationship-map"] as const;
+
 export const queryKeys = {
   aliasDetailAll,
   aliasesAll,
@@ -55,6 +58,8 @@ export const queryKeys = {
     status: string,
     q: string
   ) => ["broker-scan-results", accessToken, status, q] as const,
+  brokerRemovalPriority: (accessToken: string | null) =>
+    ["broker-scan-removal-priority", accessToken] as const,
   brokerScanCatalog: (accessToken: string | null) =>
     ["broker-scan-catalog", accessToken] as const,
   userMe: (accessToken: string | null) => ["user-me", accessToken] as const,
@@ -94,6 +99,16 @@ export const queryKeys = {
     ["threat-intel", "patterns", accessToken] as const,
   exposureReport: (accessToken: string | null) =>
     ["reports", "latest", accessToken] as const,
+  privacyDigest: (accessToken: string | null) =>
+    ["reports", "digest", accessToken] as const,
+  rotationCandidates: (accessToken: string | null) =>
+    ["rotation-candidates", accessToken] as const,
+  aliasRelationshipMap: (accessToken: string | null) =>
+    ["alias-relationship-map", accessToken] as const,
+  billingValueSummary: (accessToken: string | null) =>
+    ["billing-value-summary", accessToken] as const,
+  callGuardActiveSession: (accessToken: string | null) =>
+    ["call-guard", "active-session", accessToken] as const,
   familySnapshot: (accessToken: string | null) =>
     ["family", "snapshot", accessToken] as const,
   inboxSummary: (accessToken: string | null) =>

@@ -110,45 +110,22 @@ export async function rotateAliasForUser(
   };
 }
 
-const HEALTH_RANK: Record<string, number> = {
-  compromised: 0,
-  quarantined: 1,
-  warning: 2,
-  healthy: 3,
-};
-
 export async function findBestRotationCandidate(userId: string): Promise<{
   id: string;
   label: string;
   healthStatus: string;
   type: string;
 } | null> {
-  const rows = await prisma.alias.findMany({
-    where: {
-      userId,
-      isActive: true,
-      type: { not: "password" },
-      healthStatus: { in: ["compromised", "warning", "quarantined"] },
-    },
-    select: {
-      id: true,
-      serviceName: true,
-      healthStatus: true,
-      type: true,
-    },
-  });
-
-  if (rows.length === 0) return null;
-
-  rows.sort(
-    (a, b) =>
-      (HEALTH_RANK[a.healthStatus] ?? 99) - (HEALTH_RANK[b.healthStatus] ?? 99)
+  const { listRotationCandidatesForUser } = await import(
+    "./listRotationCandidates.js"
   );
+  const { candidates } = await listRotationCandidatesForUser(userId);
+  const top = candidates[0];
+  if (!top) return null;
 
-  const top = rows[0];
   return {
-    id: top.id,
-    label: top.serviceName ?? top.id,
+    id: top.aliasId,
+    label: top.label,
     healthStatus: top.healthStatus,
     type: top.type,
   };

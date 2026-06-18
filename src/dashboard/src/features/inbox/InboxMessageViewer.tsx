@@ -1,12 +1,21 @@
 import type { AliasInboxItem } from "@phantom/shared";
-import { scoreInboxPhishing } from "@phantom/shared";
+import {
+  classifyInboxMessage,
+  clientErrorFromApiFailure,
+  scoreInboxPhishing,
+} from "@phantom/shared";
+import { useMutation } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { useEscapeKey } from "@/hooks/useEscapeKey.js";
+import { phantomApi } from "@/lib/api/phantomApi.js";
 import { formatRelativeTime } from "@/lib/formatRelative.js";
 
 interface InboxMessageViewerProps {
+  accessToken: string;
   message: AliasInboxItem;
   onClose: () => void;
   onToggleRead: (id: string, isRead: boolean) => void;
+  onAliasFlagged: () => void;
   markBusy: boolean;
 }
 
@@ -17,9 +26,11 @@ function phishingBadgeClass(level: "low" | "moderate" | "high"): string {
 }
 
 export function InboxMessageViewer({
+  accessToken,
   message,
   onClose,
   onToggleRead,
+  onAliasFlagged,
   markBusy,
 }: InboxMessageViewerProps) {
   useEscapeKey(true, onClose);
@@ -29,6 +40,30 @@ export function InboxMessageViewer({
     fromAddress: message.fromAddress,
     snippet: message.snippet,
   });
+
+  const classification = classifyInboxMessage({
+    messageId: message.id,
+    subject: message.subject,
+    fromAddress: message.fromAddress,
+    snippet: message.snippet,
+  });
+
+  const flagMutation = useMutation({
+    mutationFn: async () => {
+      const res = await phantomApi.intelligence.flagInboxAlias(
+        accessToken,
+        message.id
+      );
+      if (!res.ok) throw clientErrorFromApiFailure(res);
+      return res.data;
+    },
+    onSuccess: () => onAliasFlagged(),
+  });
+
+  const showFlag =
+    classification.category === "phishing" ||
+    classification.category === "spam" ||
+    phishing.level !== "low";
 
   return (
     <div
@@ -72,6 +107,18 @@ export function InboxMessageViewer({
               <span className="text-ph-text-muted">To </span>
               <span className="font-mono text-ph-text-secondary">{message.aliasAddress}</span>
             </div>
+          </div>
+
+          <div className="rounded-lg border border-ph-borderSubtle bg-ph-bg-base px-4 py-3">
+            <div className="font-mono text-[10px] font-semibold uppercase tracking-wide text-ph-text-muted">
+              AI classification · Brain
+            </div>
+            <p className="mt-1 font-sans text-sm capitalize text-ph-text-primary">
+              {classification.category}
+              <span className="ml-2 font-mono text-xs text-ph-text-tertiary">
+                {Math.round(classification.confidence * 100)}% confidence
+              </span>
+            </p>
           </div>
 
           <div
@@ -118,7 +165,28 @@ export function InboxMessageViewer({
             >
               Mark as {message.isRead ? "unread" : "read"}
             </button>
+            {showFlag ? (
+              <button
+                type="button"
+                disabled={flagMutation.isPending}
+                onClick={() => flagMutation.mutate()}
+                className="rounded-md border border-ph-warning/40 bg-ph-warning/10 px-3 py-1.5 font-sans text-xs text-ph-warning disabled:opacity-50"
+              >
+                {flagMutation.isPending ? "Flagging…" : "Flag alias (warning)"}
+              </button>
+            ) : null}
+            <Link
+              to={`/aliases/${message.aliasId}`}
+              className="rounded-md border border-ph-accent-border bg-ph-accent-bg px-3 py-1.5 font-sans text-xs text-ph-accent-light"
+            >
+              Review alias
+            </Link>
           </div>
+          {flagMutation.isError ? (
+            <p className="font-sans text-xs text-ph-danger">
+              Could not flag alias — try again from the alias page.
+            </p>
+          ) : null}
         </div>
       </div>
     </div>

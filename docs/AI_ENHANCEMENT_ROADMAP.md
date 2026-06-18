@@ -27,7 +27,34 @@
 | Broker exposure severity + removal narrative | **Shipped** — severity scoring, 30-day plan UI |
 | Dark web breach impact analysis | **Shipped** — cross-links findings to aliases/vault |
 | Account data export + deletion | **Shipped** — JSON export, password-confirmed delete |
+| Live system layer telemetry | **Shipped** — real alias/broker/brain/autopilot status |
+| Threat intel preview (overview) | **Shipped** — replaces empty Sword chart in production |
+| Extension smart alias match | **Shipped** — reuse site-matched alias before generating |
+| Mobile nav parity | **Shipped** — vault, dark web, scam engage, reports |
 | Extension Copilot mini-chat | **Shipped** — popup chat + confirm actions |
+| Copilot generate_alias tool | **Shipped** — NL + LLM native tool calling |
+| Autopilot auto-rotate / inbox quarantine | **Shipped** — prefs-driven on overview load |
+| Extension inline threat warnings | **Shipped** — threat intel matched on site badge |
+| Health-ranked alias rotation suggestions | **Shipped** — API + Aliases panel + Copilot rules |
+| Privacy digest + report JSON export | **Shipped** — digest endpoint + Settings digest preview |
+| Call Guard live stream mock (NDJSON) | **Shipped** — demo screening simulation on `/call-guard` |
+| Autopilot action timeline + logging | **Shipped** — DB log surfaced on overview activity |
+| RiskSnapshot weekly persistence | **Shipped** — accurate Brain trend overlay |
+| Per-broker HTML parsers (6 core) | **Shipped** — domain-specific probe before generic fallback |
+| Vault password rotation ranking | **Shipped** — breach + reuse priority after HIBP check |
+| Daily digest in-app notification | **Shipped** — queued once/day when digest mode enabled |
+| Autopilot auto broker removal (Pro) | **Shipped** — pref + timeline logging |
+| AI sensitivity → phishing threshold | **Shipped** — Autopilot quarantine respects slider |
+| Broker removal orchestration API | **Shipped** — severity-ranked priority panel |
+| Inbox suggested actions | **Shipped** — classify, flag alias, review link |
+| Per-broker HTML parsers (10 live) | **Shipped** — full core catalog coverage |
+| Digest email body export | **Shipped** — copy plain-text for forward-to address |
+| Dark web breach exposure timeline | **Shipped** — estimated lag on finding cards |
+| Autopilot breach response playbook | **Shipped** — critical/high findings log playbook actions |
+| Autopilot FTC complaint queue (demo) | **Shipped** — SEE sessions queue complaint stubs |
+| Alias relationship map | **Shipped** — domain/service clusters on Aliases |
+| Call Guard active session banner | **Shipped** — Phase 2 architecture preview |
+| Billing value summary API | **Shipped** — structured ROI on Billing page |
 | Real PSTN / carrier Call Guard | **Pending** — Phase 2 |
 | Python ML pipelines | **Pending** — Phase 3 |
 | Virtual cards / VPN | **Pending** — Phase 3 |

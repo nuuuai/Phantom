@@ -3,6 +3,7 @@ import {
   buildCopilotPrompts,
   buildDailyBrief,
   buildIntelligenceItems,
+  buildLiveSystemLayerStatus,
   buildPriorityActions,
   buildRiskFactors,
   buildRiskNarrative,
@@ -13,10 +14,14 @@ import { prisma } from "./prisma.js";
 import { advanceRemovalSimulation } from "./brokerScanAdvance.js";
 import { buildIntelligenceContext } from "./buildIntelligenceContext.js";
 import { isOverviewDemoMetricsEnabled } from "./envOverviewDemo.js";
+import { runAutopilotTick } from "./runAutopilotTick.js";
 import {
   computeRiskTrendSeries,
   fetchRiskWeekChanges,
 } from "./riskTrendSeries.js";
+import { fetchAutopilotActivity } from "./fetchAutopilotActivity.js";
+import { persistRiskSnapshot } from "./persistRiskSnapshot.js";
+import { queueDailyDigestNotification } from "./queueDailyDigestNotification.js";
 import { isPaidTier } from "./userTierPaid.js";
 
 function formatRelativeShort(date: Date): string {
@@ -34,8 +39,19 @@ export async function buildDashboardOverview(
   userId: string
 ): Promise<DashboardOverview> {
   await advanceRemovalSimulation(userId);
+  await runAutopilotTick(userId);
+  await queueDailyDigestNotification(userId);
 
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      tier: true,
+      autopilotAutoRotate: true,
+      autopilotAutoQuarantine: true,
+      autopilotAutoComplaint: true,
+      autopilotAutoRemoval: true,
+    },
+  });
   if (!user) {
     throw new Error("User not found");
   }
@@ -93,7 +109,11 @@ export async function buildDashboardOverview(
     }));
   }
 
-  const activity = [...brokerActivity, ...darkWebActivity].slice(0, 8);
+  const activity = [
+    ...(await fetchAutopilotActivity(userId, 4)),
+    ...brokerActivity,
+    ...darkWebActivity,
+  ].slice(0, 8);
 
   const demo = isOverviewDemoMetricsEnabled();
   const intelCtx = await buildIntelligenceContext(userId);
@@ -114,6 +134,10 @@ export async function buildDashboardOverview(
   const weekChanges = await fetchRiskWeekChanges(userId, intelCtx);
   const riskNarrative = buildRiskNarrative(intelCtx, weekChanges);
 
+  if (!demo) {
+    await persistRiskSnapshot(userId, intelCtx.riskScore);
+  }
+
   const callsScreened = demo ? 1284 : 0;
   const scamsEngaged = demo ? 342 : 0;
   const scammerMinutes = demo ? 4870 : 0;
@@ -129,12 +153,22 @@ export async function buildDashboardOverview(
         { name: "Sword", status: "342 scammers engaged", layer: "sword" as const },
         { name: "Autopilot", status: "3 auto-actions today", layer: "autopilot" as const },
       ] as const)
-    : ([
-        { name: "Shield", status: "Broker & alias posture", layer: "shield" as const },
-        { name: "Brain", status: "Risk model (Phase 2)", layer: "brain" as const },
-        { name: "Sword", status: "Scam Engage not live — Phase 1", layer: "sword" as const },
-        { name: "Autopilot", status: "Automation not live — Phase 1", layer: "autopilot" as const },
-      ] as const);
+    : buildLiveSystemLayerStatus({
+        activeAliases: intelCtx.activeAliases,
+        aliasesHealthy: intelCtx.aliasesHealthy,
+        brokersFound: intelCtx.brokersFound,
+        brokersRemoved: intelCtx.brokersRemoved,
+        brokersPending: intelCtx.brokersPending,
+        riskScore: intelCtx.riskScore,
+        intelligenceCount: intelligence.length,
+        darkWebAlerts: intelCtx.darkWebAlerts,
+        unreadInbox: intelCtx.unreadInbox,
+        hasBrokerScan: intelCtx.hasBrokerScan,
+        autopilotAutoRotate: user?.autopilotAutoRotate ?? false,
+        autopilotAutoQuarantine: user?.autopilotAutoQuarantine ?? false,
+        autopilotAutoComplaint: user?.autopilotAutoComplaint ?? false,
+        autopilotAutoRemoval: user?.autopilotAutoRemoval ?? false,
+      });
 
   return {
     userId,

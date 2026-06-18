@@ -1,8 +1,14 @@
 import type { CopilotToolIntent } from "../types/copilotTools.js";
+import { inferCopilotGenerateAlias } from "./inferCopilotGenerateAlias.js";
 
 export function detectCopilotToolIntent(message: string): CopilotToolIntent | null {
   const normalized = message.trim().toLowerCase();
   if (!normalized) return null;
+
+  const generateParams = inferCopilotGenerateAlias(message);
+  if (generateParams) {
+    return { toolId: "generate_alias", params: generateParams };
+  }
 
   if (
     /\b(run|start|trigger|launch)\b/.test(normalized) &&

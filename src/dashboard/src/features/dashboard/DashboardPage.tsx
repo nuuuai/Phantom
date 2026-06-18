@@ -9,6 +9,7 @@ import { ActivityTimeline } from "./ActivityTimeline.js";
 import { QuickActionsGrid } from "./QuickActionsGrid.js";
 import { StatGrid } from "./StatGrid.js";
 import { SystemLayersPanel } from "./SystemLayersPanel.js";
+import { ThreatIntelPreviewPanel } from "./ThreatIntelPreviewPanel.js";
 import { WeeklyScamsChart } from "./WeeklyScamsChart.js";
 import { DashboardGettingStarted } from "./DashboardGettingStarted.js";
 import { shouldSkipDevBootstrap } from "@/lib/devBootstrap.js";
@@ -32,6 +33,17 @@ export function DashboardPage() {
     },
     enabled: accessToken !== null,
     staleTime: STALE.dashboardOverview,
+  });
+
+  const threatPreviewQuery = useQuery({
+    queryKey: queryKeys.threatIntelPatterns(accessToken),
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.threatIntel.patterns(accessToken!, { signal });
+      if (!res.ok) throw clientErrorFromApiFailure(res);
+      return res.data.patterns;
+    },
+    enabled: accessToken !== null && overviewQuery.data?.metricsDemoMode === false,
+    staleTime: STALE.threatIntel,
   });
 
   if (!accessToken) {
@@ -144,6 +156,8 @@ export function DashboardPage() {
               labels={data.weekDays}
               demoMode={data.metricsDemoMode}
             />
+          ) : threatPreviewQuery.data && threatPreviewQuery.data.length > 0 ? (
+            <ThreatIntelPreviewPanel patterns={threatPreviewQuery.data} />
           ) : null}
           <SystemLayersPanel layers={data.systemLayers} />
           <QuickActionsGrid />

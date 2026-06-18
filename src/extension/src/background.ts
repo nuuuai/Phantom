@@ -7,7 +7,9 @@ import {
   exportKeyHex,
   generatePassword,
   importKeyHex,
+  inferAliasCategory,
   normalizeClientError,
+  pickAliasForSite,
   PHANTOM_API_ERROR_CODES,
 } from "@phantom/shared";
 import {
@@ -94,9 +96,39 @@ function aliasTypeForField(kind: FieldKind | undefined): "email" | "password" | 
 }
 
 async function requestAlias(
-  fieldKind: FieldKind | undefined
+  fieldKind: FieldKind | undefined,
+  siteHostname?: string
 ): Promise<ApiResponse<{ alias: Alias }>> {
   const aliasType = aliasTypeForField(fieldKind);
+
+  if (siteHostname) {
+    const listRes = await fetchAuth("/api/aliases");
+    const listParsed = await parseApiResponseJson<{ userId: string; items: Alias[] }>(
+      listRes
+    );
+    if (listParsed.ok) {
+      const existing = pickAliasForSite(
+        siteHostname,
+        listParsed.data.items.map((a) => ({
+          id: a.id,
+          type: a.type,
+          category: a.category,
+          serviceUrl: a.serviceUrl,
+          serviceName: a.serviceName,
+          value: a.value,
+          isActive: a.isActive,
+          healthStatus: a.healthStatus,
+        })),
+        aliasType
+      );
+      if (existing) {
+        const alias = listParsed.data.items.find((a) => a.id === existing.id);
+        if (alias) {
+          return { ok: true, data: { alias } };
+        }
+      }
+    }
+  }
 
   let encryptedValue: string | undefined;
   if (aliasType === "password") {
@@ -108,12 +140,19 @@ async function requestAlias(
     }
   }
 
+  const inferredCategory = siteHostname
+    ? inferAliasCategory(`https://${siteHostname}`)
+    : null;
+  const category = inferredCategory ?? "shopping";
+
   const response = await fetchAuth("/api/aliases/generate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       type: aliasType,
-      category: "shopping",
+      category,
+      serviceUrl: siteHostname ? `https://${siteHostname}` : undefined,
+      serviceName: siteHostname ? siteHostname.replace(/^www\./, "") : undefined,
       encryptedValue,
     }),
   });
@@ -142,6 +181,7 @@ const COPILOT_TOOLS = new Set<CopilotToolId>([
   "start_broker_scan",
   "rotate_alias",
   "request_broker_removals",
+  "generate_alias",
 ]);
 
 async function revokeRefreshOnServer(): Promise<void> {
@@ -260,9 +300,10 @@ chrome.runtime.onMessage.addListener(
 
     if (message.type === MESSAGE_GENERATE_ALIAS) {
       const fieldKind = message.fieldKind;
+      const siteHostname = message.siteHostname;
       void (async () => {
         try {
-          const result = await requestAlias(fieldKind);
+          const result = await requestAlias(fieldKind, siteHostname);
           if (result.ok) {
             const alias = result.data.alias;
             let plainValue: string | undefined;

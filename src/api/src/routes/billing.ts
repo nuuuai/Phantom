@@ -1,6 +1,7 @@
-import type { ApiResponse } from "@phantom/shared";
+import type { ApiResponse, BillingValueSummary } from "@phantom/shared";
 import type Stripe from "stripe";
 import { Router } from "express";
+import { buildBillingValueSummaryForUser } from "../lib/buildBillingValueSummaryForUser.js";
 import { prisma } from "../lib/prisma.js";
 import { applyProSubscriptionFromCheckoutSession } from "../lib/stripeCheckoutSessionApply.js";
 import { getStripe, stripeConfigured } from "../lib/stripeClient.js";
@@ -275,4 +276,19 @@ billingRouter.post("/portal-session", async (req, res) => {
     data: { url: session.url },
   };
   res.status(201).json(response);
+});
+
+billingRouter.get("/value-summary", async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({
+      ok: false,
+      error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
+
+  const data = await buildBillingValueSummaryForUser(userId);
+  const response: ApiResponse<BillingValueSummary> = { ok: true, data };
+  res.json(response);
 });

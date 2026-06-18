@@ -1,5 +1,9 @@
 import type { Alias } from "@phantom/shared";
-import { checkPasswordPwned, detectPasswordReuse } from "@phantom/shared";
+import {
+  checkPasswordPwned,
+  detectPasswordReuse,
+  rankVaultPasswordsForRotation,
+} from "@phantom/shared";
 import { useCallback, useMemo, useState } from "react";
 
 interface VaultAuditPanelProps {
@@ -38,6 +42,35 @@ export function VaultAuditPanel({ aliases, resolveValue }: VaultAuditPanelProps)
 
   const groups = detectPasswordReuse(entries);
   const uniquePasswords = new Set(entries.map((e) => e.password)).size;
+
+  const rotationCandidates = useMemo(() => {
+    if (breachRows === null) return [];
+
+    const breachedIds = new Set(breachRows.flatMap((r) => r.entryIds));
+    const breachCountById = new Map<string, number>();
+    for (const row of breachRows) {
+      for (const id of row.entryIds) {
+        breachCountById.set(id, row.breachCount);
+      }
+    }
+
+    const reuseCountById = new Map<string, number>();
+    for (const g of groups) {
+      for (const id of g.entryIds) {
+        reuseCountById.set(id, g.entryIds.length);
+      }
+    }
+
+    return rankVaultPasswordsForRotation(
+      entries.map((e) => ({
+        id: e.id,
+        label: e.label,
+        isBreached: breachedIds.has(e.id),
+        breachCount: breachCountById.get(e.id) ?? 0,
+        reuseCount: reuseCountById.get(e.id) ?? 1,
+      }))
+    );
+  }, [breachRows, entries, groups]);
 
   const checkBreaches = useCallback(async () => {
     if (entries.length === 0) return;
@@ -192,6 +225,34 @@ export function VaultAuditPanel({ aliases, resolveValue }: VaultAuditPanelProps)
           )
         ) : null}
       </div>
+
+      {rotationCandidates.length > 0 ? (
+        <div className="mt-5 border-t border-ph-borderSubtle pt-4">
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-wide text-ph-text-muted">
+            Rotate these first · Autopilot
+          </p>
+          <ul className="mt-3 space-y-2">
+            {rotationCandidates.map((c) => (
+              <li
+                key={c.entryId}
+                className="rounded-lg border border-ph-borderSubtle bg-ph-bg-base px-3 py-2"
+              >
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <span className="font-sans text-xs font-medium text-ph-text-primary">
+                    #{c.priorityRank} {c.label}
+                  </span>
+                  <span className="font-mono text-[10px] text-ph-warning">
+                    priority {c.score}
+                  </span>
+                </div>
+                <p className="mt-1 font-sans text-[11px] text-ph-text-tertiary">
+                  {c.reason}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </section>
   );
 }

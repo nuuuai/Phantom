@@ -1,4 +1,5 @@
 import type { PlasmoCSConfig } from "plasmo";
+import { matchSiteThreatPatterns } from "@phantom/shared";
 
 export const config: PlasmoCSConfig = {
   matches: ["<all_urls>"],
@@ -7,7 +8,7 @@ export const config: PlasmoCSConfig = {
 
 const PHANTOM_RISK_ATTR = "data-phantom-site-risk";
 
-/** Lightweight Brain badge — domain heuristics only (Phase 1). */
+/** Lightweight Brain badge — domain heuristics + threat intel patterns. */
 function scoreDomain(hostname: string): { score: number; label: string } {
   const h = hostname.toLowerCase();
   if (/^(localhost|127\.)/.test(h) || h.endsWith(".phantom.local")) {
@@ -24,26 +25,37 @@ function scoreDomain(hostname: string): { score: number; label: string } {
 
 function injectBadge(): void {
   if (document.documentElement.getAttribute(PHANTOM_RISK_ATTR)) return;
-  const { score, label } = scoreDomain(window.location.hostname);
-  if (score < 50) return;
+  const hostname = window.location.hostname;
+  const { score, label } = scoreDomain(hostname);
+  const threat = matchSiteThreatPatterns(hostname);
 
-  document.documentElement.setAttribute(PHANTOM_RISK_ATTR, String(score));
+  const effectiveScore = threat
+    ? Math.max(score, threat.severity === "critical" ? 85 : 65)
+    : score;
+  if (effectiveScore < 50 && !threat) return;
+
+  document.documentElement.setAttribute(PHANTOM_RISK_ATTR, String(effectiveScore));
 
   const el = document.createElement("div");
   el.setAttribute("data-phantom-ui", "site-risk");
-  el.textContent = `Phantom · ${label} context (${score})`;
+  el.textContent = threat
+    ? `Phantom · ${threat.severity} threat pattern`
+    : `Phantom · ${label} context (${String(score)})`;
+  el.title = threat?.summary ?? "Phantom site context score";
   Object.assign(el.style, {
     position: "fixed",
     bottom: "12px",
     right: "12px",
     zIndex: "2147483646",
+    maxWidth: "220px",
     padding: "6px 10px",
     borderRadius: "6px",
     fontFamily: "'IBM Plex Mono', monospace",
     fontSize: "10px",
     fontWeight: "600",
     letterSpacing: "0.04em",
-    color: score >= 70 ? "#F87171" : "#A78BFA",
+    lineHeight: "1.35",
+    color: effectiveScore >= 70 ? "#F87171" : "#A78BFA",
     background: "#15151a",
     border: "1px solid #222228",
     pointerEvents: "none",

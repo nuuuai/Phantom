@@ -36,10 +36,14 @@ model User {
   autopilotAutoQuarantine Boolean @default(false)
   /** Autopilot: file FTC complaints after SEE sessions. */
   autopilotAutoComplaint  Boolean @default(false)
+  /** Autopilot: submit broker opt-outs for exposed listings (Pro). */
+  autopilotAutoRemoval    Boolean @default(false)
   /** Brain sensitivity 0 (conservative) – 100 (aggressive). */
   aiSensitivity           Int     @default(50)
   /** Digest notifications into AI summary instead of per-event. */
   notificationDigestMode  Boolean @default(false)
+  autopilotActions        AutopilotActionLog[]
+  riskSnapshots           RiskSnapshot[]
 }
 
 enum DarkWebFindingStatus {
@@ -272,4 +276,39 @@ model StripeWebhookEvent {
   id            String   @id @default(cuid())
   stripeEventId String   @unique
   createdAt     DateTime @default(now())
+}
+
+enum AutopilotActionKind {
+  alias_rotated
+  alias_warning
+  broker_removal_submitted
+  ftc_complaint_queued
+  breach_playbook_triggered
+}
+
+/** Append-only log of autonomous Autopilot actions for activity timeline. */
+model AutopilotActionLog {
+  id          String              @id @default(cuid())
+  userId      String
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind        AutopilotActionKind
+  title       String
+  description String              @db.Text
+  refId       String?
+  createdAt   DateTime            @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+/** Weekly risk score snapshots for accurate Brain trend charts. */
+model RiskSnapshot {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score      Int
+  weekEnding String
+  capturedAt DateTime @default(now())
+
+  @@unique([userId, weekEnding])
+  @@index([userId, weekEnding])
 }

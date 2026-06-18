@@ -7,6 +7,7 @@ import {
   type BrokerScanResult,
   type BrokerScanStartResponse,
   type BrokerScanSummary,
+  type BrokerRemovalPriorityItem,
   type DashboardOverview,
   type DataBroker,
   type GenerateAliasRequest,
@@ -23,6 +24,9 @@ import {
   type DarkWebFindingsSummary,
   type DarkWebRefreshResult,
   type CallGuardSummary,
+  type CallGuardLiveEvent,
+  type AliasRotationCandidatesSummary,
+  type PrivacyDigest,
   type ScamEngagementSummary,
   type ThreatPattern,
   type ExposureReport,
@@ -34,6 +38,9 @@ import {
   type AccountDeleteRequest,
   type AccountDeleteResult,
   type DarkWebImpactSummary,
+  type BillingValueSummary,
+  type AliasRelationshipMap,
+  type CallGuardActiveSession,
   type CopilotChatResponse,
   type CopilotConfirmRequest,
   type CopilotConfirmResponse,
@@ -264,6 +271,60 @@ export const phantomApi = {
       );
       return parseApiResponseJson(res);
     },
+
+    streamLive: async (
+      accessToken: Token,
+      opts: {
+        signal?: AbortSignal;
+        onEvent: (event: CallGuardLiveEvent) => void;
+      }
+    ): Promise<void> => {
+      const res = await fetchWithRefresh(
+        "/api/call-guard/live/stream",
+        accessToken,
+        { signal: opts.signal }
+      );
+      if (!res.ok) {
+        const parsed = await parseApiResponseJson<never>(res);
+        throw new Error(
+          !parsed.ok ? parsed.error.message : "Call Guard stream failed"
+        );
+      }
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No response body");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          opts.onEvent(JSON.parse(trimmed) as CallGuardLiveEvent);
+        }
+      }
+      const tail = buffer.trim();
+      if (tail) {
+        opts.onEvent(JSON.parse(tail) as CallGuardLiveEvent);
+      }
+    },
+
+    activeSession: async (
+      accessToken: Token,
+      init?: RequestInit
+    ): Promise<ApiResponse<{ session: CallGuardActiveSession | null }>> => {
+      const res = await fetchWithRefresh(
+        "/api/call-guard/sessions/active",
+        accessToken,
+        init ?? {}
+      );
+      return parseApiResponseJson(res);
+    },
   },
 
   scamEngage: {
@@ -306,6 +367,32 @@ export const phantomApi = {
       );
       return parseApiResponseJson(res);
     },
+
+    digest: async (
+      accessToken: Token,
+      init?: RequestInit
+    ): Promise<ApiResponse<PrivacyDigest>> => {
+      const res = await fetchWithRefresh(
+        "/api/reports/digest",
+        accessToken,
+        init ?? {}
+      );
+      return parseApiResponseJson(res);
+    },
+
+    digestEmail: async (
+      accessToken: Token,
+      init?: RequestInit
+    ): Promise<
+      ApiResponse<{ to: string | null; subject: string; body: string }>
+    > => {
+      const res = await fetchWithRefresh(
+        "/api/reports/digest/email",
+        accessToken,
+        init ?? {}
+      );
+      return parseApiResponseJson(res);
+    },
   },
 
   family: {
@@ -342,6 +429,42 @@ export const phantomApi = {
     ): Promise<ApiResponse<InboxSummary>> => {
       const res = await fetchWithRefresh(
         "/api/intelligence/inbox/summary",
+        accessToken,
+        init ?? {}
+      );
+      return parseApiResponseJson(res);
+    },
+
+    rotationCandidates: async (
+      accessToken: Token,
+      init?: RequestInit
+    ): Promise<ApiResponse<AliasRotationCandidatesSummary>> => {
+      const res = await fetchWithRefresh(
+        "/api/intelligence/aliases/rotation-candidates",
+        accessToken,
+        init ?? {}
+      );
+      return parseApiResponseJson(res);
+    },
+
+    flagInboxAlias: async (
+      accessToken: Token,
+      messageId: string
+    ): Promise<ApiResponse<{ aliasId: string; healthStatus: string }>> => {
+      const res = await fetchWithRefresh(
+        `/api/intelligence/inbox/messages/${encodeURIComponent(messageId)}/flag-alias`,
+        accessToken,
+        { method: "POST", headers: { "Content-Type": "application/json" } }
+      );
+      return parseApiResponseJson(res);
+    },
+
+    relationshipMap: async (
+      accessToken: Token,
+      init?: RequestInit
+    ): Promise<ApiResponse<AliasRelationshipMap>> => {
+      const res = await fetchWithRefresh(
+        "/api/intelligence/aliases/relationship-map",
         accessToken,
         init ?? {}
       );
@@ -548,6 +671,18 @@ export const phantomApi = {
     ): Promise<ApiResponse<BrokerScanSummary>> => {
       const res = await fetchWithRefresh(
         "/api/broker-scan/summary",
+        accessToken,
+        init ?? {}
+      );
+      return parseApiResponseJson(res);
+    },
+
+    removalPriority: async (
+      accessToken: Token,
+      init?: RequestInit
+    ): Promise<ApiResponse<{ items: BrokerRemovalPriorityItem[] }>> => {
+      const res = await fetchWithRefresh(
+        "/api/broker-scan/removal-priority",
         accessToken,
         init ?? {}
       );
@@ -776,6 +911,18 @@ export const phantomApi = {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sessionId }),
         }
+      );
+      return parseApiResponseJson(res);
+    },
+
+    valueSummary: async (
+      accessToken: Token,
+      init?: RequestInit
+    ): Promise<ApiResponse<BillingValueSummary>> => {
+      const res = await fetchWithRefresh(
+        "/api/billing/value-summary",
+        accessToken,
+        init ?? {}
       );
       return parseApiResponseJson(res);
     },

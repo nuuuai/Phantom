@@ -7,6 +7,7 @@ import {
   resolveCopilotResponse,
 } from "@phantom/shared";
 import { buildIntelligenceContext } from "../buildIntelligenceContext.js";
+import { listRotationCandidatesForUser } from "../listRotationCandidates.js";
 import { callCopilotLlm } from "./callCopilotLlm.js";
 import type { CopilotLlmToolCall } from "./copilotToolSchemas.js";
 import type { CopilotAccountSnapshot } from "./copilotPrompt.js";
@@ -78,6 +79,10 @@ export async function runCopilotChat(
   const riskFactors = buildRiskFactors(ctx);
   const priorityActions = buildPriorityActions(ctx);
   const dailyBrief = buildDailyBrief(ctx);
+  const { candidates: rotationCandidates } =
+    await listRotationCandidatesForUser(userId);
+
+  const copilotCtx = { ...ctx, riskFactors, rotationCandidates };
 
   const snapshot: CopilotAccountSnapshot = {
     tier: ctx.userTier,
@@ -102,7 +107,7 @@ export async function runCopilotChat(
 
   const llm = getCopilotLlmConfig();
   if (!llm) {
-    const baseReply = resolveCopilotResponse(trimmed, { ...ctx, riskFactors });
+    const baseReply = resolveCopilotResponse(trimmed, copilotCtx);
     const enriched = await attachPendingAction(userId, baseReply, null, trimmed);
     return { ...enriched, mode: "rules" };
   }
@@ -118,7 +123,7 @@ export async function runCopilotChat(
     );
     return { ...enriched, mode: "llm", model: llm.model };
   } catch {
-    const baseReply = resolveCopilotResponse(trimmed, { ...ctx, riskFactors });
+    const baseReply = resolveCopilotResponse(trimmed, copilotCtx);
     const enriched = await attachPendingAction(userId, baseReply, null, trimmed);
     return { ...enriched, mode: "rules" };
   }

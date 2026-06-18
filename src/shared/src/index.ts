@@ -86,6 +86,16 @@ export {
   type InboxPhishingLevel,
   type InboxPhishingScore,
 } from "./lib/scoreInboxPhishing.js";
+export {
+  adjustPhishingScoreForSensitivity,
+  resolvePhishingQuarantineThreshold,
+  scoreInboxPhishingWithSensitivity,
+} from "./lib/aiSensitivityPhishing.js";
+export {
+  rankBrokersForRemoval,
+  type BrokerRemovalPriorityItem,
+} from "./lib/rankBrokersForRemoval.js";
+export { formatPrivacyDigestEmail } from "./lib/formatPrivacyDigestEmail.js";
 export type {
   CopilotChatRequest,
   CopilotChatResponse,
@@ -100,8 +110,12 @@ export type {
   CopilotConfirmResponse,
   CopilotToolIntent,
   CopilotRotateAliasParams,
+  CopilotGenerateAliasParams,
 } from "./types/copilotTools.js";
+export { isCopilotGenerateAliasParams } from "./types/copilotTools.js";
 export { detectCopilotToolIntent } from "./lib/detectCopilotToolIntent.js";
+export { inferCopilotGenerateAlias } from "./lib/inferCopilotGenerateAlias.js";
+export { matchSiteThreatPatterns } from "./lib/matchSiteThreatPatterns.js";
 export {
   checkPasswordPwned,
   sha1HexUpper,
@@ -131,6 +145,13 @@ export {
   type PhantomApiErrorCode,
 } from "./constants/apiErrorCodes.js";
 export type { BillingStatus } from "./types/billing.js";
+export type { BillingValueSummary } from "./types/billingValue.js";
+export type { BreachTimelinePoint } from "./types/breachTimeline.js";
+export type {
+  AliasRelationshipEdge,
+  AliasRelationshipMap,
+  AliasRelationshipNode,
+} from "./types/aliasRelationship.js";
 export {
   normalizeClientError,
   clientErrorFromApiFailure,
@@ -189,9 +210,16 @@ export type {
 } from "./lib/vaultSyncMerge.js";
 export type {
   CallGuardCallLog,
-  CallGuardDecision,
   CallGuardSummary,
+  CallGuardDecision,
 } from "./types/callGuard.js";
+export type { CallGuardActiveSession } from "./types/callGuardActive.js";
+export type { CallGuardLiveEvent, CallGuardLivePhase } from "./types/callGuardLive.js";
+export type {
+  AliasRotationCandidate,
+  AliasRotationCandidatesSummary,
+} from "./types/aliasRotation.js";
+export type { PrivacyDigest } from "./types/privacyDigest.js";
 export type {
   ScamEngagementSession,
   ScamEngagementSummary,
@@ -215,6 +243,17 @@ export {
   generateCallGuardDemo,
   generateCallGuardDemoLogs,
 } from "./lib/generateCallGuardDemo.js";
+export { generateActiveCallGuardSession } from "./lib/generateActiveCallGuardSession.js";
+export { simulateCallGuardLiveEvents } from "./lib/simulateCallGuardLive.js";
+export {
+  rankAliasesForRotation,
+  formatRotationCandidatesReply,
+  type AliasRotationInput,
+} from "./lib/rankAliasesForRotation.js";
+export {
+  buildPrivacyDigest,
+  type PrivacyDigestInput,
+} from "./lib/buildPrivacyDigest.js";
 export {
   generateScamEngageDemo,
   generateScamEngageDemoSessions,
@@ -229,6 +268,11 @@ export {
   type ExposureReportInput,
 } from "./lib/buildExposureReport.js";
 export { computeAliasHealthScore } from "./lib/computeAliasHealthScore.js";
+export {
+  rankVaultPasswordsForRotation,
+  type VaultPasswordRotationCandidate,
+  type VaultPasswordRotationInput,
+} from "./lib/rankVaultPasswordsForRotation.js";
 export { inferAliasCategory } from "./lib/inferAliasCategory.js";
 export {
   classifyInboxMessage,
@@ -255,6 +299,23 @@ export {
   buildDarkWebImpactAnalysis,
   type DarkWebImpactInput,
 } from "./lib/buildDarkWebImpactAnalysis.js";
+export { buildBreachTimeline } from "./lib/buildBreachTimeline.js";
+export {
+  buildAliasRelationshipMap,
+  type AliasRelationshipInput,
+} from "./lib/buildAliasRelationshipMap.js";
+export {
+  buildBillingValueSummary,
+  type BillingValueInput,
+} from "./lib/buildBillingValueSummary.js";
+export {
+  buildLiveSystemLayerStatus,
+  type LiveSystemLayerInput,
+} from "./lib/buildLiveSystemLayerStatus.js";
+export {
+  pickAliasForSite,
+  type AliasSiteMatchCandidate,
+} from "./lib/pickAliasForSite.js";
 export {
   parseUserAiPreferencesPatch,
   DEFAULT_USER_AI_PREFERENCES,

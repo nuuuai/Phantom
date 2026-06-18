@@ -1,9 +1,11 @@
 import type {
   ApiResponse,
+  BrokerRemovalPriorityItem,
   BrokerScanResult,
   BrokerScanStartResponse,
   BrokerScanSummary,
 } from "@phantom/shared";
+import { rankBrokersForRemoval } from "@phantom/shared";
 import { Router } from "express";
 import type { BrokerScanStatus } from "@prisma/client";
 import { startBrokerScanForUser } from "../lib/brokerScanStart.js";
@@ -118,6 +120,43 @@ brokerScanRouter.get("/summary", async (req, res) => {
     computeBrokerScanSummaryFromRows(rows)
   );
   const response: ApiResponse<BrokerScanSummary> = { ok: true, data: summary };
+  res.json(response);
+});
+
+brokerScanRouter.get("/removal-priority", async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({
+      ok: false,
+      error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
+
+  await advanceRemovalSimulation(userId);
+
+  const latest = await prisma.brokerScanRun.findFirst({
+    where: { userId },
+    orderBy: { startedAt: "desc" },
+  });
+  if (!latest) {
+    const response: ApiResponse<{ items: BrokerRemovalPriorityItem[] }> = {
+      ok: true,
+      data: { items: [] },
+    };
+    res.json(response);
+    return;
+  }
+
+  const rows = await prisma.brokerScanResult.findMany({
+    where: { userId, brokerScanRunId: latest.id },
+    include: { broker: true },
+  });
+  const items = rankBrokersForRemoval(rows.map(mapBrokerScanResult));
+  const response: ApiResponse<{ items: BrokerRemovalPriorityItem[] }> = {
+    ok: true,
+    data: { items },
+  };
   res.json(response);
 });
 

@@ -9,7 +9,11 @@ export const MESSAGE_COPILOT_CONFIRM = "phantom:copilot-confirm" as const;
 export type FieldKind = "email" | "password" | "username";
 
 export type BackgroundMessage =
-  | { type: typeof MESSAGE_GENERATE_ALIAS; fieldKind?: FieldKind }
+  | {
+      type: typeof MESSAGE_GENERATE_ALIAS;
+      fieldKind?: FieldKind;
+      siteHostname?: string;
+    }
   | {
       type: typeof MESSAGE_FIELD_SCAN;
       emailFields: number;
