@@ -1,5 +1,6 @@
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { Outlet } from "react-router-dom";
+import { CopilotDrawer, CopilotFab } from "@/features/dashboard/CopilotDrawer.js";
 import { FeatureRouteErrorBoundary } from "./FeatureRouteErrorBoundary.js";
 import { RouteFallback } from "./RouteFallback.js";
 import { MobileNavBar } from "./MobileNavBar.js";
@@ -7,6 +8,8 @@ import { SidebarNav } from "./SidebarNav.js";
 import { TopBar } from "./TopBar.js";
 
 export function MainLayout() {
+  const [copilotOpen, setCopilotOpen] = useState(false);
+
   return (
     <div className="flex min-h-screen bg-ph-bg">
       <a
@@ -31,6 +34,8 @@ export function MainLayout() {
           </Suspense>
         </main>
       </div>
+      <CopilotFab onOpen={() => setCopilotOpen(true)} />
+      <CopilotDrawer open={copilotOpen} onClose={() => setCopilotOpen(false)} />
     </div>
   );
 }

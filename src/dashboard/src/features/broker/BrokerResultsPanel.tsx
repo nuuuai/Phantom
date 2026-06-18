@@ -4,6 +4,8 @@ import {
   BROKER_DATA_TYPES,
   brokerRemovalLinkLabel,
   brokerRemovalMethodLabel,
+  exposureSeverityBand,
+  exposureSeverityBandLabel,
   resolveBrokerRemovalHref,
   type BrokerDataType,
   type BrokerScanResult,
@@ -28,7 +30,7 @@ const TABS: { id: TabId; label: string; status?: string }[] = [
   { id: "relisted", label: "Re-listed", status: "relisted" },
 ];
 
-type SortKey = "name" | "category" | "status";
+type SortKey = "name" | "category" | "status" | "severity";
 
 interface BrokerResultsPanelProps {
   summary: BrokerScanSummary;
@@ -71,6 +73,8 @@ export function BrokerResultsPanel({
         cmp = a.broker.name.localeCompare(b.broker.name);
       } else if (sortKey === "category") {
         cmp = a.broker.category.localeCompare(b.broker.category);
+      } else if (sortKey === "severity") {
+        cmp = a.exposureSeverity - b.exposureSeverity;
       } else {
         cmp = a.status.localeCompare(b.status);
       }
@@ -200,7 +204,7 @@ export function BrokerResultsPanel({
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-ph-border bg-ph-surface">
-        <table className="w-full min-w-[880px] border-collapse text-left">
+        <table className="w-full min-w-[960px] border-collapse text-left">
           <thead>
             <tr className="border-b border-ph-borderSubtle">
               <th className="px-4 py-3">
@@ -223,6 +227,16 @@ export function BrokerResultsPanel({
               </th>
               <th className="px-4 py-3 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-ph-text-muted">
                 Data types
+              </th>
+              <th className="px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => toggleSort("severity")}
+                  className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-ph-text-muted"
+                >
+                  Severity{" "}
+                  {sortKey === "severity" ? (sortDir === "asc" ? "↑" : "↓") : ""}
+                </button>
               </th>
               <th className="px-4 py-3">
                 <button
@@ -287,6 +301,26 @@ export function BrokerResultsPanel({
                       </div>
                     </td>
                     <td className="px-4 py-3 align-top">
+                      {row.exposureSeverity > 0 ? (
+                        <span
+                          className={`inline-block rounded border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide ${
+                            exposureSeverityBand(row.exposureSeverity) === "critical"
+                              ? "border-ph-danger/40 text-ph-danger"
+                              : exposureSeverityBand(row.exposureSeverity) === "high"
+                                ? "border-ph-warning/40 text-ph-warning"
+                                : "border-ph-border text-ph-text-tertiary"
+                          }`}
+                        >
+                          {exposureSeverityBandLabel(
+                            exposureSeverityBand(row.exposureSeverity)
+                          )}{" "}
+                          · {row.exposureSeverity}
+                        </span>
+                      ) : (
+                        <span className="font-mono text-[11px] text-ph-text-muted">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 align-top">
                       <div className="flex items-center gap-2">
                         <span
                           className={`h-1.5 w-1.5 shrink-0 rounded-full ${scanStatusDotClass(row.status)}`}
@@ -310,7 +344,7 @@ export function BrokerResultsPanel({
                   </motion.tr>
                   {open ? (
                     <tr className="border-b border-ph-borderSubtle bg-ph-bg">
-                      <td colSpan={5} className="px-4 pb-4 pt-0">
+                      <td colSpan={6} className="px-4 pb-4 pt-0">
                         <div className="border-t border-ph-borderSubtle pt-4">
                           <div className="grid gap-4 md:grid-cols-3">
                             <div>

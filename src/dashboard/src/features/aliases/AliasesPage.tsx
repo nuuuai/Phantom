@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { memo, useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Alias, AliasCategory, HealthStatus } from "@phantom/shared";
+import { computeAliasHealthScore } from "@phantom/shared";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { EditAliasModal } from "./EditAliasModal.js";
 import { GenerateAliasModal } from "./GenerateAliasModal.js";
@@ -92,6 +93,13 @@ const AliasTableRow = memo(function AliasTableRow({
           />
           <span className="font-sans text-xs text-ph-text-tertiary">
             {row.healthStatus}
+          </span>
+          <span className="font-mono text-[10px] text-ph-text-muted">
+            {computeAliasHealthScore({
+              healthStatus: row.healthStatus,
+              spamCount: row.spamCount,
+              lastActivityAt: row.lastActivityAt,
+            })}
           </span>
         </div>
       </td>

@@ -44,6 +44,17 @@ export function BillingPage() {
     staleTime: STALE.userMe,
   });
 
+  const overviewQuery = useQuery({
+    queryKey: queryKeys.dashboardOverview(accessToken),
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.dashboard.overview(accessToken, { signal });
+      if (!res.ok) throw clientErrorFromApiFailure(res);
+      return res.data;
+    },
+    enabled: accessToken !== null,
+    staleTime: STALE.dashboardOverview,
+  });
+
   const checkoutMutation = useMutation({
     mutationFn: async () => {
       const res = await phantomApi.billing.checkoutSession(accessToken!);
@@ -128,6 +139,31 @@ export function BillingPage() {
         Phantom Pro unlocks unlimited aliases and data broker removal. Stripe
         Checkout and Customer Portal activate when API keys are configured.
       </p>
+
+      {overviewQuery.data ? (
+        <section className="mt-6 max-w-xl rounded-xl border border-ph-border bg-ph-surface p-5">
+          <div className="font-mono text-[10px] font-semibold uppercase text-ph-text-muted">
+            Pro value · Brain
+          </div>
+          <ul className="mt-3 space-y-1 font-sans text-sm text-ph-text-secondary">
+            <li>
+              {overviewQuery.data.brokersRemoved} broker removal(s) confirmed
+            </li>
+            <li>{overviewQuery.data.activeAliases} active aliases protected</li>
+            <li>
+              {overviewQuery.data.darkWebAlerts} dark web alert(s) monitored
+            </li>
+            <li>
+              Est. hours saved this month:{" "}
+              {Math.max(
+                1,
+                overviewQuery.data.brokersRemoved * 2 +
+                  overviewQuery.data.priorityActions.length
+              )}
+            </li>
+          </ul>
+        </section>
+      ) : null}
 
       {checkoutSyncSuccess && !syncCheckoutError ? (
         <div

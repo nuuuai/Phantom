@@ -1,8 +1,38 @@
 # Phantom — AI Enhancement Roadmap
 
-**Status:** Planning document  
+**Status:** In progress — Tier 1 + Tier 2 MVP surfaces shipped (June 2026)  
 **Last updated:** June 2026  
 **Scope:** Dashboard, extension, API intelligence layer, and cross-cutting UX
+
+## Implementation status (June 2026)
+
+| Area | Status |
+|------|--------|
+| Overview Brain (Daily Brief, Copilot, Risk, Actions, Threat Horizon) | **Shipped** |
+| Call Guard `/call-guard` | **MVP** — demo logs + confidence UI |
+| Scam Engage `/scam-engage` | **MVP** — 3 personas + transcript viewer |
+| Threat Intel `/threat-intel` | **MVP** — anonymized pattern catalog |
+| Reports `/reports` | **MVP** — AI exposure report generator |
+| Family `/family` | **MVP** — seat snapshot (enterprise gated) |
+| Production auth `/login` | **Shipped** |
+| Settings Autopilot prefs | **Shipped** — DB-backed toggles + sensitivity |
+| Vault password audit | **Shipped** — reuse detection + client HIBP breach check |
+| Alias health score + intel API | **Shipped** |
+| Inbox classification + summary | **Shipped** |
+| Billing ROI panel | **Shipped** |
+| Extension site risk badge | **Shipped** — heuristic domain badge |
+| Proactive Intelligence Feed | **Shipped** — prioritized signals + one-click actions |
+| Unified Risk Narrative | **Shipped** — 90-day trend, weekly delta, threshold actions |
+| Live broker scanning | **Shipped (env-gated)** — hybrid HTTP probes for 10 core brokers |
+| Broker exposure severity + removal narrative | **Shipped** — severity scoring, 30-day plan UI |
+| Dark web breach impact analysis | **Shipped** — cross-links findings to aliases/vault |
+| Account data export + deletion | **Shipped** — JSON export, password-confirmed delete |
+| Extension Copilot mini-chat | **Shipped** — popup chat + confirm actions |
+| Real PSTN / carrier Call Guard | **Pending** — Phase 2 |
+| Python ML pipelines | **Pending** — Phase 3 |
+| Virtual cards / VPN | **Pending** — Phase 3 |
+
+Run DB migration: `npm run db:migrate:deploy -w @phantom/api`
 
 This document captures a page-by-page enhancement plan to evolve Phantom from a strong Phase 1 **Shield** foundation into a genuinely **AI-native Privacy Operations Center** — aligned with the four-layer architecture (Shield → Brain → Sword → Autopilot) defined in [`OVERVIEW.md`](./OVERVIEW.md) and the Phase 2–3 roadmaps.
 

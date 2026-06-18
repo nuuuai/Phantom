@@ -27,6 +27,7 @@ import { useSessionStore } from "@/stores/useSessionStore.js";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { VaultGenerateModal } from "./VaultGenerateModal.js";
 import { VaultUnlockGate } from "./VaultUnlockGate.js";
+import { VaultAuditPanel } from "./VaultAuditPanel.js";
 
 function vaultSyncErrorLooksLikeConflict(message: string): boolean {
   const m = message.toLowerCase();
@@ -268,6 +269,11 @@ function VaultPageInner() {
           </button>
         </div>
       </div>
+
+      <VaultAuditPanel
+        aliases={listQuery.data ?? []}
+        resolveValue={resolveValue}
+      />
 
       <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap gap-1">

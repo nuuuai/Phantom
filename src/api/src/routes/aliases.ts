@@ -13,6 +13,7 @@ import type {
 } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { generateValueForType } from "../lib/aliasGenerators.js";
+import { rotateAliasForUser } from "../lib/aliasRotate.js";
 import { assertCanCreateAlias } from "../lib/aliasTierLimits.js";
 import { provisionPhoneAlias } from "../lib/phone/provisionPhone.js";
 import { parsePhoneForwardTo } from "../lib/phone/validateForward.js";
@@ -371,22 +372,6 @@ aliasesRouter.post("/:id/rotate", async (req, res) => {
     return;
   }
 
-  const existing = await prisma.alias.findFirst({
-    where: { id: req.params.id, userId, isActive: true },
-  });
-  if (!existing) {
-    res.status(404).json({
-      ok: false,
-      error: { code: "not_found", message: "Alias not found" },
-    });
-    return;
-  }
-
-  await prisma.alias.update({
-    where: { id: existing.id },
-    data: { healthStatus: "quarantined", isActive: false },
-  });
-
   const rotateBody = req.body as { encryptedValue?: string } | undefined;
   const clientEncrypted =
     typeof rotateBody?.encryptedValue === "string" &&
@@ -394,71 +379,30 @@ aliasesRouter.post("/:id/rotate", async (req, res) => {
       ? rotateBody.encryptedValue
       : null;
 
-  let value: string;
-  let phoneProvider: string | null = null;
-  let phoneProviderSid: string | null = null;
-  let phoneForwardTo: string | null = null;
-
-  if (clientEncrypted && existing.type === "password") {
-    value = "[encrypted]";
-  } else if (existing.type === "phone") {
-    const parsed = parsePhoneForwardTo(existing.phoneForwardTo);
-    if (!parsed.ok) {
-      res.status(400).json({
-        ok: false,
-        error: { code: "validation_error", message: parsed.message },
-      });
-      return;
-    }
-    const p = provisionPhoneAlias(parsed.value);
-    if (!p.ok) {
-      res.status(503).json({
-        ok: false,
-        error: { code: p.code, message: p.message },
-      });
-      return;
-    }
-    value = p.value;
-    phoneProvider = p.provider;
-    phoneProviderSid = p.providerSid;
-    phoneForwardTo = p.forwardTo;
-  } else {
-    const existsEmail = async (v: string): Promise<boolean> => {
-      const found = await prisma.alias.findFirst({
-        where: { type: "email", value: v, isActive: true },
-      });
-      return found !== null;
-    };
-    value = await generateValueForType(
-      existing.type,
-      existing.category,
-      existsEmail
-    );
-  }
-
-  const row = await prisma.alias.create({
-    data: {
-      userId,
-      type: existing.type,
-      value,
-      encryptedValue: clientEncrypted,
-      category: existing.category,
-      serviceName: existing.serviceName,
-      serviceUrl: existing.serviceUrl,
-      healthStatus: "healthy",
-      lastActivityAt: new Date(),
-      phoneProvider,
-      phoneProviderSid,
-      phoneForwardTo,
-    },
+  const result = await rotateAliasForUser(userId, req.params.id, {
+    encryptedValue: clientEncrypted,
   });
+
+  if (!result.ok) {
+    const status =
+      result.code === "not_found"
+        ? 404
+        : result.code === "phone_unavailable"
+          ? 503
+          : 400;
+    res.status(status).json({
+      ok: false,
+      error: { code: result.code, message: result.message },
+    });
+    return;
+  }
 
   const response: ApiResponse<{
     previousId: string;
     alias: ReturnType<typeof mapAliasToDto>;
   }> = {
     ok: true,
-    data: { previousId: existing.id, alias: mapAliasToDto(row) },
+    data: result.data,
   };
   res.status(201).json(response);
 });

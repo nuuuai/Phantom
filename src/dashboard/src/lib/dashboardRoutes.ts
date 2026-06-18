@@ -11,6 +11,12 @@ export const DASHBOARD_PATHS = {
   darkWeb: "/dark-web",
   billing: "/billing",
   settings: "/settings",
+  callGuard: "/call-guard",
+  scamEngage: "/scam-engage",
+  threatIntel: "/threat-intel",
+  reports: "/reports",
+  family: "/family",
+  login: "/login",
 } as const;
 
 export type DashboardPath =

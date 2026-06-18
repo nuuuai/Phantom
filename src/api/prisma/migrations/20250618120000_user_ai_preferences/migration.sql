@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN "autopilotAutoRotate" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "User" ADD COLUMN "autopilotAutoQuarantine" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "User" ADD COLUMN "autopilotAutoComplaint" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "User" ADD COLUMN "aiSensitivity" INTEGER NOT NULL DEFAULT 50;
+ALTER TABLE "User" ADD COLUMN "notificationDigestMode" BOOLEAN NOT NULL DEFAULT false;

@@ -3,10 +3,12 @@ import type {
   DarkWebFindingPublic,
   DarkWebFindingsListResponse,
   DarkWebFindingsSummary,
+  DarkWebImpactSummary,
   DarkWebRefreshResult,
 } from "@phantom/shared";
 import { Router } from "express";
 import { runHibpDarkWebRefresh } from "../lib/darkWebHibpRefresh.js";
+import { buildDarkWebImpactForUser } from "../lib/buildDarkWebImpact.js";
 import { insertDarkWebFindingWithNotification } from "../lib/darkWebIngest.js";
 import { mapDarkWebFinding } from "../lib/mapDarkWebFinding.js";
 import { prisma } from "../lib/prisma.js";
@@ -165,6 +167,42 @@ darkWebRouter.get("/findings", async (req, res) => {
   const response: ApiResponse<DarkWebFindingsListResponse> = {
     ok: true,
     data: payload,
+  };
+  res.json(response);
+});
+
+darkWebRouter.get("/impact", async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({
+      ok: false,
+      error: { code: "unauthorized", message: "Unauthorized" },
+    });
+    return;
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    res.status(404).json({
+      ok: false,
+      error: { code: "not_found", message: "User not found" },
+    });
+    return;
+  }
+
+  if (!isPaidTier(user.tier)) {
+    const response: ApiResponse<DarkWebImpactSummary> = {
+      ok: true,
+      data: { items: [], tierGated: true },
+    };
+    res.json(response);
+    return;
+  }
+
+  const items = await buildDarkWebImpactForUser(userId);
+  const response: ApiResponse<DarkWebImpactSummary> = {
+    ok: true,
+    data: { items, tierGated: false },
   };
   res.json(response);
 });

@@ -13,6 +13,8 @@ import {
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { UpgradeModal } from "@/components/upgrade/UpgradeModal.js";
+import { AiPreferencesSection } from "./AiPreferencesSection.js";
+import { AccountDataSection } from "./AccountDataSection.js";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { DASHBOARD_PATHS } from "@/lib/dashboardRoutes.js";
@@ -114,7 +116,7 @@ export function SettingsPage() {
     );
   }
 
-  const { user, aliasUsage } = meQuery.data;
+  const { user, aliasUsage, preferences } = meQuery.data;
   const tierIsFree = user.tier === "free";
 
   return (
@@ -247,10 +249,17 @@ export function SettingsPage() {
           </ul>
         </section>
 
+        <AiPreferencesSection
+          accessToken={accessToken}
+          preferences={preferences}
+        />
+
         <NotificationPrefsSection
           accessToken={accessToken}
           prefsQuery={prefsQuery}
         />
+
+        <AccountDataSection accessToken={accessToken} />
 
         <DesktopNotificationsSection />
 
@@ -259,8 +268,7 @@ export function SettingsPage() {
             Session
           </div>
           <p className="mt-2 font-sans text-xs text-ph-text-tertiary">
-            Sign out clears tokens and cached data on this device. Account
-            deletion is not available in the API for Phase 1.
+            Sign out clears tokens and cached data on this device.
           </p>
           <button
             type="button"

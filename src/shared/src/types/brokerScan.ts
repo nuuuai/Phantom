@@ -41,6 +41,8 @@ export interface BrokerScanResult {
   removalSubmittedAt: string | null;
   removalConfirmedAt: string | null;
   relistDetectedAt: string | null;
+  /** 0–100 Brain severity from data types found; 0 when not listed. */
+  exposureSeverity: number;
 }
 
 export interface BrokerScanSummary {
@@ -66,4 +68,8 @@ export interface BrokerScanStartResponse {
   scanId: string;
   totalBrokers: number;
   estimatedTime: number;
+  /** mock | hybrid | live — from BROKER_SCAN_PROVIDER env. */
+  scanProvider?: "mock" | "hybrid" | "live";
+  /** Brokers probed via live HTTP in this run. */
+  liveProbeCount?: number;
 }

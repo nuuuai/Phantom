@@ -29,6 +29,8 @@ import {
 import { STALE } from "@/lib/queryStaleTimes.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 import { VaultUnlockGate } from "@/features/vault/VaultUnlockGate.js";
+import { AliasHealthPanel } from "./AliasHealthPanel.js";
+import { AliasUsageChart } from "./AliasUsageChart.js";
 
 function healthColor(h: Alias["healthStatus"]): string {
   if (h === "healthy") return "text-emerald-400";
@@ -81,6 +83,19 @@ export function AliasDetailPage() {
   });
 
   const alias = aliasQuery.data;
+
+  const intelQuery = useQuery({
+    queryKey: queryKeys.aliasIntel(accessToken, id),
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.intelligence.aliasIntel(accessToken!, id!, {
+        signal,
+      });
+      if (!res.ok) throw clientErrorFromApiFailure(res);
+      return res.data;
+    },
+    enabled: Boolean(accessToken && id),
+    staleTime: STALE.aliasIntel,
+  });
 
   const phoneProviderQuery = useQuery({
     queryKey: queryKeys.phoneProvider(accessToken),
@@ -329,6 +344,41 @@ export function AliasDetailPage() {
           <InfoBlock label="Spam count" value={String(alias.spamCount)} />
           <InfoBlock label="Alias ID" value={alias.id} mono />
         </div>
+
+        <AliasHealthPanel status={alias.healthStatus} />
+
+        {intelQuery.data ? (
+          <section className="mt-4 rounded-lg border border-ph-border bg-ph-surface p-4">
+            <div className="mb-2 font-mono text-[10px] uppercase text-ph-text-muted">
+              Health score · {intelQuery.data.healthScore}/100
+            </div>
+            <p className="font-sans text-xs text-ph-text-tertiary">
+              {intelQuery.data.explanationHeadline}
+            </p>
+            {intelQuery.data.suggestedCategory ? (
+              <p className="mt-2 font-sans text-xs text-ph-accent-light">
+                Suggested category: {intelQuery.data.suggestedCategory}
+              </p>
+            ) : null}
+            {intelQuery.data.recommendations.length > 0 && (
+              <ul className="mt-2 space-y-1">
+                {intelQuery.data.recommendations.map((rec) => (
+                  <li key={rec} className="font-sans text-xs text-ph-text-secondary">
+                    → {rec}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {alias.type === "email" && intelQuery.data.usageSeries.length > 0 ? (
+              <div className="mt-4 border-t border-ph-border-subtle pt-4">
+                <div className="font-mono text-[10px] uppercase text-ph-text-muted">
+                  Inbound volume · 30 days
+                </div>
+                <AliasUsageChart series={intelQuery.data.usageSeries} />
+              </div>
+            ) : null}
+          </section>
+        ) : null}
 
         {alias.type === "email" && (
           <div className="mt-6 rounded-lg border border-ph-border/60 bg-ph-raised/20 p-4">

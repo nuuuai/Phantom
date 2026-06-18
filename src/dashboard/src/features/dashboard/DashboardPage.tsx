@@ -1,5 +1,10 @@
 import { clientErrorFromApiFailure, getQueryErrorMessage } from "@phantom/shared";
 import { useQuery } from "@tanstack/react-query";
+import { CopilotPanel } from "./CopilotPanel.js";
+import { DailyBrief } from "./DailyBrief.js";
+import { PriorityActionsQueue } from "./PriorityActionsQueue.js";
+import { RiskIntelligenceCard } from "./RiskIntelligenceCard.js";
+import { IntelligenceFeedPanel } from "./IntelligenceFeedPanel.js";
 import { ActivityTimeline } from "./ActivityTimeline.js";
 import { QuickActionsGrid } from "./QuickActionsGrid.js";
 import { StatGrid } from "./StatGrid.js";
@@ -115,16 +120,31 @@ export function DashboardPage() {
         </p>
       ) : null}
       {data.activeAliases === 0 ? <DashboardGettingStarted /> : null}
+      <DailyBrief lines={data.dailyBrief} />
+      <PriorityActionsQueue actions={data.priorityActions} />
+      <RiskIntelligenceCard
+        riskScore={data.riskScore}
+        riskTrend={data.riskTrend}
+        factors={data.riskFactors}
+        trendSeries={data.riskTrendSeries}
+        narrative={data.riskNarrative}
+      />
       <StatGrid data={data} />
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">
-        <ActivityTimeline items={data.activity} />
         <div className="flex flex-col gap-5">
-          <WeeklyScamsChart
-            values={data.weeklyScams}
-            labels={data.weekDays}
-            demoMode={data.metricsDemoMode}
-          />
+          <IntelligenceFeedPanel items={data.intelligence} />
+          <CopilotPanel overview={data} />
+          <ActivityTimeline items={data.activity} />
+        </div>
+        <div className="flex flex-col gap-5">
+          {data.metricsDemoMode ? (
+            <WeeklyScamsChart
+              values={data.weeklyScams}
+              labels={data.weekDays}
+              demoMode={data.metricsDemoMode}
+            />
+          ) : null}
           <SystemLayersPanel layers={data.systemLayers} />
           <QuickActionsGrid />
         </div>

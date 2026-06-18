@@ -1,23 +1,24 @@
 import { useCallback, useState } from "react";
 import {
+  MESSAGE_COPILOT_CHAT,
+  MESSAGE_COPILOT_CONFIRM,
   MESSAGE_GENERATE_ALIAS,
   MESSAGE_LOGIN,
   MESSAGE_LOGOUT,
 } from "./lib/messages";
 import type { FieldKind } from "./lib/messages";
+import { CopilotMini } from "./components/CopilotMini";
 import "./popup.css";
 
 type GenerateResponse =
   | {
       ok: true;
       alias: { type: string; value: string };
-      /** Present when vault decrypted server-stored ciphertext (password aliases). */
       plainValue?: string;
     }
   | { ok: false; error: string };
 
 type LoginResponse = { ok: true } | { ok: false; error: string };
-
 type LogoutResponse = { ok: true } | { ok: false; error: string };
 
 function maskValue(type: string, value: string): string {
@@ -36,8 +37,9 @@ export function Popup() {
   const [authStatus, setAuthStatus] = useState<string>("");
   const [status, setStatus] = useState<string>("");
   const [preview, setPreview] = useState<string | null>(null);
-  /** Popup generate: email vs password (matches page field kinds; uses vault for encrypted password when signed in). */
   const [generateKind, setGenerateKind] = useState<FieldKind>("email");
+
+  const signedIn = authStatus === "Signed in";
 
   const onLogout = useCallback(() => {
     setAuthStatus("Signing out…");
@@ -98,9 +100,7 @@ export function Popup() {
         }
         if (res.ok) {
           setStatus("Alias ready");
-          const previewValue =
-            res.plainValue ??
-            res.alias.value;
+          const previewValue = res.plainValue ?? res.alias.value;
           setPreview(
             `${res.alias.type} · ${maskValue(res.alias.type, previewValue)}`
           );
@@ -179,6 +179,17 @@ export function Popup() {
           API settings
         </button>
       </p>
+
+      {signedIn ? (
+        <>
+          <hr className="popup__hr" />
+          <CopilotMini
+            chatType={MESSAGE_COPILOT_CHAT}
+            confirmType={MESSAGE_COPILOT_CONFIRM}
+          />
+        </>
+      ) : null}
+
       <hr className="popup__hr" />
       <p className="popup__mini">Generate type</p>
       <div className="popup__row">

@@ -17,6 +17,7 @@ import {
 } from "@/lib/queryKeys.js";
 import { STALE } from "@/lib/queryStaleTimes.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
+import { DarkWebImpactPanel } from "./DarkWebImpactPanel.js";
 
 function severityClass(s: DarkWebFindingPublic["severity"]): string {
   if (s === "critical") return "border-rose-500/50 bg-rose-500/10 text-rose-300";
@@ -69,6 +70,18 @@ export function DarkWebPage() {
     staleTime: STALE.darkWeb,
   });
 
+  const impactQuery = useQuery({
+    queryKey: queryKeys.darkWebImpact(accessToken),
+    queryFn: async ({ signal }) => {
+      const res = await phantomApi.darkWeb.impact(accessToken!, { signal });
+      if (!res.ok) throw clientErrorFromApiFailure(res);
+      return res.data;
+    },
+    enabled:
+      accessToken !== null && userMeQuery.data?.user.tier !== "free",
+    staleTime: STALE.darkWeb,
+  });
+
   const refreshMutation = useMutation({
     mutationFn: async () => {
       const res = await phantomApi.darkWeb.refresh(accessToken!);
@@ -85,6 +98,9 @@ export function DarkWebPage() {
       void qc.invalidateQueries({
         queryKey: queryKeys.notifications(accessToken),
       });
+      void qc.invalidateQueries({
+        queryKey: queryKeys.darkWebImpact(accessToken),
+      });
     },
   });
 
@@ -99,6 +115,9 @@ export function DarkWebPage() {
       void qc.invalidateQueries({ queryKey: dashboardOverviewAll });
       void qc.invalidateQueries({
         queryKey: queryKeys.notificationCount(accessToken),
+      });
+      void qc.invalidateQueries({
+        queryKey: queryKeys.darkWebImpact(accessToken),
       });
     },
   });
@@ -203,6 +222,10 @@ export function DarkWebPage() {
         <p className="mt-3 font-sans text-[11px] text-ph-danger">
           {getQueryErrorMessage(refreshMutation.error)}
         </p>
+      ) : null}
+
+      {!tierGated && impactQuery.data && impactQuery.data.items.length > 0 ? (
+        <DarkWebImpactPanel items={impactQuery.data.items} />
       ) : null}
 
       {findingsQuery.isPending || summaryQuery.isPending ? (

@@ -1,8 +1,16 @@
 import type { DashboardOverview } from "@phantom/shared";
+import { RISK_THRESHOLDS } from "@phantom/shared";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter.js";
 
 interface StatGridProps {
   data: DashboardOverview;
+}
+
+function riskScoreColor(score: number): string {
+  if (score <= RISK_THRESHOLDS.LOW_MAX) return "text-ph-success";
+  if (score <= RISK_THRESHOLDS.MODERATE_MAX) return "text-ph-info";
+  if (score <= RISK_THRESHOLDS.ELEVATED_MAX) return "text-ph-warning";
+  return "text-ph-danger";
 }
 
 export function StatGrid({ data }: StatGridProps) {
@@ -11,6 +19,8 @@ export function StatGrid({ data }: StatGridProps) {
       ? (data.brokersRemoved / data.brokersFound) * 100
       : 0;
 
+  const scoreClass = riskScoreColor(data.riskScore);
+
   return (
     <div className="mb-5 grid grid-cols-1 gap-px overflow-hidden rounded-xl bg-ph-border animate-fade-up md:grid-cols-2 xl:grid-cols-4">
       <div className="bg-ph-surface px-5 py-6">
@@ -18,17 +28,20 @@ export function StatGrid({ data }: StatGridProps) {
           Risk score
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="text-[40px] font-light tracking-[-0.02em] text-ph-success">
+          <span className={`text-[40px] font-light tracking-[-0.02em] ${scoreClass}`}>
             <AnimatedCounter value={data.riskScore} />
           </span>
-          <span className="text-[13px] font-medium text-ph-success">
-            ↓{Math.abs(data.riskTrend)}
-          </span>
+          {data.riskTrend !== 0 ? (
+            <span
+              className={`text-[13px] font-medium ${data.riskTrend < 0 ? "text-ph-success" : "text-ph-danger"}`}
+            >
+              {data.riskTrend < 0 ? "↓" : "↑"}
+              {Math.abs(data.riskTrend)}
+            </span>
+          ) : null}
         </div>
         <div className="mt-1 font-sans text-xs text-ph-text-muted">
-          {data.metricsDemoMode
-            ? "Low risk — strong posture"
-            : "Heuristic from broker + alias posture"}
+          See Risk intelligence below for factor breakdown
         </div>
       </div>
 
@@ -66,21 +79,28 @@ export function StatGrid({ data }: StatGridProps) {
 
       <div className="bg-ph-surface px-5 py-6">
         <div className="mb-3 font-mono text-[11px] font-medium uppercase tracking-wide text-ph-text-tertiary">
-          Scam engage
+          {data.metricsDemoMode ? "Scam engage" : "Inbox unread"}
         </div>
-        <div className="text-[40px] font-light tracking-[-0.02em] text-ph-danger">
-          <AnimatedCounter value={data.scammerMinutes} />
-          <span className="text-sm text-ph-text-tertiary"> min</span>
-        </div>
-        <div className="mt-1 font-sans text-xs text-ph-text-muted">
-          {data.metricsDemoMode ? (
-            <>
+        {data.metricsDemoMode ? (
+          <>
+            <div className="text-[40px] font-light tracking-[-0.02em] text-ph-danger">
+              <AnimatedCounter value={data.scammerMinutes} />
+              <span className="text-sm text-ph-text-tertiary"> min</span>
+            </div>
+            <div className="mt-1 font-sans text-xs text-ph-text-muted">
               {data.scamsEngaged} scammers · {data.complaintsFile} complaints
-            </>
-          ) : (
-            <>Phase 1: Sword / SEE not live — zeros are honest.</>
-          )}
-        </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="text-[40px] font-light tracking-[-0.02em] text-ph-text-primary">
+              <AnimatedCounter value={data.unreadInbox} />
+            </div>
+            <div className="mt-1 font-sans text-xs text-ph-text-muted">
+              Alias mail awaiting review
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

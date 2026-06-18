@@ -7,10 +7,9 @@ const LINKS = [
   { label: "Overview", to: DASHBOARD_PATHS.home, end: true },
   { label: "Aliases", to: DASHBOARD_PATHS.aliases, end: false },
   { label: "Inbox", to: DASHBOARD_PATHS.inbox, end: false },
-  { label: "Vault", to: DASHBOARD_PATHS.vault, end: false },
+  { label: "Call Guard", to: DASHBOARD_PATHS.callGuard, end: false },
   { label: "Brokers", to: DASHBOARD_PATHS.brokers, end: false },
-  { label: "Dark web", to: DASHBOARD_PATHS.darkWeb, end: false },
-  { label: "Billing", to: DASHBOARD_PATHS.billing, end: false },
+  { label: "Intel", to: DASHBOARD_PATHS.threatIntel, end: false },
   { label: "Settings", to: DASHBOARD_PATHS.settings, end: false },
 ] as const;
 

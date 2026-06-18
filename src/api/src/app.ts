@@ -24,6 +24,13 @@ import { stripeWebhookRouter } from "./routes/stripeWebhook.js";
 import { webhookEmailInboundRouter } from "./routes/webhookEmailInbound.js";
 import { phoneRouter } from "./routes/phone.js";
 import { darkWebRouter } from "./routes/darkWeb.js";
+import { callGuardRouter } from "./routes/callGuard.js";
+import { scamEngageRouter } from "./routes/scamEngage.js";
+import { threatIntelRouter } from "./routes/threatIntel.js";
+import { reportsRouter } from "./routes/reports.js";
+import { familyRouter } from "./routes/family.js";
+import { intelligenceRouter } from "./routes/intelligence.js";
+import { copilotRouter } from "./routes/copilot.js";
 
 const globalRateLimiter = createGlobalRateLimiter();
 
@@ -92,6 +99,13 @@ export function createApp() {
   app.use("/api/dark-web", authenticateJwt, darkWebRouter);
   app.use("/api/vault", authenticateJwt, vaultRouter);
   app.use("/api/billing", authenticateJwt, billingRouter);
+  app.use("/api/call-guard", authenticateJwt, callGuardRouter);
+  app.use("/api/scam-engage", authenticateJwt, scamEngageRouter);
+  app.use("/api/threat-intel", authenticateJwt, threatIntelRouter);
+  app.use("/api/reports", authenticateJwt, reportsRouter);
+  app.use("/api/family", authenticateJwt, familyRouter);
+  app.use("/api/intelligence", authenticateJwt, intelligenceRouter);
+  app.use("/api/copilot", authenticateJwt, copilotRouter);
 
   app.use(notFoundJson);
   app.use(errorJsonHandler);

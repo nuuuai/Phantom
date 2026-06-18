@@ -30,6 +30,16 @@ model User {
   notifications    Notification[]
   notificationPrefs NotificationPref[]
   darkWebFindings  DarkWebFinding[]
+  /** Autopilot: rotate compromised aliases without confirmation. */
+  autopilotAutoRotate     Boolean @default(false)
+  /** Autopilot: quarantine suspicious aliases automatically. */
+  autopilotAutoQuarantine Boolean @default(false)
+  /** Autopilot: file FTC complaints after SEE sessions. */
+  autopilotAutoComplaint  Boolean @default(false)
+  /** Brain sensitivity 0 (conservative) – 100 (aggressive). */
+  aiSensitivity           Int     @default(50)
+  /** Digest notifications into AI summary instead of per-event. */
+  notificationDigestMode  Boolean @default(false)
 }
 
 enum DarkWebFindingStatus {

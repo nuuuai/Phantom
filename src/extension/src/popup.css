@@ -123,3 +123,56 @@
   color: #e8e8ec;
   word-break: break-word;
 }
+
+.popup__copilot {
+  margin-bottom: 4px;
+}
+
+.popup__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 6px 0 8px;
+}
+
+.popup__chip {
+  border: 1px solid #222228;
+  background: #1a1a24;
+  color: #888890;
+  font-size: 10px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.popup__input--flex {
+  flex: 1;
+  min-width: 0;
+}
+
+.popup__action--inline {
+  width: auto;
+  flex-shrink: 0;
+  padding: 8px 10px;
+}
+
+.popup__pending {
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(108, 58, 237, 0.3);
+  background: rgba(108, 58, 237, 0.08);
+}
+
+.popup__reply {
+  max-height: 120px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.popup__mini--danger {
+  color: #f87171;
+}

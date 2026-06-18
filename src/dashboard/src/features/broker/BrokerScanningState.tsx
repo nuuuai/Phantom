@@ -45,8 +45,9 @@ export function BrokerScanningState({
       </h2>
       <p className="mt-2 max-w-xl font-sans text-sm text-ph-text-tertiary">
         Checking public and subscription data sources for your name, phone,
-        email, and address variants. This is simulated in Phase 1 — no live
-        queries leave your browser until production workers launch.
+        email, and address variants. With{" "}
+        <span className="font-mono text-[10px]">BROKER_SCAN_PROVIDER=hybrid</span>{" "}
+        on the API, 10 core brokers use live HTTP probes; the rest stay simulated.
       </p>
 
       <div className="mt-8 h-1 w-full overflow-hidden rounded-sm bg-ph-border">

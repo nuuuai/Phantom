@@ -1,14 +1,14 @@
 import { useCallback, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { NotificationCenter } from "@/features/notifications/NotificationCenter.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import {
-  clearSkipDevBootstrap,
   setSkipDevBootstrap,
   shouldSkipDevBootstrap,
 } from "@/lib/devBootstrap.js";
 import { queryClient } from "@/lib/queryClient.js";
 import { titleForPath } from "@/lib/routeTitles.js";
+import { DASHBOARD_PATHS } from "@/lib/dashboardRoutes.js";
 import { useSessionStore } from "@/stores/useSessionStore.js";
 
 export function TopBar() {
@@ -39,11 +39,6 @@ export function TopBar() {
     setSigningOut(false);
     void navigate("/", { replace: true });
   }, [clearSession, navigate, signingOut]);
-
-  const onResumeDevSession = useCallback(() => {
-    clearSkipDevBootstrap();
-    window.location.reload();
-  }, []);
 
   const title = useMemo(
     () => titleForPath(location.pathname),
@@ -83,13 +78,12 @@ export function TopBar() {
             {signingOut ? "Signing out…" : "Sign out"}
           </button>
         ) : shouldSkipDevBootstrap() ? (
-          <button
-            type="button"
-            onClick={onResumeDevSession}
+          <Link
+            to={DASHBOARD_PATHS.login}
             className="cursor-pointer rounded-md border border-ph-accent-border bg-[#6C3AED15] px-3.5 py-1.5 font-sans text-xs font-medium text-ph-accent-light"
           >
-            Resume dev session
-          </button>
+            Sign in
+          </Link>
         ) : devBootstrapError ? (
           <div className="flex max-w-[min(420px,50vw)] items-center gap-2">
             <span

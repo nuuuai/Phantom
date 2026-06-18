@@ -1,4 +1,4 @@
-import type { Alias, ApiResponse } from "@phantom/shared";
+import type { Alias, ApiResponse, CopilotChatResponse, CopilotConfirmResponse, CopilotToolId } from "@phantom/shared";
 import {
   clientErrorFromApiFailure,
   decryptVaultValue,
@@ -19,6 +19,8 @@ import {
 import {
   MESSAGE_FIELD_SCAN,
   MESSAGE_GENERATE_ALIAS,
+  MESSAGE_COPILOT_CHAT,
+  MESSAGE_COPILOT_CONFIRM,
   MESSAGE_LOGIN,
   MESSAGE_LOGOUT,
   type BackgroundMessage,
@@ -128,6 +130,20 @@ type LoginResponse =
 
 type LogoutResponse = { ok: true } | { ok: false; error: string };
 
+type CopilotChatResponseMsg =
+  | { ok: true; data: CopilotChatResponse }
+  | { ok: false; error: string };
+
+type CopilotConfirmResponseMsg =
+  | { ok: true; data: CopilotConfirmResponse }
+  | { ok: false; error: string };
+
+const COPILOT_TOOLS = new Set<CopilotToolId>([
+  "start_broker_scan",
+  "rotate_alias",
+  "request_broker_removals",
+]);
+
 async function revokeRefreshOnServer(): Promise<void> {
   const rt = await getRefreshToken();
   if (!rt) return;
@@ -161,7 +177,13 @@ chrome.runtime.onMessage.addListener(
     message: BackgroundMessage,
     _sender,
     sendResponse: (
-      response: GenerateResponse | LoginResponse | LogoutResponse | { ok: true }
+      response:
+        | GenerateResponse
+        | LoginResponse
+        | LogoutResponse
+        | CopilotChatResponseMsg
+        | CopilotConfirmResponseMsg
+        | { ok: true }
     ) => void
   ) => {
     if (message.type === MESSAGE_FIELD_SCAN) {
@@ -277,6 +299,62 @@ chrome.runtime.onMessage.addListener(
               message: "",
             }).userMessage,
           });
+        }
+      })();
+      return true;
+    }
+
+    if (message.type === MESSAGE_COPILOT_CHAT) {
+      void (async () => {
+        try {
+          const res = await fetchAuth("/api/copilot/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: message.message }),
+          });
+          const data = await parseApiResponseJson<CopilotChatResponse>(res);
+          if (data.ok) {
+            sendResponse({ ok: true, data: data.data });
+          } else {
+            sendResponse({
+              ok: false,
+              error: clientErrorFromApiFailure(data).message,
+            });
+          }
+        } catch {
+          sendResponse({ ok: false, error: "network_error" });
+        }
+      })();
+      return true;
+    }
+
+    if (message.type === MESSAGE_COPILOT_CONFIRM) {
+      const toolId = message.toolId;
+      if (!COPILOT_TOOLS.has(toolId as CopilotToolId)) {
+        sendResponse({ ok: false, error: "invalid_tool" });
+        return true;
+      }
+      void (async () => {
+        try {
+          const res = await fetchAuth("/api/copilot/confirm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              toolId,
+              params: message.params,
+            }),
+          });
+          const data = await parseApiResponseJson<CopilotConfirmResponse>(res);
+          if (data.ok) {
+            sendResponse({ ok: true, data: data.data });
+          } else {
+            sendResponse({
+              ok: false,
+              error: clientErrorFromApiFailure(data).message,
+            });
+          }
+        } catch {
+          sendResponse({ ok: false, error: "network_error" });
         }
       })();
       return true;

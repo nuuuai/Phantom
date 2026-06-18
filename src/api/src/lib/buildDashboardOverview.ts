@@ -1,8 +1,22 @@
 import type { ActivityItem, DashboardOverview } from "@phantom/shared";
+import {
+  buildCopilotPrompts,
+  buildDailyBrief,
+  buildIntelligenceItems,
+  buildPriorityActions,
+  buildRiskFactors,
+  buildRiskNarrative,
+  buildSyntheticRiskTrendSeries,
+  riskTrendFromSeries,
+} from "@phantom/shared";
 import { prisma } from "./prisma.js";
 import { advanceRemovalSimulation } from "./brokerScanAdvance.js";
-import { computeBrokerScanSummaryFromRows } from "./computeBrokerScanSummary.js";
+import { buildIntelligenceContext } from "./buildIntelligenceContext.js";
 import { isOverviewDemoMetricsEnabled } from "./envOverviewDemo.js";
+import {
+  computeRiskTrendSeries,
+  fetchRiskWeekChanges,
+} from "./riskTrendSeries.js";
 import { isPaidTier } from "./userTierPaid.js";
 
 function formatRelativeShort(date: Date): string {
@@ -25,28 +39,6 @@ export async function buildDashboardOverview(
   if (!user) {
     throw new Error("User not found");
   }
-
-  const aliases = await prisma.alias.findMany({
-    where: { userId, isActive: true },
-    select: { id: true, healthStatus: true },
-  });
-  const activeAliases = aliases.length;
-  const aliasesHealthy = aliases.filter((a) => a.healthStatus === "healthy").length;
-  const aliasesWarning = aliases.filter((a) => a.healthStatus === "warning").length;
-  const aliasesCompromised = aliases.filter(
-    (a) => a.healthStatus === "compromised" || a.healthStatus === "quarantined"
-  ).length;
-
-  const latestRun = await prisma.brokerScanRun.findFirst({
-    where: { userId },
-    orderBy: { startedAt: "desc" },
-  });
-  const brokerRows = latestRun
-    ? await prisma.brokerScanResult.findMany({
-        where: { userId, brokerScanRunId: latestRun.id },
-      })
-    : [];
-  const brokerSummary = computeBrokerScanSummaryFromRows(brokerRows);
 
   const brokerEvents = await prisma.brokerScanResult.findMany({
     where: {
@@ -103,29 +95,24 @@ export async function buildDashboardOverview(
 
   const activity = [...brokerActivity, ...darkWebActivity].slice(0, 8);
 
-  let darkWebAlerts = 0;
-  if (isPaidTier(user.tier)) {
-    darkWebAlerts = await prisma.darkWebFinding.count({
-      where: {
-        userId,
-        status: "open",
-        severity: { in: ["medium", "high", "critical"] },
-      },
-    });
-  }
-
-  const riskScore = Math.min(
-    92,
-    Math.max(
-      12,
-      22 +
-        brokerSummary.exposureCount +
-        aliasesCompromised * 3 -
-        Math.floor(brokerSummary.removed / 4)
-    )
-  );
-
   const demo = isOverviewDemoMetricsEnabled();
+  const intelCtx = await buildIntelligenceContext(userId);
+
+  const riskFactors = buildRiskFactors(intelCtx);
+  const priorityActions = buildPriorityActions(intelCtx);
+  const dailyBrief = buildDailyBrief(intelCtx);
+  const intelligence = buildIntelligenceItems(intelCtx);
+  const copilotPrompts = buildCopilotPrompts();
+
+  const demoTrendDelta = -12;
+  const riskTrendSeries = demo
+    ? buildSyntheticRiskTrendSeries(intelCtx.riskScore, demoTrendDelta)
+    : await computeRiskTrendSeries(userId);
+  const riskTrend = demo
+    ? demoTrendDelta
+    : riskTrendFromSeries(riskTrendSeries);
+  const weekChanges = await fetchRiskWeekChanges(userId, intelCtx);
+  const riskNarrative = buildRiskNarrative(intelCtx, weekChanges);
 
   const callsScreened = demo ? 1284 : 0;
   const scamsEngaged = demo ? 342 : 0;
@@ -134,7 +121,6 @@ export async function buildDashboardOverview(
   const weeklyScams = demo
     ? ([12, 18, 9, 24, 15, 21, 14] as const)
     : ([0, 0, 0, 0, 0, 0, 0] as const);
-  const riskTrend = demo ? -12 : 0;
 
   const systemLayers = demo
     ? ([
@@ -152,25 +138,36 @@ export async function buildDashboardOverview(
 
   return {
     userId,
-    riskScore,
+    riskScore: intelCtx.riskScore,
     riskTrend,
+    riskTrendSeries,
+    riskNarrative,
     metricsDemoMode: demo,
-    activeAliases,
-    aliasesHealthy,
-    aliasesWarning,
-    aliasesCompromised,
-    brokersFound: brokerSummary.exposureCount,
-    brokersRemoved: brokerSummary.removed,
-    brokersPending: brokerSummary.pending,
-    brokersRelisted: brokerSummary.relisted,
+    activeAliases: intelCtx.activeAliases,
+    aliasesHealthy: intelCtx.aliasesHealthy,
+    aliasesWarning: intelCtx.aliasesWarning,
+    aliasesCompromised: intelCtx.aliasesCompromised,
+    brokersFound: intelCtx.brokersFound,
+    brokersRemoved: intelCtx.brokersRemoved,
+    brokersPending: intelCtx.brokersPending,
+    brokersRelisted: intelCtx.brokersRelisted,
     callsScreened,
     scamsEngaged,
     scammerMinutes,
     complaintsFile,
-    darkWebAlerts,
+    darkWebAlerts: intelCtx.darkWebAlerts,
     activity,
     weeklyScams: [...weeklyScams],
     weekDays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
     systemLayers: [...systemLayers],
+    dailyBrief,
+    riskFactors,
+    priorityActions,
+    intelligence,
+    copilotPrompts,
+    unreadInbox: intelCtx.unreadInbox,
+    hasBrokerScan: intelCtx.hasBrokerScan,
+    passwordAliasCount: intelCtx.passwordAliasCount,
+    isPaidTier: intelCtx.isPaidTier,
   };
 }

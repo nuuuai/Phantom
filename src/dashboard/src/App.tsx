@@ -9,7 +9,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout.js";
 import { DashboardPage } from "@/features/dashboard/DashboardPage.js";
 import { OnboardingModal } from "@/features/onboarding/OnboardingModal.js";
-import { PlaceholderPage } from "@/features/placeholder/PlaceholderPage.js";
+import { LoginPage } from "@/features/auth/LoginPage.js";
+import { NotFoundPage } from "@/features/errors/NotFoundPage.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import { shouldSkipDevBootstrap } from "@/lib/devBootstrap.js";
 import { queryKeys } from "@/lib/queryKeys.js";
@@ -54,6 +55,31 @@ const AliasDetailPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import("@/features/settings/SettingsPage.js").then((m) => ({
     default: m.SettingsPage,
+  }))
+);
+const CallGuardPage = lazy(() =>
+  import("@/features/callGuard/CallGuardPage.js").then((m) => ({
+    default: m.CallGuardPage,
+  }))
+);
+const ScamEngagePage = lazy(() =>
+  import("@/features/scamEngage/ScamEngagePage.js").then((m) => ({
+    default: m.ScamEngagePage,
+  }))
+);
+const ThreatIntelPage = lazy(() =>
+  import("@/features/threatIntel/ThreatIntelPage.js").then((m) => ({
+    default: m.ThreatIntelPage,
+  }))
+);
+const ReportsPage = lazy(() =>
+  import("@/features/reports/ReportsPage.js").then((m) => ({
+    default: m.ReportsPage,
+  }))
+);
+const FamilyPage = lazy(() =>
+  import("@/features/family/FamilyPage.js").then((m) => ({
+    default: m.FamilyPage,
   }))
 );
 
@@ -169,6 +195,7 @@ export function App() {
       <SessionBootstrap />
       <OnboardingModal />
       <Routes>
+        <Route path="/login" element={<LoginPage />} />
         <Route element={<MainLayout />}>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/aliases" element={<AliasesPage />} />
@@ -180,56 +207,15 @@ export function App() {
             path="/broker-removal"
             element={<Navigate to="/brokers" replace />}
           />
-          <Route
-            path="/call-guard"
-            element={
-              <PlaceholderPage
-                title="Call Guard"
-                description="Call screening, robocall labeling, and telephony posture — planned product surface, not wired in Phase 1."
-              />
-            }
-          />
+          <Route path="/call-guard" element={<CallGuardPage />} />
           <Route path="/dark-web" element={<DarkWebPage />} />
-          <Route
-            path="/scam-engage"
-            element={
-              <PlaceholderPage
-                title="Scam engage"
-                description="Scammer Engagement Engine — transcripts and controls (roadmap; no live SEE in Phase 1)."
-              />
-            }
-          />
-          <Route
-            path="/threat-intel"
-            element={
-              <PlaceholderPage
-                title="Threat intel"
-                description="Campaign-style intelligence feeds — not connected to live community or marketplace data in Phase 1."
-              />
-            }
-          />
-          <Route
-            path="/reports"
-            element={
-              <PlaceholderPage
-                title="Reports"
-                description="Scheduled exposure and removal reporting — export and digests are a future slice."
-              />
-            }
-          />
-          <Route
-            path="/family"
-            element={
-              <PlaceholderPage
-                title="Family"
-                description="Shared family command center — multi-seat policies and dashboards are not in Phase 1."
-              />
-            }
-          />
+          <Route path="/scam-engage" element={<ScamEngagePage />} />
+          <Route path="/threat-intel" element={<ThreatIntelPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/family" element={<FamilyPage />} />
           <Route path="/billing" element={<BillingPage />} />
           <Route path="/settings" element={<SettingsPage />} />
-          {/* Unknown paths → home (no separate 404 in Phase 1 shell). */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
     </>

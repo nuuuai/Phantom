@@ -28,6 +28,13 @@ export const STALE = {
   aliasesList: 30_000,
   /** Dark web findings + summary — refresh invalidates. */
   darkWeb: 30_000,
-  /** Vault sync push query — tied to alias list `dataUpdatedAt`. */
+  callGuard: 45_000,
+  scamEngage: 45_000,
+  threatIntel: 120_000,
+  reports: 60_000,
+  family: 60_000,
+  inboxSummary: 20_000,
+  aliasIntel: 30_000,
+  copilotStatus: 120_000,
   vaultSync: 20_000,
 } as const;

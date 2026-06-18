@@ -7,7 +7,7 @@ import type {
   DataBroker,
   ScanStatus,
 } from "@phantom/shared";
-import { BROKER_DATA_TYPES } from "@phantom/shared";
+import { BROKER_DATA_TYPES, computeBrokerExposureSeverity } from "@phantom/shared";
 
 function mapBroker(row: PrismaBroker): DataBroker {
   return {
@@ -43,6 +43,10 @@ export function mapBrokerScanResult(
     removalSubmittedAt: row.removalSubmittedAt?.toISOString() ?? null,
     removalConfirmedAt: row.removalConfirmedAt?.toISOString() ?? null,
     relistDetectedAt: row.relistDetectedAt?.toISOString() ?? null,
+    exposureSeverity:
+      row.status === "not_found" || row.dataTypesFound.length === 0
+        ? 0
+        : computeBrokerExposureSeverity(row.dataTypesFound),
   };
 }
 

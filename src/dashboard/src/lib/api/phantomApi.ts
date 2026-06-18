@@ -22,6 +22,22 @@ import {
   type DarkWebFindingsListResponse,
   type DarkWebFindingsSummary,
   type DarkWebRefreshResult,
+  type CallGuardSummary,
+  type ScamEngagementSummary,
+  type ThreatPattern,
+  type ExposureReport,
+  type FamilySnapshot,
+  type UserAiPreferences,
+  type AliasHealthIntel,
+  type InboxSummary,
+  type AccountExportPayload,
+  type AccountDeleteRequest,
+  type AccountDeleteResult,
+  type DarkWebImpactSummary,
+  type CopilotChatResponse,
+  type CopilotConfirmRequest,
+  type CopilotConfirmResponse,
+  type CopilotStatusResponse,
   RATE_LIMIT_RETRY_MS,
 } from "@phantom/shared";
 import { useSessionStore } from "@/stores/useSessionStore.js";
@@ -202,6 +218,135 @@ export const phantomApi = {
       });
       return parseApiResponseJson(res);
     },
+
+    patchPreferences: async (
+      accessToken: Token,
+      body: Partial<UserAiPreferences>
+    ): Promise<ApiResponse<UserAiPreferences>> => {
+      const res = await fetchWithRefresh("/api/user/preferences", accessToken, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      return parseApiResponseJson(res);
+    },
+
+    exportAccount: async (
+      accessToken: Token,
+      init?: RequestInit
+    ): Promise<ApiResponse<AccountExportPayload>> => {
+      const res = await fetchWithRefresh("/api/user/export", accessToken, init ?? {});
+      return parseApiResponseJson(res);
+    },
+
+    deleteAccount: async (
+      accessToken: Token,
+      body: AccountDeleteRequest
+    ): Promise<ApiResponse<AccountDeleteResult>> => {
+      const res = await fetchWithRefresh("/api/user/me", accessToken, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      return parseApiResponseJson(res);
+    },
+  },
+
+  callGuard: {
+    logs: async (
+      accessToken: Token,
+      init?: RequestInit
+    ): Promise<ApiResponse<CallGuardSummary>> => {
+      const res = await fetchWithRefresh(
+        "/api/call-guard/logs",
+        accessToken,
+        init ?? {}
+      );
+      return parseApiResponseJson(res);
+    },
+  },
+
+  scamEngage: {
+    sessions: async (
+      accessToken: Token,
+      init?: RequestInit
+    ): Promise<ApiResponse<ScamEngagementSummary>> => {
+      const res = await fetchWithRefresh(
+        "/api/scam-engage/sessions",
+        accessToken,
+        init ?? {}
+      );
+      return parseApiResponseJson(res);
+    },
+  },
+
+  threatIntel: {
+    patterns: async (
+      accessToken: Token,
+      init?: RequestInit
+    ): Promise<ApiResponse<{ patterns: ThreatPattern[] }>> => {
+      const res = await fetchWithRefresh(
+        "/api/threat-intel/patterns",
+        accessToken,
+        init ?? {}
+      );
+      return parseApiResponseJson(res);
+    },
+  },
+
+  reports: {
+    latest: async (
+      accessToken: Token,
+      init?: RequestInit
+    ): Promise<ApiResponse<{ report: ExposureReport }>> => {
+      const res = await fetchWithRefresh(
+        "/api/reports/latest",
+        accessToken,
+        init ?? {}
+      );
+      return parseApiResponseJson(res);
+    },
+  },
+
+  family: {
+    snapshot: async (
+      accessToken: Token,
+      init?: RequestInit
+    ): Promise<ApiResponse<FamilySnapshot>> => {
+      const res = await fetchWithRefresh(
+        "/api/family/snapshot",
+        accessToken,
+        init ?? {}
+      );
+      return parseApiResponseJson(res);
+    },
+  },
+
+  intelligence: {
+    aliasIntel: async (
+      accessToken: Token,
+      aliasId: string,
+      init?: RequestInit
+    ): Promise<ApiResponse<AliasHealthIntel>> => {
+      const res = await fetchWithRefresh(
+        `/api/intelligence/aliases/${aliasId}/intel`,
+        accessToken,
+        init ?? {}
+      );
+      return parseApiResponseJson(res);
+    },
+
+    inboxSummary: async (
+      accessToken: Token,
+      init?: RequestInit
+    ): Promise<ApiResponse<InboxSummary>> => {
+      const res = await fetchWithRefresh(
+        "/api/intelligence/inbox/summary",
+        accessToken,
+        init ?? {}
+      );
+      return parseApiResponseJson(res);
+    },
   },
 
   emailInbox: {
@@ -315,6 +460,18 @@ export const phantomApi = {
       const qs = params.toString() ? `?${params.toString()}` : "";
       const res = await fetchWithRefresh(
         `/api/dark-web/findings${qs}`,
+        accessToken,
+        init ?? {}
+      );
+      return parseApiResponseJson(res);
+    },
+
+    impact: async (
+      accessToken: Token,
+      init?: RequestInit
+    ): Promise<ApiResponse<DarkWebImpactSummary>> => {
+      const res = await fetchWithRefresh(
+        "/api/dark-web/impact",
         accessToken,
         init ?? {}
       );
@@ -620,6 +777,48 @@ export const phantomApi = {
           body: JSON.stringify({ sessionId }),
         }
       );
+      return parseApiResponseJson(res);
+    },
+  },
+
+  copilot: {
+    status: async (
+      accessToken: Token,
+      init?: RequestInit
+    ): Promise<ApiResponse<CopilotStatusResponse>> => {
+      const res = await fetchWithRefresh(
+        "/api/copilot/status",
+        accessToken,
+        init ?? {}
+      );
+      return parseApiResponseJson(res);
+    },
+
+    chat: async (
+      accessToken: Token,
+      message: string,
+      init?: RequestInit
+    ): Promise<ApiResponse<CopilotChatResponse>> => {
+      const res = await fetchWithRefresh("/api/copilot/chat", accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+        ...init,
+      });
+      return parseApiResponseJson(res);
+    },
+
+    confirm: async (
+      accessToken: Token,
+      body: CopilotConfirmRequest,
+      init?: RequestInit
+    ): Promise<ApiResponse<CopilotConfirmResponse>> => {
+      const res = await fetchWithRefresh("/api/copilot/confirm", accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        ...init,
+      });
       return parseApiResponseJson(res);
     },
   },

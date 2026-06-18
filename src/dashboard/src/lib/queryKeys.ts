@@ -24,6 +24,13 @@ export const notificationPrefsAll = ["notification-prefs"] as const;
 export const emailInboxAll = ["email-inbox"] as const;
 
 export const darkWebAll = ["dark-web"] as const;
+export const callGuardAll = ["call-guard"] as const;
+export const scamEngageAll = ["scam-engage"] as const;
+export const threatIntelAll = ["threat-intel"] as const;
+export const reportsAll = ["reports"] as const;
+export const familyAll = ["family"] as const;
+export const inboxSummaryAll = ["inbox-summary"] as const;
+export const aliasIntelAll = ["alias-intel"] as const;
 
 export const queryKeys = {
   aliasDetailAll,
@@ -77,4 +84,22 @@ export const queryKeys = {
     ["dark-web", "summary", accessToken] as const,
   darkWebFindings: (accessToken: string | null) =>
     ["dark-web", "findings", accessToken] as const,
+  darkWebImpact: (accessToken: string | null) =>
+    ["dark-web", "impact", accessToken] as const,
+  callGuardLogs: (accessToken: string | null) =>
+    ["call-guard", "logs", accessToken] as const,
+  scamEngageSessions: (accessToken: string | null) =>
+    ["scam-engage", "sessions", accessToken] as const,
+  threatIntelPatterns: (accessToken: string | null) =>
+    ["threat-intel", "patterns", accessToken] as const,
+  exposureReport: (accessToken: string | null) =>
+    ["reports", "latest", accessToken] as const,
+  familySnapshot: (accessToken: string | null) =>
+    ["family", "snapshot", accessToken] as const,
+  inboxSummary: (accessToken: string | null) =>
+    ["inbox-summary", accessToken] as const,
+  aliasIntel: (accessToken: string | null, aliasId: string | undefined) =>
+    ["alias-intel", accessToken, aliasId] as const,
+  copilotStatus: (accessToken: string | null) =>
+    ["copilot", "status", accessToken] as const,
 };

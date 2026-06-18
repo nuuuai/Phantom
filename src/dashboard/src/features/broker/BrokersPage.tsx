@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { SessionGateMessage } from "@/components/SessionGateMessage.js";
 import { UpgradeModal } from "@/components/upgrade/UpgradeModal.js";
 import { BrokerResultsPanel } from "./BrokerResultsPanel.js";
+import { BrokerRemovalNarrativePanel } from "./BrokerRemovalNarrativePanel.js";
 import { phantomApi } from "@/lib/api/phantomApi.js";
 import {
   brokerScanCatalogAll,
@@ -20,6 +21,7 @@ import {
   PHANTOM_API_ERROR_CODES,
   type BrokerScanSummary,
   type ClientErrorMeta,
+  buildBrokerRemovalNarrative,
   FREE_TIER_BROKER_SCAN_MAX_PER_24H,
 } from "@phantom/shared";
 import type { UpgradeContext, UpgradeReason } from "@/lib/upgradeCopy.js";
@@ -228,6 +230,14 @@ export function BrokersPage() {
     [catalogQuery.data]
   );
 
+  const removalNarrative = useMemo(
+    () =>
+      resultsQuery.data && resultsQuery.data.length > 0
+        ? buildBrokerRemovalNarrative(resultsQuery.data)
+        : null,
+    [resultsQuery.data]
+  );
+
   const exposureForModal = summary?.exposureCount ?? 0;
 
   if (!accessToken) {
@@ -363,9 +373,10 @@ export function BrokersPage() {
             requesting removal.
           </p>
           <p className="mt-4 max-w-2xl font-sans text-sm leading-relaxed text-ph-text-tertiary">
-            Phase 1 runs a deterministic simulation (no live broker queries).
-            Production workers will parallelize real scans with rate limits per
-            site.
+            Default: deterministic simulation. Set{" "}
+            <span className="font-mono text-[10px]">BROKER_SCAN_PROVIDER=hybrid</span>{" "}
+            on the API for live HTTP probes on 10 core brokers (Spokeo, WhitePages,
+            etc.).
           </p>
           <p className="mt-4 max-w-2xl font-sans text-[11px] leading-relaxed text-ph-text-muted">
             <span className="font-medium text-ph-text-tertiary">Status legend:</span>{" "}
@@ -403,7 +414,11 @@ export function BrokersPage() {
             Loading results…
           </div>
         ) : (
-          <BrokerResultsPanel
+          <>
+            {removalNarrative ? (
+              <BrokerRemovalNarrativePanel narrative={removalNarrative} />
+            ) : null}
+            <BrokerResultsPanel
             summary={summary}
             items={resultsQuery.data ?? []}
             tab={tab}
@@ -422,6 +437,7 @@ export function BrokersPage() {
             removeAllBusy={removeAllMutation.isPending}
             removalBusyId={removalBusyId}
           />
+          </>
         )
       ) : null}
     </div>
