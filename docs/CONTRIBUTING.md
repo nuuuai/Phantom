@@ -17,14 +17,14 @@ From the repo root (Node **20+**):
 3. `npm run test`
 4. `npm run build` (if you touched build output or Prisma)
 
-CI order matches [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+CI order matches [`.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 
 ## Integration tests (Postgres + Redis)
 
 Many `*.integration.test.ts` files under `src/api/src` **skip** when `DATABASE_URL` is unset or equals the Vitest placeholder (`phantom_placeholder`). To run them locally:
 
 1. Start services: `docker compose up -d postgres redis` (or use your own instances).
-2. Copy [`.env.example`](.env.example) → `.env` and set **`DATABASE_URL`**, **`JWT_SECRET`**, and **`REDIS_URL`** (e.g. `redis://localhost:6379`).
+2. Copy [`.env.example`](../.env.example) → `.env` and set **`DATABASE_URL`**, **`JWT_SECRET`**, and **`REDIS_URL`** (e.g. `redis://localhost:6379`).
 3. Migrate and seed:  
    `npm run db:migrate:deploy -w @phantom/api`  
    `npm run db:seed -w @phantom/api`
@@ -35,4 +35,6 @@ GitHub Actions runs Postgres and Redis services and sets **`DATABASE_URL`** / **
 
 ## Docs
 
-Operational steps for deploy, webhooks, and manual QA live in [`docs/roadmap/DEPLOYMENT.md`](docs/roadmap/DEPLOYMENT.md), [`docs/roadmap/EMAIL_INBOUND.md`](docs/roadmap/EMAIL_INBOUND.md), and [`docs/roadmap/QA_MANUAL.md`](docs/roadmap/QA_MANUAL.md).
+Operational steps for deploy, webhooks, and manual QA live in [`roadmap/DEPLOYMENT.md`](./roadmap/DEPLOYMENT.md), [`roadmap/EMAIL_INBOUND.md`](./roadmap/EMAIL_INBOUND.md), and [`roadmap/QA_MANUAL.md`](./roadmap/QA_MANUAL.md).
+
+Full documentation index: [`README.md`](./README.md).

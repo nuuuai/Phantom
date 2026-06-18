@@ -118,7 +118,7 @@ For the rolling **% complete** model, see [`README.md`](./README.md) in this fol
 
 ## Run 9 — Batch 5 (tests, verticals, resilience)
 
-**Scope:** **`@phantom/shared`** **`forwardEmail`** (`parseForwardToEmailPatchBody`, **`isValidForwardEmailInput`**) — single validation path for **`PATCH /api/user/me`** and dashboard Settings; **`GET /api/email-inbox`** **`offset`** + **`data.meta`** with clamped limits; integration tests (invalid forward email, inbox clamp, idempotent read PATCH, existing auth/vault/notifications coverage retained). **Dashboard** **`FeatureRouteErrorBoundary`** around **`Outlet`** for lazy-route chunk failures. **Docs:** **`EMAIL_INBOUND.md`** + **`DEPLOYMENT.md`** (inbox query + readiness vs liveness); **`CONTRIBUTING.md`**; **`CHANGELOG.md`** Unreleased; **`README`** integration-test pointer; **`dashboardRoutes.test.ts`** notification deep-link sanity.
+**Scope:** **`@phantom/shared`** **`forwardEmail`** (`parseForwardToEmailPatchBody`, **`isValidForwardEmailInput`**) — single validation path for **`PATCH /api/user/me`** and dashboard Settings; **`GET /api/email-inbox`** **`offset`** + **`data.meta`** with clamped limits; integration tests (invalid forward email, inbox clamp, idempotent read PATCH, existing auth/vault/notifications coverage retained). **Dashboard** **`FeatureRouteErrorBoundary`** around **`Outlet`** for lazy-route chunk failures. **Docs:** **`EMAIL_INBOUND.md`** + **`DEPLOYMENT.md`** (inbox query + readiness vs liveness); **`docs/CONTRIBUTING.md`**; **`docs/CHANGELOG.md`** Unreleased; **`docs/README.md`** integration-test pointer; **`dashboardRoutes.test.ts`** notification deep-link sanity.
 
 **Deferred:** Playwright E2E; Phase 2 surfaces.
 

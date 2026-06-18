@@ -49,6 +49,8 @@ Full AI autonomy: autonomous alias rotation, breach auto-response, monthly expos
 
 For local development and production deployment (environment variables, health checks, CI command order), see **[`docs/roadmap/DEPLOYMENT.md`](roadmap/DEPLOYMENT.md)**.
 
+For the page-by-page AI enhancement plan (Copilot, Call Guard, SEE, inbox intelligence, and priority roadmap), see **[`AI_ENHANCEMENT_ROADMAP.md`](AI_ENHANCEMENT_ROADMAP.md)**.
+
 ## Ecosystem
 
 Phantom is the third pillar of a unified ecosystem:
